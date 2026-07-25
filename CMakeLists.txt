@@ -32,5 +32,6 @@ set_target_properties(stylized_glad PROPERTIES
     FOLDER "Dependencies"
 )
 
+add_subdirectory(engine)
 add_subdirectory(apps/viewer)
 

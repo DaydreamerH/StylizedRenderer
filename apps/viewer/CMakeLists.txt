@@ -4,8 +4,7 @@ add_executable(stylized_viewer
 
 target_link_libraries(stylized_viewer
     PRIVATE
-        glfw
-        stylized_glad
+        stylized_engine
 )
 
 if(MSVC)
