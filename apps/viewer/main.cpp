@@ -1,68 +1,65 @@
+#include <stylized/core/Application.hpp>
 #include <stylized/graphics/GraphicsDevice.hpp>
-#include <stylized/graphics/OpenGLContext.hpp>
 #include <stylized/platform/Window.hpp>
 
 #include <cstdlib>
 #include <string_view>
+
+namespace
+{
+
+stylized::core::ApplicationDesc makeApplicationDesc(const bool smokeTest)
+{
+    stylized::core::ApplicationDesc desc;
+    desc.title = "StylizedRenderer";
+    desc.width = 1280;
+    desc.height = 720;
+    desc.visible = !smokeTest;
+    desc.vsync = !smokeTest;
+    return desc;
+}
+
+class ViewerApplication final : public stylized::core::Application
+{
+public:
+    explicit ViewerApplication(const bool smokeTest)
+        : Application(makeApplicationDesc(smokeTest)),
+          smokeTest_(smokeTest)
+    {
+    }
+
+protected:
+    void onUpdate(float) override
+    {
+        if (window().isKeyPressed(stylized::platform::Key::Escape))
+        {
+            requestExit();
+        }
+    }
+
+    void onRender() override
+    {
+        graphicsDevice().clear({0.06F, 0.07F, 0.10F, 1.0F});
+
+        ++renderedFrameCount_;
+        if (smokeTest_ && renderedFrameCount_ >= 3)
+        {
+            requestExit();
+        }
+    }
+
+private:
+    bool smokeTest_ = false;
+    int renderedFrameCount_ = 0;
+};
+
+} // namespace
 
 int main(const int argc, char* argv[])
 {
     const bool smokeTest =
         argc > 1 && std::string_view{argv[1]} == "--smoke-test";
 
-    stylized::platform::Window::Desc windowDesc;
-    windowDesc.title = "StylizedRenderer";
-    windowDesc.visible = !smokeTest;
-
-    stylized::platform::Window window(windowDesc);
-    if (!window.isValid())
-    {
-        return EXIT_FAILURE;
-    }
-
-    stylized::graphics::OpenGLContext context(window);
-    if (!context.isValid())
-    {
-        return EXIT_FAILURE;
-    }
-
-    context.setVSync(!smokeTest);
-    context.printInfo();
-
-    stylized::graphics::GraphicsDevice graphicsDevice(context);
-    if (!graphicsDevice.isValid())
-    {
-        return EXIT_FAILURE;
-    }
-
-    int renderedFrameCount = 0;
-    while (!window.shouldClose())
-    {
-        window.pollEvents();
-        if (window.isKeyPressed(stylized::platform::Key::Escape))
-        {
-            window.setShouldClose(true);
-        }
-
-        uint32_t framebufferWidth = 0;
-        uint32_t framebufferHeight = 0;
-        window.getFramebufferSize(framebufferWidth, framebufferHeight);
-        if (framebufferWidth == 0 || framebufferHeight == 0)
-        {
-            window.waitEvents();
-            continue;
-        }
-
-        graphicsDevice.setViewport({framebufferWidth, framebufferHeight});
-        graphicsDevice.clear({0.06F, 0.07F, 0.10F, 1.0F});
-        window.swapBuffers();
-
-        ++renderedFrameCount;
-        if (smokeTest && renderedFrameCount >= 3)
-        {
-            window.setShouldClose(true);
-        }
-    }
-
-    return EXIT_SUCCESS;
+    ViewerApplication application(smokeTest);
+    return application.run();
 }
