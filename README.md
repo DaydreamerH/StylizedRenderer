@@ -2,14 +2,17 @@
 
 StylizedRenderer 是一个以 OpenGL 为后端、以实时三渲二角色渲染为首个目标的 C++ 渲染项目。
 
-当前仓库只包含最小开发环境：
+当前仓库已完成最小开发环境，并正在实施第一阶段 Graphics Foundation：
 
 - C++20；
 - CMake；
 - Visual Studio 2022 x64；
 - GLFW 3.4；
 - GLAD 2.0.8 生成的 OpenGL 4.5 Core 加载代码；
-- 一个带 OpenGL 调试输出的清屏窗口。
+- `stylized_engine` 静态库；
+- Application、Window 和 OpenGLContext 生命周期；
+- 最小 GraphicsDevice；
+- 带 OpenGL 调试输出的清屏窗口。
 
 详细设计和开发计划见 [PROJECT_PROPOSAL.md](PROJECT_PROPOSAL.md)。
 
@@ -27,6 +30,9 @@ StylizedRenderer 是一个以 OpenGL 为后端、以实时三渲二角色渲染�
 ```powershell
 cmake --preset windows-vs2022
 ```
+
+不要在同一个 `build` 目录中混用不同版本的 CMake。若从 Visual Studio
+内置 CMake 切换到独立安装的 CMake，应该重新生成对应构建目录。
 
 ## 构建
 
