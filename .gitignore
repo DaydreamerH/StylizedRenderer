@@ -1,4 +1,5 @@
 /build/
+/docs/
 /out/
 /.vs/
 /CMakeUserPresets.json
