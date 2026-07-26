@@ -20,6 +20,29 @@ struct BufferDesc
     std::string debugName;
 };
 
+enum class VertexAttributeFormat : uint8_t
+{
+    Float,
+    Float2,
+    Float3,
+    Float4,
+    Uint8Normalized4
+};
+
+struct VertexAttributeDesc
+{
+    uint32_t location = 0;
+    uint32_t binding = 0;
+    VertexAttributeFormat format = VertexAttributeFormat::Float3;
+    std::size_t offset = 0;
+};
+
+struct VertexBufferBindingDesc
+{
+    uint32_t binding = 0;
+    std::size_t stride = 0;
+};
+
 enum class TextureFormat : uint8_t
 {
     R8,

@@ -5,11 +5,13 @@ add_library(stylized_engine STATIC
     include/stylized/graphics/GraphicsDevice.hpp
     include/stylized/graphics/GraphicsTypes.hpp
     include/stylized/graphics/OpenGLContext.hpp
+    include/stylized/graphics/VertexArray.hpp
     include/stylized/platform/Window.hpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
     src/graphics/opengl/GraphicsDevice.cpp
     src/graphics/opengl/OpenGLContext.cpp
+    src/graphics/opengl/VertexArray.cpp
     src/platform/Window.cpp
 )
 

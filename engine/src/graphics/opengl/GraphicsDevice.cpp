@@ -49,4 +49,13 @@ Buffer GraphicsDevice::createBuffer(const BufferDesc &desc, std::span<const std:
     return Buffer{desc, initialData};
 }
 
+VertexArray GraphicsDevice::createVertexArray(const VertexArrayDesc &desc)
+{
+    if (!initialized_)
+    {
+        return {};
+    }
+
+    return VertexArray{desc};
+}
 } // namespace stylized::graphics
