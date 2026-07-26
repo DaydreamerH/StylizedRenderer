@@ -2,6 +2,11 @@
 
 #include <stylized/core/NonCopyable.hpp>
 #include <stylized/graphics/GraphicsTypes.hpp>
+#include <stylized/graphics/Buffer.hpp>
+
+#include <cstddef>
+#include <span>
+#include <type_traits>
 
 namespace stylized::graphics
 {
@@ -17,6 +22,20 @@ public:
     [[nodiscard]] bool isValid() const;
     void setViewport(const Extent2D& extent);
     void clear(const ClearValue& value);
+
+    [[nodiscard]] Buffer createBuffer(const BufferDesc& desc, std::span<const std::byte> initialData = {});
+    template<typename T>
+    [[nodiscard]] Buffer createBuffer(BufferDesc desc, const std::span<const T> initialData)
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "GPU buffer elements must be trivially copyable.");
+
+        if (desc.size == 0)
+        {
+            desc.size = initialData.size_bytes();
+        }
+
+        return createBuffer(desc, std::as_bytes(initialData));
+    }
 
 private:
     bool initialized_ = false;

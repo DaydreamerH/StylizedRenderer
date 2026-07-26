@@ -43,4 +43,10 @@ void GraphicsDevice::clear(const ClearValue& value)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+Buffer GraphicsDevice::createBuffer(const BufferDesc &desc, std::span<const std::byte> initialData)
+{
+    if (!initialized_) return {};
+    return Buffer{desc, initialData};
+}
+
 } // namespace stylized::graphics

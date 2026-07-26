@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
+#include <string>
 
 namespace stylized::graphics
 {
@@ -9,6 +11,13 @@ enum class BufferUsage : uint8_t
 {
     Static,
     Dynamic
+};
+
+struct BufferDesc
+{
+    std::size_t size = 0;
+    BufferUsage usage = BufferUsage::Static;
+    std::string debugName;
 };
 
 enum class TextureFormat : uint8_t
