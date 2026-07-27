@@ -62,6 +62,22 @@ enum class TextureFilter : uint8_t
     Linear
 };
 
+struct Texture2DDesc
+{
+    uint32_t width = 0;
+    uint32_t height = 0;
+
+    TextureFormat format = TextureFormat::RGBA8;
+
+    TextureWrap wrapU = TextureWrap::Repeat;
+    TextureWrap wrapV = TextureWrap::Repeat;
+
+    TextureFilter minFilter = TextureFilter::Linear;
+    TextureFilter magFilter = TextureFilter::Linear;
+
+    std::string debugName;
+};
+
 enum class PrimitiveTopology : uint8_t
 {
     Triangles

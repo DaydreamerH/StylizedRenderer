@@ -170,4 +170,11 @@ void GraphicsDevice::drawIndexed(const DrawIndexedCommand& command)
         reinterpret_cast<const void*>(byteOffset));
 }
 
+Texture2D GraphicsDevice::createTexture2D(const Texture2DDesc& desc, const std::span<const std::byte> pixels)
+{
+    if (!initialized_) return {};
+
+    return Texture2D{desc, pixels};
+}
+
 } // namespace stylized::graphics

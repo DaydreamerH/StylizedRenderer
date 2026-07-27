@@ -6,6 +6,7 @@
 #include <stylized/graphics/VertexArray.hpp>
 #include <stylized/graphics/ShaderProgram.hpp>
 #include <stylized/graphics/GraphicsCommands.hpp>
+#include <stylized/graphics/Texture2D.hpp>
 
 #include <cstddef>
 #include <span>
@@ -43,6 +44,15 @@ public:
     [[nodiscard]] VertexArray createVertexArray(const VertexArrayDesc& desc);
 
     [[nodiscard]] ShaderProgram createShaderProgram(const ShaderProgramDesc& desc);
+
+    [[nodiscard]] Texture2D createTexture2D(const Texture2DDesc& desc, std::span<const std::byte> pixels);
+    template<typename T>
+    [[nodiscard]] Texture2D createTexture2D(const Texture2DDesc& desc, const std::span<const T> pixels)
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "Texture pixels must be trivially copyable.");
+
+        return createTexture2D(desc, std::as_bytes(pixels));
+    }
 
     void drawIndexed(const DrawIndexedCommand& command);
 

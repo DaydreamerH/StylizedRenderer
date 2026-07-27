@@ -7,6 +7,7 @@ add_library(stylized_engine STATIC
     include/stylized/graphics/GraphicsTypes.hpp
     include/stylized/graphics/OpenGLContext.hpp
     include/stylized/graphics/ShaderProgram.hpp
+    include/stylized/graphics/Texture2D.hpp
     include/stylized/graphics/VertexArray.hpp
     include/stylized/platform/Window.hpp
     src/core/Application.cpp
@@ -14,6 +15,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/GraphicsDevice.cpp
     src/graphics/opengl/OpenGLContext.cpp
     src/graphics/opengl/ShaderProgram.cpp
+    src/graphics/opengl/Texture2D.cpp
     src/graphics/opengl/VertexArray.cpp
     src/platform/Window.cpp
 )

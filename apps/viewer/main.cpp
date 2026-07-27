@@ -5,6 +5,7 @@
 #include <stylized/graphics/ShaderProgram.hpp>
 #include <stylized/graphics/VertexArray.hpp>
 #include <stylized/platform/Window.hpp>
+#include <stylized/graphics/Texture2D.hpp>
 
 #include <array>
 #include <cstddef>
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <span>
 #include <string_view>
+#include <vector>
 
 namespace
 {
@@ -72,6 +74,8 @@ protected:
 
         if (!createShader()) return false;
 
+        if (!createCheckerboardTexture()) return false;
+
         return true;
     }
 
@@ -86,6 +90,8 @@ protected:
     void onRender() override
     {
         graphicsDevice().clear({0.06F, 0.07F, 0.10F, 1.0F});
+
+        checkerboardTexture_.bind(0);
 
         stylized::graphics::DrawIndexedCommand command;
         command.shader = &shaderProgram_;
@@ -112,6 +118,7 @@ private:
     stylized::graphics::Buffer vertexBuffer_;
     stylized::graphics::Buffer indexBuffer_;
     stylized::graphics::VertexArray vertexArray_;
+    stylized::graphics::Texture2D checkerboardTexture_;
     stylized::graphics::ShaderProgram shaderProgram_;
 
     bool createBuffers(
@@ -158,6 +165,70 @@ private:
         return vertexArray_.isValid();
     }
 
+    bool createCheckerboardTexture()
+    {
+        constexpr uint32_t textureWidth = 128;
+        constexpr uint32_t textureHeight = 128;
+        constexpr uint32_t tileSize = 16;
+        constexpr uint32_t channelCount = 4;
+
+        std::vector<uint8_t> pixels(
+            static_cast<std::size_t>(textureWidth) *
+            static_cast<std::size_t>(textureHeight) *
+            channelCount);
+
+        for (uint32_t y = 0; y<textureHeight; ++y)
+        {
+            for (uint32_t x = 0; x<textureWidth; ++x)
+            {
+                const bool lightTile =
+                ((x / tileSize) + (y / tileSize)) % 2 == 0;
+
+                const uint8_t color =
+                    lightTile
+                        ? static_cast<uint8_t>(230)
+                        : static_cast<uint8_t>(40);
+
+                const std::size_t pixelIndex =
+                    (static_cast<std::size_t>(y) *
+                        textureWidth +
+                    x) *
+                    channelCount;
+
+                pixels[pixelIndex + 0] = color;
+                pixels[pixelIndex + 1] = color;
+                pixels[pixelIndex + 2] = color;
+                pixels[pixelIndex + 3] = 255;
+            }
+        }
+
+        stylized::graphics::Texture2DDesc desc;
+        desc.width = textureWidth;
+        desc.height = textureHeight;
+        desc.format =
+            stylized::graphics::TextureFormat::RGBA8;
+        desc.wrapU =
+            stylized::graphics::TextureWrap::Repeat;
+        desc.wrapV =
+            stylized::graphics::TextureWrap::Repeat;
+        desc.minFilter =
+            stylized::graphics::TextureFilter::Nearest;
+        desc.magFilter =
+            stylized::graphics::TextureFilter::Nearest;
+        desc.debugName =
+            "Foundation Checkerboard Texture";
+
+        checkerboardTexture_ =
+            graphicsDevice().createTexture2D(
+                desc,
+                std::span<const uint8_t>{
+                    pixels.data(),
+                    pixels.size()
+                });
+
+        return checkerboardTexture_.isValid();
+    }
+
     bool createShader()
     {
         stylized::graphics::ShaderProgramDesc desc;
@@ -168,6 +239,8 @@ private:
         shaderProgram_ = graphicsDevice().createShaderProgram(desc);
 
         if (!shaderProgram_.isValid()) return false;
+
+        if (!shaderProgram_.setInt("uTexture", 0)) return false;
         
         return shaderProgram_.setVec4(
             "uTint",
