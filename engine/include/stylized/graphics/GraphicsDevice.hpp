@@ -4,6 +4,7 @@
 #include <stylized/graphics/GraphicsTypes.hpp>
 #include <stylized/graphics/Buffer.hpp>
 #include <stylized/graphics/VertexArray.hpp>
+#include <stylized/graphics/ShaderProgram.hpp>
 
 #include <cstddef>
 #include <span>
@@ -39,6 +40,8 @@ public:
     }
 
     [[nodiscard]] VertexArray createVertexArray(const VertexArrayDesc& desc);
+
+    [[nodiscard]] ShaderProgram createShaderProgram(const ShaderProgramDesc& desc);
 
 private:
     bool initialized_ = false;

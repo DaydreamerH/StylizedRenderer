@@ -58,4 +58,12 @@ VertexArray GraphicsDevice::createVertexArray(const VertexArrayDesc &desc)
 
     return VertexArray{desc};
 }
+
+ShaderProgram GraphicsDevice::createShaderProgram(const ShaderProgramDesc &desc)
+{
+    if (!initialized_) return{};
+
+    return ShaderProgram{desc};
+}
+
 } // namespace stylized::graphics
