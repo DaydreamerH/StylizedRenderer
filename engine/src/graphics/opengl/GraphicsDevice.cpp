@@ -3,8 +3,60 @@
 
 #include <glad/gl.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <iostream>
+
 namespace stylized::graphics
 {
+
+namespace
+{
+
+GLenum toOpenGLTopology(
+    const PrimitiveTopology topology) noexcept
+{
+    switch (topology)
+    {
+    case PrimitiveTopology::Triangles:
+        return GL_TRIANGLES;
+    }
+
+    return GL_TRIANGLES;
+}
+
+GLenum toOpenGLIndexType(
+    const IndexType indexType) noexcept
+{
+    switch (indexType)
+    {
+    case IndexType::Uint16:
+        return GL_UNSIGNED_SHORT;
+
+    case IndexType::Uint32:
+        return GL_UNSIGNED_INT;
+    }
+
+    return GL_UNSIGNED_INT;
+}
+
+std::size_t indexTypeSize(
+    const IndexType indexType) noexcept
+{
+    switch (indexType)
+    {
+    case IndexType::Uint16:
+        return sizeof(uint16_t);
+
+    case IndexType::Uint32:
+        return sizeof(uint32_t);
+    }
+
+    return 0;
+}
+
+} // namespace
 
 GraphicsDevice::GraphicsDevice(const OpenGLContext& context)
     : initialized_(context.isValid())
@@ -64,6 +116,58 @@ ShaderProgram GraphicsDevice::createShaderProgram(const ShaderProgramDesc &desc)
     if (!initialized_) return{};
 
     return ShaderProgram{desc};
+}
+
+void GraphicsDevice::drawIndexed(const DrawIndexedCommand& command)
+{
+    if (!initialized_) return;
+
+    if (command.shader == nullptr || !command.shader->isValid()) return;
+
+    if (command.vertexArray == nullptr || !command.vertexArray->isValid() || !command.vertexArray->hasIndexBuffer())
+    {
+        return;
+    }
+
+    if (command.indexCount == 0)
+    {
+        return;
+    }
+
+    if (command.indexCount >
+        static_cast<uint32_t>(
+            std::numeric_limits<GLsizei>::max()))
+    {
+        return;
+    }
+
+    const std::size_t elementSize =
+        indexTypeSize(command.indexType);
+
+    if (elementSize == 0)
+    {
+        return;
+    }
+
+    if (command.firstIndex >
+        std::numeric_limits<std::size_t>::max() /
+            elementSize)
+    {
+        return;
+    }
+
+    const std::size_t byteOffset =
+        static_cast<std::size_t>(command.firstIndex) *
+        elementSize;
+
+    glUseProgram(command.shader->id_);
+    glBindVertexArray(command.vertexArray->id_);
+
+    glDrawElements(
+        toOpenGLTopology(command.topology),
+        static_cast<GLsizei>(command.indexCount),
+        toOpenGLIndexType(command.indexType),
+        reinterpret_cast<const void*>(byteOffset));
 }
 
 } // namespace stylized::graphics

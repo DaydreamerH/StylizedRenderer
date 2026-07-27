@@ -2,6 +2,7 @@ add_library(stylized_engine STATIC
     include/stylized/core/Application.hpp
     include/stylized/core/NonCopyable.hpp
     include/stylized/graphics/Buffer.hpp
+    include/stylized/graphics/GraphicsCommands.hpp
     include/stylized/graphics/GraphicsDevice.hpp
     include/stylized/graphics/GraphicsTypes.hpp
     include/stylized/graphics/OpenGLContext.hpp

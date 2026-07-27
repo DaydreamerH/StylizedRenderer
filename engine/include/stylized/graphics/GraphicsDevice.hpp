@@ -5,6 +5,7 @@
 #include <stylized/graphics/Buffer.hpp>
 #include <stylized/graphics/VertexArray.hpp>
 #include <stylized/graphics/ShaderProgram.hpp>
+#include <stylized/graphics/GraphicsCommands.hpp>
 
 #include <cstddef>
 #include <span>
@@ -42,6 +43,8 @@ public:
     [[nodiscard]] VertexArray createVertexArray(const VertexArrayDesc& desc);
 
     [[nodiscard]] ShaderProgram createShaderProgram(const ShaderProgramDesc& desc);
+
+    void drawIndexed(const DrawIndexedCommand& command);
 
 private:
     bool initialized_ = false;
