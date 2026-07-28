@@ -11,6 +11,7 @@ add_library(stylized_engine STATIC
     include/stylized/graphics/VertexArray.hpp
     include/stylized/math/Bounds.hpp
     include/stylized/platform/Window.hpp
+    include/stylized/scene/Camera.hpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
     src/graphics/opengl/GraphicsDevice.cpp
@@ -20,6 +21,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/VertexArray.cpp
     src/math/Bounds.cpp
     src/platform/Window.cpp
+    src/scene/Camera.cpp
 )
 
 target_include_directories(stylized_engine
