@@ -9,6 +9,7 @@ add_library(stylized_engine STATIC
     include/stylized/graphics/ShaderProgram.hpp
     include/stylized/graphics/Texture2D.hpp
     include/stylized/graphics/VertexArray.hpp
+    include/stylized/math/Bounds.hpp
     include/stylized/platform/Window.hpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
@@ -17,6 +18,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/ShaderProgram.cpp
     src/graphics/opengl/Texture2D.cpp
     src/graphics/opengl/VertexArray.cpp
+    src/math/Bounds.cpp
     src/platform/Window.cpp
 )
 
@@ -26,6 +28,8 @@ target_include_directories(stylized_engine
 )
 
 target_link_libraries(stylized_engine
+    PUBLIC
+        glm::glm
     PRIVATE
         glfw
         stylized_glad

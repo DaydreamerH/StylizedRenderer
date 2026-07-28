@@ -14,9 +14,22 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(glfw)
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(
+    glfw
+    glm
+)
 
 set_target_properties(glfw PROPERTIES
     FOLDER "Dependencies"
 )
 
+set_target_properties(glm PROPERTIES
+    FOLDER "Dependencies"
+)
