@@ -12,6 +12,8 @@ add_library(stylized_engine STATIC
     include/stylized/math/Bounds.hpp
     include/stylized/platform/Window.hpp
     include/stylized/scene/Camera.hpp
+    include/stylized/scene/Entity.hpp
+    include/stylized/scene/Scene.hpp
     include/stylized/scene/Transform.hpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
@@ -23,6 +25,7 @@ add_library(stylized_engine STATIC
     src/math/Bounds.cpp
     src/platform/Window.cpp
     src/scene/Camera.cpp
+    src/scene/Scene.cpp
     src/scene/Transform.cpp
 )
 
