@@ -7,6 +7,8 @@
 #include <stylized/platform/Window.hpp>
 #include <stylized/graphics/Texture2D.hpp>
 
+#include "OrbitCameraController.hpp"
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -81,6 +83,8 @@ protected:
 
     void onUpdate(float) override
     {
+        cameraController_.update(window());
+
         if (window().isKeyPressed(stylized::platform::Key::Escape))
         {
             requestExit();
@@ -92,6 +96,13 @@ protected:
         graphicsDevice().clear({0.06F, 0.07F, 0.10F, 1.0F});
 
         checkerboardTexture_.bind(0);
+
+        const glm::mat4 viewProjection = camera_.viewProjectionMatrix();
+
+        if (!shaderProgram_.setMat4("uViewProjection", viewProjection))
+        {
+            return;
+        }
 
         stylized::graphics::DrawIndexedCommand command;
         command.shader = &shaderProgram_;
@@ -120,6 +131,9 @@ private:
     stylized::graphics::VertexArray vertexArray_;
     stylized::graphics::Texture2D checkerboardTexture_;
     stylized::graphics::ShaderProgram shaderProgram_;
+
+    stylized::scene::Camera camera_;
+    OrbitCameraController cameraController_{camera_};
 
     bool createBuffers(
         std::span<const Vertex> vertices,

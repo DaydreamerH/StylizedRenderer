@@ -1,5 +1,7 @@
 add_executable(stylized_viewer
     main.cpp
+    OrbitCameraController.hpp
+    OrbitCameraController.cpp
 )
 
 target_link_libraries(stylized_viewer

@@ -25,6 +25,23 @@ int toGlfwKey(const Key key)
     return GLFW_KEY_UNKNOWN;
 }
 
+int toGlfwMouseButton(const MouseButton button)
+{
+    switch (button)
+    {
+    case MouseButton::Left:
+        return GLFW_MOUSE_BUTTON_LEFT;
+    
+    case MouseButton::Middle:
+        return GLFW_MOUSE_BUTTON_MIDDLE;
+    
+    case MouseButton::Right:
+        return GLFW_MOUSE_BUTTON_RIGHT;
+    }
+
+    return -1;
+}
+
 } // namespace
 
 Window::Window(const Desc& desc)
@@ -60,7 +77,11 @@ Window::Window(const Desc& desc)
     if (window_ == nullptr)
     {
         std::cerr << "Failed to create GLFW window.\n";
+        return;
     }
+
+    glfwSetWindowUserPointer(window_, this);
+    glfwSetScrollCallback(window_, &Window::scrollCallback);
 }
 
 Window::~Window()
@@ -150,6 +171,45 @@ bool Window::isKeyPressed(const Key key) const
 GLFWwindow* Window::nativeHandle() const
 {
     return window_;
+}
+
+bool Window::isMouseButtonPressed(const MouseButton button) const
+{
+    if (window_ == nullptr) return false;
+
+    const int glfwButton = toGlfwMouseButton(button);
+
+    return glfwButton >= 0 && glfwGetMouseButton(window_, glfwButton) == GLFW_PRESS;
+}
+
+void Window::getCursorPosition(double& x, double& y) const
+{
+    if (window_ == nullptr) 
+    {
+        x = 0.0;
+        y = 0.0;
+        return;
+    }
+
+    glfwGetCursorPos(window_, &x, &y);
+}
+
+double Window::consumeScrollDelta() noexcept
+{
+    const double result = scrollDelta_;
+    scrollDelta_ = 0.0;
+
+    return result;
+}
+
+void Window::scrollCallback(GLFWwindow *window, double, double yOffset)
+{
+    if (window == nullptr) return;
+
+    auto* owner = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    if (owner != nullptr) 
+        owner->scrollDelta_ += yOffset;
 }
 
 } // namespace stylized::platform

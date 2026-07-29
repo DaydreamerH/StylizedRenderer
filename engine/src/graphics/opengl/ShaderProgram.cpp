@@ -1,6 +1,7 @@
 #include <stylized/graphics/ShaderProgram.hpp>
 
 #include <glad/gl.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -480,6 +481,23 @@ bool ShaderProgram::setVec4(
         z,
         w);
 
+    return true;
+}
+
+bool ShaderProgram::setMat4(std::string_view name, const glm::mat4 &value)
+{
+    const int32_t location = 
+        uniformLocation(name);
+    
+    if (location < 0) return false;
+
+    glProgramUniformMatrix4fv(
+        id_,
+        location,
+        1,
+        GL_FALSE,
+        glm::value_ptr(value));
+    
     return true;
 }
 

@@ -8,6 +8,8 @@
 #include <string_view>
 #include <unordered_map>
 
+#include <glm/mat4x4.hpp>
+
 namespace stylized::graphics
 {
 
@@ -45,6 +47,8 @@ public:
     bool setVec3(std::string_view name, float x, float y, float z);
 
     bool setVec4(std::string_view name, float x, float y, float z, float w);
+
+    bool setMat4(std::string_view name, const glm::mat4& value);
 
 private:
     friend class GraphicsDevice;

@@ -15,6 +15,13 @@ enum class Key : uint8_t
     Escape
 };
 
+enum class MouseButton : uint8_t
+{
+    Left,
+    Middle,
+    Right
+};
+
 class Window final : public core::NonCopyable
 {
 public:
@@ -42,8 +49,15 @@ public:
     [[nodiscard]] bool isKeyPressed(Key key) const;
     [[nodiscard]] GLFWwindow* nativeHandle() const;
 
+    [[nodiscard]] bool isMouseButtonPressed(MouseButton button) const;
+    void getCursorPosition(double& x, double& y) const;
+    [[nodiscard]] double consumeScrollDelta() noexcept;
+
 private:
     GLFWwindow* window_ = nullptr;
+
+    double scrollDelta_ = 0.0;
+    static void scrollCallback(GLFWwindow* window, double, double yOffset);
 };
 
 } // namespace stylized::platform
