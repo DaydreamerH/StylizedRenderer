@@ -1,4 +1,6 @@
 add_library(stylized_engine STATIC
+    include/stylized/asset/AssetHandle.hpp
+    include/stylized/asset/AssetRegistry.hpp
     include/stylized/core/Application.hpp
     include/stylized/core/NonCopyable.hpp
     include/stylized/graphics/Buffer.hpp
