@@ -47,8 +47,10 @@ target_link_libraries(stylized_engine
     PUBLIC
         glm::glm
     PRIVATE
+        fastgltf::fastgltf
         glfw
         stylized_glad
+        stylized_stb
 )
 
 target_compile_definitions(stylized_engine
