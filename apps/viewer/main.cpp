@@ -1,11 +1,11 @@
-#include <stylized/core/Application.hpp>
-#include <stylized/graphics/Buffer.hpp>
-#include <stylized/graphics/GraphicsCommands.hpp>
-#include <stylized/graphics/GraphicsDevice.hpp>
-#include <stylized/graphics/ShaderProgram.hpp>
-#include <stylized/graphics/VertexArray.hpp>
-#include <stylized/platform/Window.hpp>
-#include <stylized/graphics/Texture2D.hpp>
+#include <core/Application.hpp>
+#include <graphics/Buffer.hpp>
+#include <graphics/GraphicsCommands.hpp>
+#include <graphics/GraphicsDevice.hpp>
+#include <graphics/ShaderProgram.hpp>
+#include <graphics/VertexArray.hpp>
+#include <platform/Window.hpp>
+#include <graphics/Texture2D.hpp>
 
 #include "OrbitCameraController.hpp"
 

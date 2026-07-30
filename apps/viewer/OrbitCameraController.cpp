@@ -1,6 +1,6 @@
 #include "OrbitCameraController.hpp"
 
-#include <stylized/platform/Window.hpp>
+#include <platform/Window.hpp>
 
 #include <algorithm>
 #include <cmath>

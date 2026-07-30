@@ -1,4 +1,4 @@
-#include <stylized/asset/TextureAsset.hpp>
+#include <asset/TextureAsset.hpp>
 
 #include <limits>
 

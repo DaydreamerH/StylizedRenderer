@@ -1,4 +1,4 @@
-#include <stylized/graphics/ShaderProgram.hpp>
+#include <graphics/ShaderProgram.hpp>
 
 #include <glad/gl.h>
 #include <glm/gtc/type_ptr.hpp>

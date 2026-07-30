@@ -1,4 +1,4 @@
-#include <stylized/scene/Scene.hpp>
+#include <scene/Scene.hpp>
 
 #include <algorithm>
 

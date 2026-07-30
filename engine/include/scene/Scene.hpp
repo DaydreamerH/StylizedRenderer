@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stylized/core/NonCopyable.hpp>
-#include <stylized/scene/Entity.hpp>
-#include <stylized/scene/Transform.hpp>
+#include <core/NonCopyable.hpp>
+#include <scene/Entity.hpp>
+#include <scene/Transform.hpp>
 
 #include <cstdint>
 #include <span>

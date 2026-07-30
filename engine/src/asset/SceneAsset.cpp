@@ -1,4 +1,4 @@
-#include <stylized/asset/SceneAsset.hpp>
+#include <asset/SceneAsset.hpp>
 
 #include <cstddef>
 

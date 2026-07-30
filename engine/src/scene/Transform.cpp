@@ -1,4 +1,4 @@
-#include <stylized/scene/Transform.hpp>
+#include <scene/Transform.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>

@@ -1,4 +1,4 @@
-#include <stylized/asset/MeshAsset.hpp>
+#include <asset/MeshAsset.hpp>
 
 namespace stylized::asset
 {

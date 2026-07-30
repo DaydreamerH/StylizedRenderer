@@ -1,4 +1,4 @@
-#include <stylized/graphics/Buffer.hpp>
+#include <graphics/Buffer.hpp>
 
 #include <glad/gl.h>
 

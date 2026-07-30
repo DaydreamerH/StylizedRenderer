@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stylized/math/Bounds.hpp>
-#include <stylized/scene/Camera.hpp>
+#include <math/Bounds.hpp>
+#include <scene/Camera.hpp>
 
 #include <glm/vec3.hpp>
 

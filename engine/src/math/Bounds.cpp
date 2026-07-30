@@ -1,4 +1,4 @@
-#include <stylized/math/Bounds.hpp>
+#include <math/Bounds.hpp>
 
 #include <glm/common.hpp>
 #include <glm/vec4.hpp>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stylized/graphics/GraphicsTypes.hpp>
+#include <graphics/GraphicsTypes.hpp>
 
 #include <cstdint>
 

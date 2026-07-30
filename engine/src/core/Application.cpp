@@ -1,7 +1,7 @@
-#include <stylized/core/Application.hpp>
-#include <stylized/graphics/GraphicsDevice.hpp>
-#include <stylized/graphics/OpenGLContext.hpp>
-#include <stylized/platform/Window.hpp>
+#include <core/Application.hpp>
+#include <graphics/GraphicsDevice.hpp>
+#include <graphics/OpenGLContext.hpp>
+#include <platform/Window.hpp>
 
 #include <iostream>
 

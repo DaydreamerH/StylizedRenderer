@@ -1,4 +1,4 @@
-#include <stylized/graphics/Texture2D.hpp>
+#include <graphics/Texture2D.hpp>
 
 #include <glad/gl.h>
 

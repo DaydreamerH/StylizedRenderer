@@ -1,12 +1,12 @@
 #pragma once
 
-#include <stylized/core/NonCopyable.hpp>
-#include <stylized/graphics/GraphicsTypes.hpp>
-#include <stylized/graphics/Buffer.hpp>
-#include <stylized/graphics/VertexArray.hpp>
-#include <stylized/graphics/ShaderProgram.hpp>
-#include <stylized/graphics/GraphicsCommands.hpp>
-#include <stylized/graphics/Texture2D.hpp>
+#include <core/NonCopyable.hpp>
+#include <graphics/GraphicsTypes.hpp>
+#include <graphics/Buffer.hpp>
+#include <graphics/VertexArray.hpp>
+#include <graphics/ShaderProgram.hpp>
+#include <graphics/GraphicsCommands.hpp>
+#include <graphics/Texture2D.hpp>
 
 #include <cstddef>
 #include <span>

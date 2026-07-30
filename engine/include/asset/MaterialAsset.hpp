@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stylized/asset/AssetHandle.hpp>
+#include <asset/AssetHandle.hpp>
 
 #include <cstdint>
 #include <string>

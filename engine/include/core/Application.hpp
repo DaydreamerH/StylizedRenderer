@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stylized/core/NonCopyable.hpp>
+#include <core/NonCopyable.hpp>
 
 #include <chrono>
 #include <cstdint>

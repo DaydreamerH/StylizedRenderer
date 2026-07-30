@@ -1,4 +1,4 @@
-#include <stylized/scene/Camera.hpp>
+#include <scene/Camera.hpp>
 
 #include <cmath>
 

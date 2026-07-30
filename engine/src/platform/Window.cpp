@@ -1,4 +1,4 @@
-#include <stylized/platform/Window.hpp>
+#include <platform/Window.hpp>
 
 #include <GLFW/glfw3.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stylized/core/NonCopyable.hpp>
+#include <core/NonCopyable.hpp>
 
 namespace stylized::platform { class Window; }
 

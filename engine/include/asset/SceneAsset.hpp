@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stylized/asset/AssetHandle.hpp>
-#include <stylized/scene/Transform.hpp>
+#include <asset/AssetHandle.hpp>
+#include <scene/Transform.hpp>
 
 #include <cstdint>
 #include <limits>

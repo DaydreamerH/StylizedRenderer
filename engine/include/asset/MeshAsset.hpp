@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stylized/asset/AssetHandle.hpp>
-#include <stylized/math/Bounds.hpp>
+#include <asset/AssetHandle.hpp>
+#include <math/Bounds.hpp>
 
 #include <cstdint>
 #include <string>

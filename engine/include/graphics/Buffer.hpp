@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stylized/core/NonCopyable.hpp>
-#include <stylized/graphics/GraphicsTypes.hpp>
+#include <core/NonCopyable.hpp>
+#include <graphics/GraphicsTypes.hpp>
 
 #include <cstddef>
 #include <cstdint>

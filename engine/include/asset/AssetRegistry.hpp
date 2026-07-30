@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stylized/asset/AssetHandle.hpp>
-#include <stylized/core/NonCopyable.hpp>
+#include <asset/AssetHandle.hpp>
+#include <core/NonCopyable.hpp>
 
 #include <cstddef>
 #include <cstdint>
