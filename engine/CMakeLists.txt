@@ -1,6 +1,7 @@
 add_library(stylized_engine STATIC
     include/stylized/asset/AssetHandle.hpp
     include/stylized/asset/AssetRegistry.hpp
+    include/stylized/asset/TextureAsset.hpp
     include/stylized/core/Application.hpp
     include/stylized/core/NonCopyable.hpp
     include/stylized/graphics/Buffer.hpp
@@ -17,6 +18,7 @@ add_library(stylized_engine STATIC
     include/stylized/scene/Entity.hpp
     include/stylized/scene/Scene.hpp
     include/stylized/scene/Transform.hpp
+    src/asset/TextureAsset.cpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
     src/graphics/opengl/GraphicsDevice.cpp
