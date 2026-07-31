@@ -1,4 +1,5 @@
 #include <asset/importers/GltfImporter.hpp>
+#include <asset/importers/detail/GltfSceneImporter.hpp>
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
@@ -174,9 +175,58 @@ AssetHandle<SceneAsset> GltfImporter::import(const std::filesystem::path& path)
         << gltfAsset.images.size()
         << '\n';
 
-    (void)registry_;
+    if (gltfAsset.scenes.empty())
+    {
+        std::cerr
+            << "The glTF file does not contain a scene: "
+            << path
+            << '\n';
 
-    return{};
+        return {};
+    }
+
+    const std::size_t sceneIndex =
+        gltfAsset.defaultScene.value_or(0);
+
+    if (sceneIndex >= gltfAsset.scenes.size())
+    {
+        std::cerr
+            << "The default glTF scene is invalid: "
+            << path
+            << '\n';
+
+        return {};
+    }
+
+    SceneAsset sceneAsset;
+
+    if (!detail::buildSceneAsset(
+            gltfAsset,
+            sceneIndex,
+            sceneAsset))
+    {
+        std::cerr
+            << "Failed to convert the glTF scene "
+            "hierarchy: "
+            << path
+            << '\n';
+
+        return {};
+    }
+
+    const AssetHandle<SceneAsset> sceneHandle =
+        registry_.emplace<SceneAsset>(
+            std::move(sceneAsset));
+
+    if (sceneHandle.isNull())
+    {
+        std::cerr
+            << "Failed to register the imported scene: "
+            << path
+            << '\n';
+    }
+
+    return sceneHandle;
 }
 
 } // namespace stylized::asset::importers
