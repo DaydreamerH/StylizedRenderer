@@ -47,6 +47,7 @@ target_link_libraries(stylized_engine
     PUBLIC
         glm::glm
     PRIVATE
+        assimp::assimp
         glfw
         stylized_glad
         stylized_stb
