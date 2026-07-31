@@ -127,7 +127,7 @@ const T* AssetRegistry::get(const AssetHandle<T> handle) const noexcept
 
     if (entry->type() != std::type_index{typeid(T)}) return nullptr;
 
-    return &static_cast<AssetEntry<T>*>(entry)->asset;
+    return &static_cast<const AssetEntry<T>*>(entry)->asset;
 }
 
 template<typename T>
