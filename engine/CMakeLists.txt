@@ -5,8 +5,6 @@ add_library(stylized_engine STATIC
     include/asset/MeshAsset.hpp
     include/asset/SceneAsset.hpp
     include/asset/TextureAsset.hpp
-    include/asset/importers/GltfImporter.hpp
-    include/asset/importers/detail/GltfSceneImporter.hpp
     include/core/Application.hpp
     include/core/NonCopyable.hpp
     include/graphics/Buffer.hpp
@@ -26,8 +24,6 @@ add_library(stylized_engine STATIC
     src/asset/MeshAsset.cpp
     src/asset/SceneAsset.cpp
     src/asset/TextureAsset.cpp
-    src/asset/importers/GltfImporter.cpp
-    src/asset/importers/detail/GltfSceneImporter.cpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
     src/graphics/opengl/GraphicsDevice.cpp
@@ -51,7 +47,6 @@ target_link_libraries(stylized_engine
     PUBLIC
         glm::glm
     PRIVATE
-        fastgltf::fastgltf
         glfw
         stylized_glad
         stylized_stb
