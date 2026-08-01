@@ -501,6 +501,22 @@ bool ShaderProgram::setMat4(std::string_view name, const glm::mat4 &value)
     return true;
 }
 
+bool ShaderProgram::setMat3(std::string_view name, const glm::mat3 &value)
+{
+    const int32_t location = uniformLocation(name);
+
+    if (location < 0) return false;
+    glProgramUniformMatrix3fv(
+        id_,
+        location,
+        1,
+        GL_FALSE,
+        glm::value_ptr(value)
+    );
+
+    return true;
+}
+
 int32_t ShaderProgram::uniformLocation(
     const std::string_view name)
 {
