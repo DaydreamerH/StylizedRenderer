@@ -46,8 +46,11 @@ struct VertexBufferBindingDesc
 enum class TextureFormat : uint8_t
 {
     R8,
+    RG8,
     RGB8,
-    RGBA8
+    RGBA8,
+    SRGB8,
+    SRGBA8
 };
 
 enum class TextureWrap : uint8_t

@@ -20,6 +20,7 @@ add_library(stylized_engine STATIC
     include/math/Bounds.hpp
     include/platform/Window.hpp
     include/render/RuntimeMesh.hpp
+    include/render/RuntimeResourceCache.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
     include/scene/Scene.hpp
@@ -43,6 +44,7 @@ add_library(stylized_engine STATIC
     src/math/Bounds.cpp
     src/platform/Window.cpp
     src/render/RuntimeMesh.cpp
+    src/render/RuntimeResourceCache.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp
     src/scene/Transform.cpp
