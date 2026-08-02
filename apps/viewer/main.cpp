@@ -16,6 +16,7 @@
 #include <scene/Camera.hpp>
 
 #include "OrbitCameraController.hpp"
+#include "ViewerPanels.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -67,6 +68,15 @@ protected:
 
         if (!createRuntimeResources())
         {
+            return false;
+        }
+
+        if (!viewerPanels_.initialize(
+                window().nativeHandle()))
+        {
+            std::cerr
+                << "Failed to initialize Viewer panels.\n";
+
             return false;
         }
 
@@ -165,6 +175,15 @@ protected:
         renderWorld_.renderStats.drawCalls =
             renderer_->lastDrawCallCount();
 
+        viewerPanels_.beginFrame();
+        viewerPanels_.draw(
+            modelPath_,
+            assetRegistry_,
+            sceneAsset,
+            renderWorld_,
+            renderer_->lastDrawCallCount());
+        viewerPanels_.endFrame();
+
         ++statsPrintFrameCount_;
 
         if (statsPrintFrameCount_ % 60 == 0)
@@ -187,6 +206,7 @@ protected:
 
     void onShutdown() override
     {
+        viewerPanels_.shutdown();
         renderer_.reset();
         extractor_.reset();
         resourceCache_.reset();
@@ -299,6 +319,8 @@ private:
         renderer_;
 
     stylized::render::RenderWorld renderWorld_;
+
+    ViewerPanels viewerPanels_;
 
     stylized::scene::Camera camera_;
     OrbitCameraController cameraController_{
