@@ -484,6 +484,18 @@ bool ShaderProgram::setVec4(
     return true;
 }
 
+bool ShaderProgram::setVec4(
+    const std::string_view name,
+    const glm::vec4& value)
+{
+    return setVec4(
+        name,
+        value.r,
+        value.g,
+        value.b,
+        value.a);
+}
+
 bool ShaderProgram::setMat4(std::string_view name, const glm::mat4 &value)
 {
     const int32_t location = 

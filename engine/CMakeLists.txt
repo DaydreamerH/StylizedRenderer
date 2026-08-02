@@ -23,6 +23,7 @@ add_library(stylized_engine STATIC
     include/render/RuntimeResourceCache.hpp
     include/render/RenderExtractor.hpp
     include/render/RenderWorld.hpp
+    include/render/StaticModelRenderer.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
     include/scene/Scene.hpp
@@ -48,6 +49,7 @@ add_library(stylized_engine STATIC
     src/render/RenderExtractor.cpp
     src/render/RuntimeMesh.cpp
     src/render/RuntimeResourceCache.cpp
+    src/render/StaticModelRenderer.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp
     src/scene/Transform.cpp
