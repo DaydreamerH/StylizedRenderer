@@ -21,6 +21,8 @@ add_library(stylized_engine STATIC
     include/platform/Window.hpp
     include/render/RuntimeMesh.hpp
     include/render/RuntimeResourceCache.hpp
+    include/render/RenderExtractor.hpp
+    include/render/RenderWorld.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
     include/scene/Scene.hpp
@@ -43,6 +45,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/VertexArray.cpp
     src/math/Bounds.cpp
     src/platform/Window.cpp
+    src/render/RenderExtractor.cpp
     src/render/RuntimeMesh.cpp
     src/render/RuntimeResourceCache.cpp
     src/scene/Camera.cpp
