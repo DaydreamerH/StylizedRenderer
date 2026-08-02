@@ -42,12 +42,25 @@ FetchContent_Declare(
     GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
 )
 
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.9b
+    GIT_SHALLOW TRUE
+)
+
 FetchContent_MakeAvailable(
     glfw
     glm
     assimp
     stb
 )
+
+FetchContent_GetProperties(imgui)
+
+if(NOT imgui_POPULATED)
+    FetchContent_Populate(imgui)
+endif()
 
 add_library(stylized_stb INTERFACE)
 
