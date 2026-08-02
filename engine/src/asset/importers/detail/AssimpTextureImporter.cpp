@@ -1,5 +1,6 @@
 #include <asset/importers/detail/AssimpImportInternal.hpp>
 
+#include <algorithm>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,46 @@ namespace stylized::asset::importers::detail
 
 namespace
 {
+
+void flipImageVertically(
+    std::vector<std::byte>& pixels,
+    const std::uint32_t width,
+    const std::uint32_t height,
+    const std::size_t bytesPerPixel) noexcept
+{
+    if (width == 0 || height < 2 || bytesPerPixel == 0)
+    {
+        return;
+    }
+
+    const std::size_t rowByteCount =
+        static_cast<std::size_t>(width) * bytesPerPixel;
+
+    std::vector<std::byte> temporaryRow(rowByteCount);
+
+    for (std::uint32_t row = 0; row < height / 2; ++row)
+    {
+        const std::size_t topOffset =
+            static_cast<std::size_t>(row) * rowByteCount;
+        const std::size_t bottomOffset =
+            static_cast<std::size_t>(height - row - 1) * rowByteCount;
+
+        std::copy_n(
+            pixels.data() + topOffset,
+            rowByteCount,
+            temporaryRow.data());
+
+        std::copy_n(
+            pixels.data() + bottomOffset,
+            rowByteCount,
+            pixels.data() + topOffset);
+
+        std::copy_n(
+            temporaryRow.data(),
+            rowByteCount,
+            pixels.data() + bottomOffset);
+    }
+}
 
 [[nodiscard]] bool decodeCompressedBytes(
     const std::byte* encodedData,
@@ -86,6 +127,15 @@ namespace
         firstPixel,
         firstPixel + pixelByteCount);
 
+    // Assimp exposes glTF UVs in its lower-left internal convention,
+    // while stb_image stores decoded rows from top to bottom. Keep the
+    // engine's UV values unchanged and align the image rows once here.
+    flipImageVertically(
+        textureAsset.pixels,
+        textureAsset.width,
+        textureAsset.height,
+        4);
+
     stbi_image_free(decoded);
     return textureAsset.isValid();
 }
@@ -153,6 +203,12 @@ bool decodeEmbeddedTexture(
         textureAsset.pixels[destinationIndex + 3] =
             static_cast<std::byte>(sourcePixel.a);
     }
+
+    flipImageVertically(
+        textureAsset.pixels,
+        textureAsset.width,
+        textureAsset.height,
+        4);
 
     return textureAsset.isValid();
 }
