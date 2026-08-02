@@ -92,7 +92,8 @@ void GraphicsDevice::clear(const ClearValue& value)
     }
 
     glClearColor(value.r, value.g, value.b, value.a);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 Buffer GraphicsDevice::createBuffer(const BufferDesc &desc, std::span<const std::byte> initialData)
