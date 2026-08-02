@@ -1,91 +1,92 @@
+#include <asset/AssetRegistry.hpp>
+#include <asset/SceneAsset.hpp>
+#include <asset/importers/ModelImporter.hpp>
+
 #include <core/Application.hpp>
-#include <graphics/Buffer.hpp>
-#include <graphics/GraphicsCommands.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/ShaderProgram.hpp>
-#include <graphics/VertexArray.hpp>
+
+#include <math/Bounds.hpp>
+
 #include <platform/Window.hpp>
-#include <graphics/Texture2D.hpp>
+
+#include <render/RenderExtractor.hpp>
+#include <render/RenderWorld.hpp>
+#include <render/RuntimeResourceCache.hpp>
+#include <render/StaticModelRenderer.hpp>
+
+#include <scene/Camera.hpp>
 
 #include "OrbitCameraController.hpp"
 
-#include <array>
-#include <cstddef>
 #include <cstdint>
-#include <cstdlib>
-#include <span>
+#include <filesystem>
+#include <iostream>
+#include <memory>
 #include <string_view>
-#include <vector>
 
 namespace
 {
 
-stylized::core::ApplicationDesc makeApplicationDesc(const bool smokeTest)
+stylized::core::ApplicationDesc makeApplicationDesc(
+    const bool smokeTest)
 {
     stylized::core::ApplicationDesc desc;
+
     desc.title = "StylizedRenderer";
     desc.width = 1280;
     desc.height = 720;
     desc.visible = !smokeTest;
     desc.vsync = !smokeTest;
+
     return desc;
 }
 
-struct Vertex 
-{
-    float position[3];
-    float uv[2];
-};
-
-class ViewerApplication final : public stylized::core::Application
+class ViewerApplication final
+    : public stylized::core::Application
 {
 public:
-    explicit ViewerApplication(const bool smokeTest)
+    ViewerApplication(
+        const bool smokeTest,
+        std::filesystem::path modelPath)
         : Application(makeApplicationDesc(smokeTest)),
-          smokeTest_(smokeTest)
+          smokeTest_(smokeTest),
+          modelPath_(std::move(modelPath))
     {
     }
 
 protected:
     bool onInit() override
     {
-        constexpr std::array<Vertex, 4> vertices {
-            Vertex{
-                {-0.5F, -0.5F, 0.0F},
-                {0.0F, 0.0F}
-            },
-            Vertex{
-                {0.5F, -0.5F, 0.0F},
-                {1.0F, 0.0F}
-            },
-            Vertex{
-                {0.5F, 0.5F, 0.0F},
-                {1.0F, 1.0F}
-            },
-            Vertex{
-                {-0.5F, 0.5F, 0.0F},
-                {0.0F, 1.0F}
+        if (!smokeTest_ && modelPath_.empty())
+        {
+            std::cerr
+                << "Usage: stylized_viewer "
+                << "<model.gltf|model.glb>\n";
+
+            return false;
+        }
+
+        if (!createRuntimeResources())
+        {
+            return false;
+        }
+
+        if (!smokeTest_)
+        {
+            if (!loadScene())
+            {
+                return false;
             }
-        };
-
-        constexpr std::array<uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
-
-        if (!createBuffers(vertices, indices)) return false;
-
-        if (!createVertexArray()) return false;
-
-        if (!createShader()) return false;
-
-        if (!createCheckerboardTexture()) return false;
+        }
 
         return true;
     }
 
-    void onUpdate(float) override
+    void onUpdate(const float) override
     {
         cameraController_.update(window());
 
-        if (window().isKeyPressed(stylized::platform::Key::Escape))
+        if (window().isKeyPressed(
+                stylized::platform::Key::Escape))
         {
             requestExit();
         }
@@ -93,186 +94,233 @@ protected:
 
     void onRender() override
     {
-        graphicsDevice().clear({0.06F, 0.07F, 0.10F, 1.0F});
+        graphicsDevice().clear(
+            {
+                0.06F,
+                0.07F,
+                0.10F,
+                1.0F
+            });
 
-        checkerboardTexture_.bind(0);
-
-        const glm::mat4 viewProjection = camera_.viewProjectionMatrix();
-
-        if (!shaderProgram_.setMat4("uViewProjection", viewProjection))
+        if (smokeTest_)
         {
+            ++renderedFrameCount_;
+
+            if (renderedFrameCount_ >= 3)
+            {
+                requestExit();
+            }
+
             return;
         }
 
-        stylized::graphics::DrawIndexedCommand command;
-        command.shader = &shaderProgram_;
-        command.vertexArray = &vertexArray_;
-        command.topology = stylized::graphics::PrimitiveTopology::Triangles;
-        command.indexType = stylized::graphics::IndexType::Uint32;
-        command.indexCount = 6;
-        command.firstIndex = 0;
+        const stylized::asset::SceneAsset* sceneAsset =
+            assetRegistry_.get(sceneHandle_);
 
-        graphicsDevice().drawIndexed(command);
-
-        ++renderedFrameCount_;
-
-        if (smokeTest_ && renderedFrameCount_ >= 3)
+        if (sceneAsset == nullptr)
         {
             requestExit();
+            return;
         }
-    }
 
-private:
-    bool smokeTest_ = false;
-    int renderedFrameCount_ = 0;
-
-    stylized::graphics::Buffer vertexBuffer_;
-    stylized::graphics::Buffer indexBuffer_;
-    stylized::graphics::VertexArray vertexArray_;
-    stylized::graphics::Texture2D checkerboardTexture_;
-    stylized::graphics::ShaderProgram shaderProgram_;
-
-    stylized::scene::Camera camera_;
-    OrbitCameraController cameraController_{camera_};
-
-    bool createBuffers(
-        std::span<const Vertex> vertices,
-        std::span<const uint32_t> indices)
-    {
-        stylized::graphics::BufferDesc vertexBufferDesc;
-        vertexBufferDesc.usage = stylized::graphics::BufferUsage::Static;
-        vertexBufferDesc.debugName = "Foundation Vertex Buffer";
-
-        vertexBuffer_ = graphicsDevice().createBuffer(vertexBufferDesc, vertices);
-
-        if (!vertexBuffer_.isValid()) return false;
-
-        stylized::graphics::BufferDesc indexBufferDesc;
-        indexBufferDesc.usage = stylized::graphics::BufferUsage::Static;
-        indexBufferDesc.debugName = "Foundation Index Buffer";
-
-        indexBuffer_ = graphicsDevice().createBuffer(indexBufferDesc, indices);
-
-        return indexBuffer_.isValid();
-    }
-
-    bool createVertexArray()
-    {
-        std::array<stylized::graphics::VertexAttributeDesc, 2> vertexAttributeDescs;
-        vertexAttributeDescs[0] = {
-            stylized::graphics::VertexAttributeDesc{.location = 0, .binding = 0, .format = stylized::graphics::VertexAttributeFormat::Float3, .offset = offsetof(Vertex, position)}
-        }; 
-        vertexAttributeDescs[1] = {
-            stylized::graphics::VertexAttributeDesc{.location = 1, .binding = 0, .format = stylized::graphics::VertexAttributeFormat::Float2, .offset = offsetof(Vertex, uv)}
-        };
-
-        stylized::graphics::VertexArrayDesc vertexArrayDesc;
-        vertexArrayDesc.vertexBuffer = &vertexBuffer_;
-        vertexArrayDesc.indexBuffer = &indexBuffer_;
-        vertexArrayDesc.vertexBinding.binding = 0;
-        vertexArrayDesc.vertexBinding.stride = sizeof(Vertex);
-        vertexArrayDesc.vertexBufferOffset = 0;
-        vertexArrayDesc.attributes = std::span<const stylized::graphics::VertexAttributeDesc>{vertexAttributeDescs};
-        vertexArrayDesc.debugName = "Foundation Vertex Array";
-        vertexArray_ = graphicsDevice().createVertexArray(vertexArrayDesc);
-
-        return vertexArray_.isValid();
-    }
-
-    bool createCheckerboardTexture()
-    {
-        constexpr uint32_t textureWidth = 128;
-        constexpr uint32_t textureHeight = 128;
-        constexpr uint32_t tileSize = 16;
-        constexpr uint32_t channelCount = 4;
-
-        std::vector<uint8_t> pixels(
-            static_cast<std::size_t>(textureWidth) *
-            static_cast<std::size_t>(textureHeight) *
-            channelCount);
-
-        for (uint32_t y = 0; y<textureHeight; ++y)
+        if (!extractor_->extract(
+                *sceneAsset,
+                assetRegistry_,
+                camera_,
+                renderWorld_))
         {
-            for (uint32_t x = 0; x<textureWidth; ++x)
+            std::cerr
+                << "Failed to extract RenderWorld.\n";
+
+            requestExit();
+            return;
+        }
+
+        if (!cameraFocused_)
+        {
+            stylized::math::Bounds sceneBounds;
+
+            for (const stylized::render::RenderItem& item :
+                 renderWorld_.items)
             {
-                const bool lightTile =
-                ((x / tileSize) + (y / tileSize)) % 2 == 0;
+                sceneBounds.expand(item.worldBounds);
+            }
 
-                const uint8_t color =
-                    lightTile
-                        ? static_cast<uint8_t>(230)
-                        : static_cast<uint8_t>(40);
-
-                const std::size_t pixelIndex =
-                    (static_cast<std::size_t>(y) *
-                        textureWidth +
-                    x) *
-                    channelCount;
-
-                pixels[pixelIndex + 0] = color;
-                pixels[pixelIndex + 1] = color;
-                pixels[pixelIndex + 2] = color;
-                pixels[pixelIndex + 3] = 255;
+            if (sceneBounds.isValid())
+            {
+                cameraController_.focus(sceneBounds);
+                cameraFocused_ = true;
             }
         }
 
-        stylized::graphics::Texture2DDesc desc;
-        desc.width = textureWidth;
-        desc.height = textureHeight;
-        desc.format =
-            stylized::graphics::TextureFormat::RGBA8;
-        desc.wrapU =
-            stylized::graphics::TextureWrap::Repeat;
-        desc.wrapV =
-            stylized::graphics::TextureWrap::Repeat;
-        desc.minFilter =
-            stylized::graphics::TextureFilter::Nearest;
-        desc.magFilter =
-            stylized::graphics::TextureFilter::Nearest;
-        desc.debugName =
-            "Foundation Checkerboard Texture";
+        if (!renderer_->render(renderWorld_))
+        {
+            std::cerr
+                << "Failed to render RenderWorld.\n";
 
-        checkerboardTexture_ =
-            graphicsDevice().createTexture2D(
-                desc,
-                std::span<const uint8_t>{
-                    pixels.data(),
-                    pixels.size()
-                });
-
-        return checkerboardTexture_.isValid();
+            requestExit();
+            return;
+        }
     }
 
-    bool createShader()
+    void onShutdown() override
     {
-        stylized::graphics::ShaderProgramDesc desc;
-        desc.vertexShaderPath = "assets/shaders/foundation/foundation.vert";
-        desc.fragmentShaderPath = "assets/shaders/foundation/foundation.frag";
-        desc.debugName = "Foundation Shader";
-
-        shaderProgram_ = graphicsDevice().createShaderProgram(desc);
-
-        if (!shaderProgram_.isValid()) return false;
-
-        if (!shaderProgram_.setInt("uTexture", 0)) return false;
-        
-        return shaderProgram_.setVec4(
-            "uTint",
-            1.0F,
-            1.0F,
-            1.0F,
-            1.0F);
+        renderer_.reset();
+        extractor_.reset();
+        resourceCache_.reset();
     }
+
+private:
+    bool createRuntimeResources()
+    {
+        resourceCache_ =
+            std::make_unique<
+                stylized::render::RuntimeResourceCache>(
+                graphicsDevice());
+
+        if (!resourceCache_->initialize())
+        {
+            std::cerr
+                << "Failed to initialize runtime "
+                << "resource cache.\n";
+
+            return false;
+        }
+
+        extractor_ =
+            std::make_unique<
+                stylized::render::RenderExtractor>(
+                *resourceCache_);
+
+        renderer_ =
+            std::make_unique<
+                stylized::render::StaticModelRenderer>(
+                graphicsDevice(),
+                assetRegistry_,
+                *resourceCache_);
+
+        if (!renderer_->initialize())
+        {
+            std::cerr
+                << "Failed to initialize static model renderer.\n";
+
+            return false;
+        }
+
+        return true;
+    }
+
+    bool loadScene()
+    {
+        stylized::asset::importers::ModelImporter importer{
+            assetRegistry_
+        };
+
+        sceneHandle_ =
+            importer.import(modelPath_);
+
+        if (sceneHandle_.isNull())
+        {
+            std::cerr
+                << "Failed to import model: "
+                << modelPath_
+                << '\n';
+
+            return false;
+        }
+
+        const stylized::asset::SceneAsset* sceneAsset =
+            assetRegistry_.get(sceneHandle_);
+
+        if (sceneAsset == nullptr ||
+            !sceneAsset->isValid())
+        {
+            std::cerr
+                << "Imported SceneAsset is invalid.\n";
+
+            return false;
+        }
+
+        std::cout
+            << "Scene loaded successfully: "
+            << sceneAsset->name
+            << '\n'
+            << "Node count: "
+            << sceneAsset->nodes.size()
+            << '\n';
+
+        return true;
+    }
+
+    bool smokeTest_ = false;
+    int renderedFrameCount_ = 0;
+
+    std::filesystem::path modelPath_;
+
+    stylized::asset::AssetRegistry assetRegistry_;
+
+    stylized::asset::AssetHandle<
+        stylized::asset::SceneAsset>
+        sceneHandle_;
+
+    std::unique_ptr<
+        stylized::render::RuntimeResourceCache>
+        resourceCache_;
+
+    std::unique_ptr<
+        stylized::render::RenderExtractor>
+        extractor_;
+
+    std::unique_ptr<
+        stylized::render::StaticModelRenderer>
+        renderer_;
+
+    stylized::render::RenderWorld renderWorld_;
+
+    stylized::scene::Camera camera_;
+    OrbitCameraController cameraController_{
+        camera_
+    };
+
+    bool cameraFocused_ = false;
 };
 
 } // namespace
 
-int main(const int argc, char* argv[])
+int main(
+    const int argc,
+    char* argv[])
 {
-    const bool smokeTest =
-        argc > 1 &&
-        std::string_view{argv[1]} == "--smoke-test";
+    bool smokeTest = false;
+    std::filesystem::path modelPath;
 
-    ViewerApplication application(smokeTest);
+    for (int argumentIndex = 1;
+         argumentIndex < argc;
+         ++argumentIndex)
+    {
+        const std::string_view argument{
+            argv[argumentIndex]
+        };
+
+        if (argument == "--smoke-test")
+        {
+            smokeTest = true;
+            continue;
+        }
+
+        if (modelPath.empty())
+        {
+            modelPath =
+                std::filesystem::path{
+                    argument
+                };
+        }
+    }
+
+    ViewerApplication application{
+        smokeTest,
+        modelPath
+    };
+
     return application.run();
 }
