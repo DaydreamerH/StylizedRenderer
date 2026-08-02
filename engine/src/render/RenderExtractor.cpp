@@ -37,6 +37,10 @@ bool RenderExtractor::extract(
 
     renderWorld.mainView.cameraPosition = camera.position();
 
+    renderWorld.mainView.frustum = 
+        math::Frustum::fromViewProjection(renderWorld.mainView.viewProjection);
+    if (!renderWorld.mainView.frustum.isValid()) return false;
+
     const std::size_t nodeCount = sceneAsset.nodes.size();
     
     std::vector<glm::mat4> worldMatrices(nodeCount, glm::mat4{1.F});
@@ -99,13 +103,25 @@ bool RenderExtractor::extract(
         for (const RuntimeMeshPrimitive& primitive : runtimeMesh->primitives())
         {
             if (!primitive.isValid()) continue;
+
+            ++renderWorld.renderStats.totalItems;
             
             RenderItem item;
+
+            item.worldBounds = primitive.localBounds().transformed(worldMatrix);
+            if (!renderWorld.mainView.frustum.intersects(item.worldBounds))
+            {
+                ++renderWorld.renderStats.culledItems;
+                continue;
+            }
+
+            ++renderWorld.renderStats.visibleItems;
+            
             item.primitive = &primitive;
             item.material = primitive.material();
             item.world = worldMatrix;
             item.normalMatrix = normalMatrix;
-            item.worldBounds = primitive.localBounds().transformed(worldMatrix);
+
             item.objectId = static_cast<std::uint32_t>(nodeIndex);
             renderWorld.items.push_back(item);
         }

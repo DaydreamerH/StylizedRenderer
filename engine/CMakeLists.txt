@@ -18,6 +18,7 @@ add_library(stylized_engine STATIC
     include/graphics/Texture2D.hpp
     include/graphics/VertexArray.hpp
     include/math/Bounds.hpp
+    include/math/Frustum.hpp
     include/platform/Window.hpp
     include/render/RuntimeMesh.hpp
     include/render/RuntimeResourceCache.hpp
@@ -45,6 +46,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/Texture2D.cpp
     src/graphics/opengl/VertexArray.cpp
     src/math/Bounds.cpp
+    src/math/Frustum.cpp
     src/platform/Window.cpp
     src/render/RenderExtractor.cpp
     src/render/RuntimeMesh.cpp

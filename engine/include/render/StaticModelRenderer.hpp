@@ -34,6 +34,8 @@ private:
     graphics::ShaderProgram shader_;
     bool initialized_ = false;
 
+    std::size_t lastDrawCallCount_ = 0;
+
 public:
     StaticModelRenderer(
         graphics::GraphicsDevice& graphicsDevice,
@@ -47,6 +49,8 @@ public:
     [[nodiscard]] bool initialize();
 
     [[nodiscard]] bool render(const RenderWorld& renderWorld);
+
+    [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
 };
 
 } // namespace stylized::render

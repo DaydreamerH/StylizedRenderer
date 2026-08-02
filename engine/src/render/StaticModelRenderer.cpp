@@ -63,6 +63,8 @@ bool StaticModelRenderer::initialize()
 
 bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 {
+    lastDrawCallCount_ = 0;
+
     if (!initialized_ || !shader_.isValid()) return false;
 
     if (!shader_.setMat4("uViewProjection", renderWorld.mainView.viewProjection)) return false;
@@ -93,12 +95,7 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (!shader_.setMat3("uNormalMatrix", item.normalMatrix)) return false;
 
-        if (!shader_.setVec4(
-                "uBaseColorFactor",
-                baseColorFactor.r,
-                baseColorFactor.g,
-                baseColorFactor.b,
-                baseColorFactor.a))
+        if (!shader_.setVec4("uBaseColorFactor", baseColorFactor))
         {
             return false;
         }
@@ -121,10 +118,17 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         graphicsDevice_.drawIndexed(command);
 
+        ++lastDrawCallCount_;
+
         renderedAnyItem = true;
     }
 
     return renderedAnyItem || renderWorld.items.empty();
+}
+
+std::size_t StaticModelRenderer::lastDrawCallCount() const noexcept
+{
+    return lastDrawCallCount_;
 }
 
 }

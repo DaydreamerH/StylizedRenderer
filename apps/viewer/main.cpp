@@ -161,6 +161,28 @@ protected:
             requestExit();
             return;
         }
+
+        renderWorld_.renderStats.drawCalls =
+            renderer_->lastDrawCallCount();
+
+        ++statsPrintFrameCount_;
+
+        if (statsPrintFrameCount_ % 60 == 0)
+        {
+            const stylized::render::RenderStats& stats =
+                renderWorld_.renderStats;
+
+            std::cout
+                << "Render stats: total="
+                << stats.totalItems
+                << ", visible="
+                << stats.visibleItems
+                << ", culled="
+                << stats.culledItems
+                << ", drawCalls="
+                << stats.drawCalls
+                << '\n';
+        }
     }
 
     void onShutdown() override
@@ -254,6 +276,7 @@ private:
 
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
+    std::uint64_t statsPrintFrameCount_ = 0;
 
     std::filesystem::path modelPath_;
 

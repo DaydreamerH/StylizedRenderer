@@ -2,6 +2,7 @@
 
 #include <asset/AssetHandle.hpp>
 #include <math/Bounds.hpp>
+#include <math/Frustum.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -27,7 +28,10 @@ struct RenderView
     glm::mat4 view{1.F};
     glm::mat4 projection{1.F};
     glm::mat4 viewProjection{1.F};
+    
     glm::vec3 cameraPosition{0.F};
+
+    math::Frustum frustum;
 };
 
 struct RenderItem
@@ -44,14 +48,24 @@ struct RenderItem
     std::uint32_t objectId = 0;
 };
 
+struct RenderStats
+{
+    std::size_t totalItems = 0;
+    std::size_t visibleItems = 0;
+    std::size_t culledItems = 0;
+    std::size_t drawCalls = 0;
+};
+
 struct RenderWorld
 {
     RenderView mainView;
+    RenderStats renderStats;
     std::vector<RenderItem> items;
 
     void clear() noexcept
     {
         items.clear();
+        renderStats = {};
     }
 
     [[nodiscard]] bool empty() const noexcept
