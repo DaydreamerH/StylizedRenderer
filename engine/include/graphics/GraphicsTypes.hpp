@@ -121,4 +121,20 @@ struct RenderTextureDesc
     std::string debugName;
 };
 
+enum class DepthTextureFormat : std::uint8_t
+{
+    Depth24Stencil8,
+    Depth32Float
+};
+
+struct DepthTextureDesc
+{
+    Extent2D extent;
+
+    DepthTextureFormat format = DepthTextureFormat::Depth24Stencil8;
+
+    std::string debugName;
+};
+
+
 } // namespace stylized::graphics

@@ -10,6 +10,7 @@ add_library(stylized_engine STATIC
     include/core/Application.hpp
     include/core/NonCopyable.hpp
     include/graphics/Buffer.hpp
+    include/graphics/DepthTexture.hpp
     include/graphics/GraphicsCommands.hpp
     include/graphics/GraphicsDevice.hpp
     include/graphics/GraphicsTypes.hpp
@@ -41,6 +42,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/detail/StbImage.cpp
     src/core/Application.cpp
     src/graphics/opengl/Buffer.cpp
+    src/graphics/opengl/DepthTexture.cpp
     src/graphics/opengl/GraphicsDevice.cpp
     src/graphics/opengl/OpenGLContext.cpp
     src/graphics/opengl/RenderTexture.cpp

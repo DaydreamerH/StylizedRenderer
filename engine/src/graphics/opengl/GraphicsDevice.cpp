@@ -185,4 +185,11 @@ RenderTexture GraphicsDevice::createRenderTexture(const RenderTextureDesc& desc)
     return RenderTexture{desc};
 }
 
+DepthTexture GraphicsDevice::createDepthTexture(const DepthTextureDesc& desc)
+{
+    if (!initialized_) return {};
+
+    return DepthTexture{desc};
+}
+
 } // namespace stylized::graphics

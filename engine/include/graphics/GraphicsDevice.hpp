@@ -8,6 +8,7 @@
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/Texture2D.hpp>
 #include <graphics/RenderTexture.hpp>
+#include <graphics/DepthTexture.hpp>
 
 #include <cstddef>
 #include <span>
@@ -56,6 +57,8 @@ public:
     }
 
     [[nodiscard]] RenderTexture createRenderTexture(const RenderTextureDesc& desc);
+
+    [[nodiscard]] DepthTexture createDepthTexture(const DepthTextureDesc& desc);
 
     void drawIndexed(const DrawIndexedCommand& command);
 
