@@ -9,6 +9,7 @@ namespace stylized::graphics
 {
     
 class GraphicsDevice;
+class Framebuffer;
 
 class DepthTexture final : public core::NonCopyable
 {
@@ -28,6 +29,7 @@ public:
 
 private:
     friend class GraphicsDevice;
+    friend class Framebuffer;
 
     explicit DepthTexture(const DepthTextureDesc& desc);
 

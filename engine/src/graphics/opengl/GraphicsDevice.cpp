@@ -192,4 +192,18 @@ DepthTexture GraphicsDevice::createDepthTexture(const DepthTextureDesc& desc)
     return DepthTexture{desc};
 }
 
+Framebuffer GraphicsDevice::createFramebuffer(const FramebufferDesc& desc)
+{
+    if (!initialized_) return {};
+
+    return Framebuffer{desc};
+}
+
+void GraphicsDevice::bindFramebuffer(const Framebuffer* framebuffer)
+{
+    if (!initialized_) return;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer != nullptr ? framebuffer->id_ : 0);
+}
+
 } // namespace stylized::graphics

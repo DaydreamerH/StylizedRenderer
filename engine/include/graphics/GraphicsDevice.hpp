@@ -9,6 +9,7 @@
 #include <graphics/Texture2D.hpp>
 #include <graphics/RenderTexture.hpp>
 #include <graphics/DepthTexture.hpp>
+#include <graphics/Framebuffer.hpp>
 
 #include <cstddef>
 #include <span>
@@ -59,6 +60,9 @@ public:
     [[nodiscard]] RenderTexture createRenderTexture(const RenderTextureDesc& desc);
 
     [[nodiscard]] DepthTexture createDepthTexture(const DepthTextureDesc& desc);
+
+    [[nodiscard]] Framebuffer createFramebuffer(const FramebufferDesc& desc);
+    void bindFramebuffer(const Framebuffer* framebuffer);
 
     void drawIndexed(const DrawIndexedCommand& command);
 
