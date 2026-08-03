@@ -26,7 +26,10 @@ add_library(stylized_engine STATIC
     include/render/RuntimeMesh.hpp
     include/render/RuntimeResourceCache.hpp
     include/render/RenderExtractor.hpp
+    include/render/FrameContext.hpp
+    include/render/FramePipeline.hpp
     include/render/RenderWorld.hpp
+    include/render/IRenderPass.hpp
     include/render/StaticModelRenderer.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
@@ -55,6 +58,7 @@ add_library(stylized_engine STATIC
     src/math/Frustum.cpp
     src/platform/Window.cpp
     src/render/RenderExtractor.cpp
+    src/render/FramePipeline.cpp
     src/render/RuntimeMesh.cpp
     src/render/RuntimeResourceCache.cpp
     src/render/StaticModelRenderer.cpp
