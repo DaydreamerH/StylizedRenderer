@@ -178,4 +178,11 @@ Texture2D GraphicsDevice::createTexture2D(const Texture2DDesc& desc, const std::
     return Texture2D{desc, pixels};
 }
 
+RenderTexture GraphicsDevice::createRenderTexture(const RenderTextureDesc& desc)
+{
+    if (!initialized_) return {};
+
+    return RenderTexture{desc};
+}
+
 } // namespace stylized::graphics

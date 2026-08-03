@@ -106,4 +106,19 @@ struct Extent2D
     uint32_t height = 0;
 };
 
+enum class RenderTextureFormat : std::uint8_t
+{
+    RGBA8,
+    RGBA16Float
+};
+
+struct RenderTextureDesc
+{
+    Extent2D extent;
+    RenderTextureFormat format = RenderTextureFormat::RGBA16Float;
+
+    bool sampled = true;
+    std::string debugName;
+};
+
 } // namespace stylized::graphics

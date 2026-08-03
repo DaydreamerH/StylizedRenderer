@@ -7,6 +7,7 @@
 #include <graphics/ShaderProgram.hpp>
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/Texture2D.hpp>
+#include <graphics/RenderTexture.hpp>
 
 #include <cstddef>
 #include <span>
@@ -53,6 +54,8 @@ public:
 
         return createTexture2D(desc, std::as_bytes(pixels));
     }
+
+    [[nodiscard]] RenderTexture createRenderTexture(const RenderTextureDesc& desc);
 
     void drawIndexed(const DrawIndexedCommand& command);
 
