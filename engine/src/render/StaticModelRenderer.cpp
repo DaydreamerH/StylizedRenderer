@@ -69,10 +69,10 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
     if (!shader_.setMat4("uViewProjection", renderWorld.mainView.viewProjection)) return false;
 
-    bool renderedAnyItem = false;
-
     for (const RenderItem& item : renderWorld.items)
     {
+        if (item.materialClass != RenderMaterialClass::Opaque) continue;
+
         if (item.primitive == nullptr) continue;
 
         const asset::MaterialAsset* material = assetRegistry_.get(item.material);
@@ -119,11 +119,9 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
         graphicsDevice_.drawIndexed(command);
 
         ++lastDrawCallCount_;
-
-        renderedAnyItem = true;
     }
 
-    return renderedAnyItem || renderWorld.items.empty();
+    return true;
 }
 
 std::size_t StaticModelRenderer::lastDrawCallCount() const noexcept

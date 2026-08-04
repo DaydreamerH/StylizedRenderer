@@ -3,6 +3,7 @@
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Camera.hpp>
+#include <asset/MaterialAsset.hpp>
 
 #include <render/RuntimeMesh.hpp>
 #include <render/RuntimeResourceCache.hpp>
@@ -118,11 +119,50 @@ bool RenderExtractor::extract(
             ++renderWorld.renderStats.visibleItems;
             
             item.primitive = &primitive;
+            
             item.material = primitive.material();
+            const asset::MaterialAsset* material = assetRegistry.get(item.material);
+            if (material != nullptr)
+            {
+                switch (material->alphaMode)
+                {
+                case asset::AlphaMode::Opaque:
+                    item.materialClass = RenderMaterialClass::Opaque;
+                    break;
+                case asset::AlphaMode::Mask:
+                    item.materialClass = RenderMaterialClass::Masked;
+                    break;
+                case asset::AlphaMode::Blend:
+                    item.materialClass = RenderMaterialClass::Transparent;
+                    break;
+                }
+
+                if (material->doubleSided)
+                {
+                    item.flags = item.flags | RenderItemFlags::DoubleSided;
+                }
+            }
+            
             item.world = worldMatrix;
             item.normalMatrix = normalMatrix;
 
             item.objectId = static_cast<std::uint32_t>(nodeIndex);
+
+            switch (item.materialClass)
+            {
+            case RenderMaterialClass::Opaque:
+                ++renderWorld.renderStats.opaqueItems;
+                break;
+
+            case RenderMaterialClass::Masked:
+                ++renderWorld.renderStats.maskedItems;
+                break;
+
+            case RenderMaterialClass::Transparent:
+                ++renderWorld.renderStats.transparentItems;
+                break;
+            }
+
             renderWorld.items.push_back(item);
         }
 
