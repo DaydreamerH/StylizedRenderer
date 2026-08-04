@@ -12,6 +12,9 @@
 #include <render/RenderWorld.hpp>
 #include <render/RuntimeResourceCache.hpp>
 #include <render/StaticModelRenderer.hpp>
+#include <render/ForwardOpaquePass.hpp>
+#include <render/FrameContext.hpp>
+#include <render/FramePipeline.hpp>
 
 #include <scene/Camera.hpp>
 
@@ -104,22 +107,18 @@ protected:
 
     void onRender() override
     {
-        graphicsDevice().clear(
-            {
-                0.06F,
-                0.07F,
-                0.10F,
-                1.0F
-            });
+        std::uint32_t framebufferWidth = 0;
+        std::uint32_t framebufferHeight = 0;
+
+        window().getFramebufferSize(framebufferWidth, framebufferHeight);
+
+        if (framebufferWidth == 0 || framebufferHeight == 0) return;
 
         if (smokeTest_)
         {
             ++renderedFrameCount_;
 
-            if (renderedFrameCount_ >= 3)
-            {
-                requestExit();
-            }
+            if (renderedFrameCount_ >= 3) requestExit();
 
             return;
         }
@@ -129,18 +128,15 @@ protected:
 
         if (sceneAsset == nullptr)
         {
+            std::cerr << "SceneAsset is no longer available.\n";
+
             requestExit();
             return;
         }
 
-        if (!extractor_->extract(
-                *sceneAsset,
-                assetRegistry_,
-                camera_,
-                renderWorld_))
+        if (!extractor_->extract(*sceneAsset, assetRegistry_, camera_, renderWorld_))
         {
-            std::cerr
-                << "Failed to extract RenderWorld.\n";
+            std::cerr << "Failed to extract RenderWorld.\n";
 
             requestExit();
             return;
@@ -149,12 +145,8 @@ protected:
         if (!cameraFocused_)
         {
             stylized::math::Bounds sceneBounds;
-
-            for (const stylized::render::RenderItem& item :
-                 renderWorld_.items)
-            {
+            for (const stylized::render::RenderItem& item : renderWorld_.items)
                 sceneBounds.expand(item.worldBounds);
-            }
 
             if (sceneBounds.isValid())
             {
@@ -163,25 +155,59 @@ protected:
             }
         }
 
-        if (!renderer_->render(renderWorld_))
+        const stylized::graphics::Extent2D framebufferExtent{
+            framebufferWidth,
+            framebufferHeight
+        };
+
+        const bool extentChanged =
+            pipelineExtent_.width != framebufferExtent.width ||
+            pipelineExtent_.height != framebufferExtent.height;
+
+        if (extentChanged)
         {
-            std::cerr
-                << "Failed to render RenderWorld.\n";
+            if (!framePipeline_->resize(framebufferExtent))
+            {
+                std::cerr << "Failed to resize frame pipeline.\n";
+
+                requestExit();
+                return;
+            }
+
+            pipelineExtent_ = framebufferExtent;
+        }
+
+        stylized::render::FrameContext frame;
+        frame.framebufferSize = framebufferExtent;
+        frame.renderWorld = &renderWorld_;
+        frame.framebuffer = nullptr;
+        frame.hdrColor = nullptr;
+        frame.deltaTime = 0.F;
+        frame.exposure = 1.F;
+
+        if (!framePipeline_->execute(frame))
+        {
+            std::cerr << "Failed to execute frame pipeline.\n";
 
             requestExit();
             return;
         }
 
-        renderWorld_.renderStats.drawCalls =
-            renderer_->lastDrawCallCount();
+        if (forwardOpaquePass_ != nullptr)
+        {
+            renderWorld_.renderStats.drawCalls =
+                forwardOpaquePass_->lastDrawCallCount();
+        }
 
         viewerPanels_.beginFrame();
+
         viewerPanels_.draw(
             modelPath_,
             assetRegistry_,
             sceneAsset,
             renderWorld_,
-            renderer_->lastDrawCallCount());
+            renderWorld_.renderStats.drawCalls);
+
         viewerPanels_.endFrame();
 
         ++statsPrintFrameCount_;
@@ -207,7 +233,8 @@ protected:
     void onShutdown() override
     {
         viewerPanels_.shutdown();
-        renderer_.reset();
+        framePipeline_.reset();
+        forwardOpaquePass_ = nullptr;
         extractor_.reset();
         resourceCache_.reset();
     }
@@ -234,20 +261,20 @@ private:
                 stylized::render::RenderExtractor>(
                 *resourceCache_);
 
-        renderer_ =
-            std::make_unique<
-                stylized::render::StaticModelRenderer>(
+        framePipeline_ =
+            std::make_unique<stylized::render::FramePipeline>();
+
+        auto forwardPass = std::make_unique<
+            stylized::render::ForwardOpaquePass>(
                 graphicsDevice(),
                 assetRegistry_,
                 *resourceCache_);
+        if (!forwardPass->initialize()) return false;
 
-        if (!renderer_->initialize())
-        {
-            std::cerr
-                << "Failed to initialize static model renderer.\n";
+        forwardOpaquePass_ = forwardPass.get();
 
+        if (!framePipeline_->addPass(std::move(forwardPass)))
             return false;
-        }
 
         return true;
     }
@@ -315,8 +342,12 @@ private:
         extractor_;
 
     std::unique_ptr<
-        stylized::render::StaticModelRenderer>
-        renderer_;
+        stylized::render::FramePipeline>
+        framePipeline_;
+
+    stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
+
+    stylized::graphics::Extent2D pipelineExtent_{};
 
     stylized::render::RenderWorld renderWorld_;
 

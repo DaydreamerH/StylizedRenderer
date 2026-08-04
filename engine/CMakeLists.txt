@@ -28,6 +28,7 @@ add_library(stylized_engine STATIC
     include/render/RenderExtractor.hpp
     include/render/FrameContext.hpp
     include/render/FramePipeline.hpp
+    include/render/ForwardOpaquePass.hpp
     include/render/RenderWorld.hpp
     include/render/IRenderPass.hpp
     include/render/StaticModelRenderer.hpp
@@ -59,6 +60,7 @@ add_library(stylized_engine STATIC
     src/platform/Window.cpp
     src/render/RenderExtractor.cpp
     src/render/FramePipeline.cpp
+    src/render/ForwardOpaquePass.cpp
     src/render/RuntimeMesh.cpp
     src/render/RuntimeResourceCache.cpp
     src/render/StaticModelRenderer.cpp
