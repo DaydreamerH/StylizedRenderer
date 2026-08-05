@@ -2,6 +2,8 @@ add_library(stylized_engine STATIC
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
     include/asset/MaterialAsset.hpp
+    include/asset/MaterialTemplate.hpp
+    include/asset/MaterialInstance.hpp
     include/asset/MeshAsset.hpp
     include/asset/SceneAsset.hpp
     include/asset/TextureAsset.hpp
