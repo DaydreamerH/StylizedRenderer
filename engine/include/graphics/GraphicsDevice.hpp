@@ -63,6 +63,10 @@ public:
 
     [[nodiscard]] Framebuffer createFramebuffer(const FramebufferDesc& desc);
     void bindFramebuffer(const Framebuffer* framebuffer);
+    void blitColorToDefaultFramebuffer(
+        const Framebuffer& source,
+        Extent2D destinationExtent
+    );
 
     void drawIndexed(const DrawIndexedCommand& command);
 

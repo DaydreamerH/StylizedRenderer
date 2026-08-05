@@ -4,6 +4,8 @@
 #include <graphics/GraphicsDevice.hpp>
 #include <render/RuntimeResourceCache.hpp>
 
+#include <utility>
+
 namespace stylized::render
 {
 
@@ -33,33 +35,89 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
 {
     lastDrawCallCount_ = 0;
 
-    if (!initialized_) return false;
+    if (!initialized_ ||
+        frame.renderWorld == nullptr ||
+        !framebuffer_.isValid() ||
+        !hdrColor_.isValid() ||
+        !depth_.isValid())
+    {
+        return false;
+    }
 
-    if (frame.renderWorld == nullptr) return false;
+    if (frame.framebufferSize.width == 0 ||
+        frame.framebufferSize.height == 0)
+    {
+        return false;
+    }
 
-    if (frame.framebuffer != nullptr && !frame.framebuffer->isValid()) return false;
+    frame.hdrColor = &hdrColor_;
+    frame.depth = &depth_;
+    frame.framebuffer = &framebuffer_;
 
-    graphics::Extent2D targetExtent = frame.framebufferSize;
+    graphicsDevice_.bindFramebuffer(&framebuffer_);
+    graphicsDevice_.setViewport(extent_);
+    graphicsDevice_.clear(clearValue_);
 
-    if (frame.framebuffer != nullptr)
-        targetExtent = frame.framebuffer->extent();
-
-    if (targetExtent.width == 0 || targetExtent.height == 0)
+    if (!renderer_.render(*frame.renderWorld))
         return false;
 
-    graphicsDevice_.bindFramebuffer(frame.framebuffer);
-    graphicsDevice_.setViewport(targetExtent);
-    graphicsDevice_.clear(clearValue_);
-    const bool rendered = renderer_.render(*frame.renderWorld);
+    lastDrawCallCount_ =
+        renderer_.lastDrawCallCount();
 
-    lastDrawCallCount_ = renderer_.lastDrawCallCount();
+    graphicsDevice_.blitColorToDefaultFramebuffer(
+        framebuffer_,
+        frame.framebufferSize);
 
-    return rendered;
+    graphicsDevice_.setViewport(frame.framebufferSize);
+
+    return true;
 }
 
 bool ForwardOpaquePass::resize(graphics::Extent2D extent)
 {
-    return extent.width != 0 && extent.height != 0;
+    if (extent.width == 0 || extent.height == 0)
+        return false;
+
+    if (framebuffer_.isValid() &&
+        extent_.width == extent.width &&
+        extent_.height == extent.height)
+        return true;
+
+    graphics::RenderTextureDesc colorDesc;
+    colorDesc.extent = extent;
+    colorDesc.format = graphics::RenderTextureFormat::RGBA16Float;
+    colorDesc.sampled = true;
+    colorDesc.debugName = "Forward Opaque Color";
+
+    graphics::RenderTexture newHdrColor = graphicsDevice_.createRenderTexture(colorDesc);
+
+    if (!newHdrColor.isValid()) return false;
+
+    graphics::DepthTextureDesc depthDesc;
+    depthDesc.extent = extent;
+    depthDesc.format = graphics::DepthTextureFormat::Depth24Stencil8;
+    depthDesc.debugName = "Forward Opaque Depth";
+
+    graphics::DepthTexture newDepth = graphicsDevice_.createDepthTexture(depthDesc);
+
+    if (!newDepth.isValid()) return false;
+
+    graphics::FramebufferDesc framebufferDesc;
+    framebufferDesc.colorTexture = &newHdrColor;
+    framebufferDesc.depthTexture = &newDepth;
+    framebufferDesc.debugName = "Forward Opaque Framebuffer";
+
+    graphics::Framebuffer newFramebuffer =
+        graphicsDevice_.createFramebuffer(framebufferDesc);
+
+    if (!newFramebuffer.isValid()) return false;
+
+    hdrColor_ = std::move(newHdrColor);
+    depth_ = std::move(newDepth);
+    framebuffer_ = std::move(newFramebuffer);
+    extent_ = extent;
+
+    return true;
 }
 
 std::string_view ForwardOpaquePass::name() const noexcept

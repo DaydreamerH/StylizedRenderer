@@ -206,4 +206,31 @@ void GraphicsDevice::bindFramebuffer(const Framebuffer* framebuffer)
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer != nullptr ? framebuffer->id_ : 0);
 }
 
+void GraphicsDevice::blitColorToDefaultFramebuffer(
+    const Framebuffer& source,
+    const Extent2D destinationExtent)
+{
+    if (!initialized_ ||
+        !source.isValid() ||
+        destinationExtent.width == 0 ||
+        destinationExtent.height == 0)
+    {
+        return;
+    }
+
+    const Extent2D sourceExtent = source.extent();
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, source.id_);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glBlitFramebuffer(0, 0,
+        static_cast<GLint>(sourceExtent.width), static_cast<GLint>(sourceExtent.height),
+        0, 0,
+        static_cast<GLint>(destinationExtent.width), static_cast<GLint>(destinationExtent.height),
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 } // namespace stylized::graphics

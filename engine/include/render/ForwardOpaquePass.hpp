@@ -2,6 +2,9 @@
 
 #include <core/NonCopyable.hpp>
 #include <graphics/GraphicsTypes.hpp>
+#include <graphics/DepthTexture.hpp>
+#include <graphics/Framebuffer.hpp>
+#include <graphics/RenderTexture.hpp>
 #include <render/IRenderPass.hpp>
 #include <render/StaticModelRenderer.hpp>
 
@@ -62,6 +65,12 @@ private:
 
     std::size_t lastDrawCallCount_ = 0;
     bool initialized_ = false;
+
+    graphics::RenderTexture hdrColor_;
+    graphics::DepthTexture depth_;
+    graphics::Framebuffer framebuffer_;
+
+    graphics::Extent2D extent_{};
 };
 
 } // namespace stylized::render
