@@ -12,12 +12,16 @@ namespace stylized::render
 ForwardOpaquePass::ForwardOpaquePass(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
-    RuntimeResourceCache& resourceCache) noexcept
+    RuntimeResourceCache& resourceCache,
+    const asset::AssetHandle<
+        material::MaterialTemplate>
+        materialTemplate) noexcept
     : graphicsDevice_(graphicsDevice),
       renderer_(
           graphicsDevice,
           assetRegistry,
-          resourceCache)
+          resourceCache,
+          materialTemplate)
 {
 }
 

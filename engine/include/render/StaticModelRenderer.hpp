@@ -3,6 +3,7 @@
 #include <core/NonCopyable.hpp>
 #include <graphics/ShaderProgram.hpp>
 #include <render/RenderWorld.hpp>
+#include <asset/AssetHandle.hpp>
 
 namespace stylized::asset
 {
@@ -18,6 +19,14 @@ class GraphicsDevice;
 
 } // namespace stylized::graphics
 
+namespace stylized::material
+{
+
+struct MaterialTemplate;
+
+} // namespace stylized::material
+
+
 
 namespace stylized::render
 {
@@ -31,6 +40,8 @@ private:
     const asset::AssetRegistry& assetRegistry_;
     RuntimeResourceCache& resourceCache_;
 
+    asset::AssetHandle<material::MaterialTemplate> materialTemplate_;
+
     graphics::ShaderProgram shader_;
     bool initialized_ = false;
 
@@ -40,7 +51,10 @@ public:
     StaticModelRenderer(
         graphics::GraphicsDevice& graphicsDevice,
         const asset::AssetRegistry& assetRegistry,
-        RuntimeResourceCache& resourceCache
+        RuntimeResourceCache& resourceCache,
+        const asset::AssetHandle<
+            material::MaterialTemplate>
+                materialTemplate
     ) noexcept;
 
 

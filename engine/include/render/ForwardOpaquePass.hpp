@@ -7,9 +7,17 @@
 #include <graphics/RenderTexture.hpp>
 #include <render/IRenderPass.hpp>
 #include <render/StaticModelRenderer.hpp>
+#include <asset/AssetHandle.hpp>
 
 #include <cstddef>
 #include <string_view>
+
+namespace stylized::material
+{
+
+struct MaterialTemplate;
+
+} // namespace stylized::material
 
 namespace stylized::asset
 {
@@ -34,8 +42,10 @@ public:
     ForwardOpaquePass(
         graphics::GraphicsDevice& graphicsDevice,
         const asset::AssetRegistry& assetRegistry,
-        RuntimeResourceCache& resourceCache
-    ) noexcept;
+        RuntimeResourceCache& resourceCache,
+        asset::AssetHandle<
+            material::MaterialTemplate>
+            materialTemplate) noexcept;
 
     ~ForwardOpaquePass() override = default;
 

@@ -18,6 +18,8 @@
 
 #include <scene/Camera.hpp>
 
+#include <material/MaterialTemplate.hpp>
+
 #include "OrbitCameraController.hpp"
 #include "ViewerPanels.hpp"
 
@@ -26,6 +28,7 @@
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <utility>
 
 namespace
 {
@@ -242,6 +245,14 @@ protected:
 private:
     bool createRuntimeResources()
     {
+        if (!createMaterialTemplates())
+        {
+            std::cerr
+                << "Failed to create material templates.\n";
+
+            return false;
+        }
+
         resourceCache_ =
             std::make_unique<
                 stylized::render::RuntimeResourceCache>(
@@ -268,7 +279,8 @@ private:
             stylized::render::ForwardOpaquePass>(
                 graphicsDevice(),
                 assetRegistry_,
-                *resourceCache_);
+                *resourceCache_,
+                unlitTemplateHandle_);
         if (!forwardPass->initialize()) return false;
 
         forwardOpaquePass_ = forwardPass.get();
@@ -321,6 +333,26 @@ private:
         return true;
     }
 
+    bool createMaterialTemplates()
+    {
+        stylized::material::MaterialTemplate unlitTemplate;
+
+        unlitTemplate.name = "Default Unlit";
+        unlitTemplate.kind = stylized::material::MaterialKind::Unlit;
+        unlitTemplate.vertexShaderPath =
+            "assets/shaders/static_model/static_model.vert";
+        unlitTemplate.fragmentShaderPath =
+            "assets/shaders/static_model/static_model.frag";
+
+        if (!unlitTemplate.isValid()) return false;
+
+        unlitTemplateHandle_ = assetRegistry_.emplace<
+            stylized::material::MaterialTemplate>(
+                std::move(unlitTemplate));
+
+        return !unlitTemplateHandle_.isNull();
+    }
+
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
     std::uint64_t statsPrintFrameCount_ = 0;
@@ -344,6 +376,10 @@ private:
     std::unique_ptr<
         stylized::render::FramePipeline>
         framePipeline_;
+
+    stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        unlitTemplateHandle_;
 
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
 

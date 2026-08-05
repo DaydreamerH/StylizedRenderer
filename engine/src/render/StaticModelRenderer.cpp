@@ -8,6 +8,7 @@
 #include <graphics/Texture2D.hpp>
 #include <render/RuntimeMesh.hpp>
 #include <render/RuntimeResourceCache.hpp>
+#include <material/MaterialTemplate.hpp>
 
 #include <glm/mat3x3.hpp>
 
@@ -16,10 +17,14 @@ namespace stylized::render
 StaticModelRenderer::StaticModelRenderer(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
-    RuntimeResourceCache& resourceCache) noexcept
+    RuntimeResourceCache& resourceCache,
+    const asset::AssetHandle<
+        material::MaterialTemplate>
+        materialTemplate) noexcept
     : graphicsDevice_(graphicsDevice),
       assetRegistry_(assetRegistry),
-      resourceCache_(resourceCache)
+      resourceCache_(resourceCache),
+      materialTemplate_(materialTemplate)
 {
 }
 
@@ -30,16 +35,25 @@ bool StaticModelRenderer::initialize()
         return shader_.isValid();
     }
 
+    const material::MaterialTemplate* materialTemplate =
+        assetRegistry_.get(materialTemplate_);
+
+    if (materialTemplate == nullptr ||
+        !materialTemplate->isValid())
+    {
+        return false;
+    }
+
     graphics::ShaderProgramDesc shaderDesc;
 
     shaderDesc.vertexShaderPath =
-        "assets/shaders/static_model/static_model.vert";
+        materialTemplate->vertexShaderPath;
 
     shaderDesc.fragmentShaderPath =
-        "assets/shaders/static_model/static_model.frag";
+        materialTemplate->fragmentShaderPath;
 
     shaderDesc.debugName =
-        "Static Model Shader";
+        materialTemplate->name;
 
     shader_ =
         graphicsDevice_.createShaderProgram(
