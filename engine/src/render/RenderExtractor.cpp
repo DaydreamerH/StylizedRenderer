@@ -131,7 +131,7 @@ bool RenderExtractor::extract(
                     primitive.material();
 
             item.material =
-                resourceCache_.getOrCreateMaterial(
+                resourceCache_.getOrCreateMaterialInstance(
                     sourceMaterialHandle,
                     materialTemplate,
                     assetRegistry

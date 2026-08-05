@@ -129,6 +129,7 @@ void RuntimeResourceCache::clear() noexcept
     errorTexture_ = {};
 
     materialInstances_.clear();
+    runtimeMaterials_.clear();
 
     initialized_ = false;
 }
@@ -236,8 +237,38 @@ RuntimeResourceCache::uploadTexture(const asset::TextureAsset& textureAsset)
     );
 }
 
+RuntimeMaterial* RuntimeResourceCache::getOrCreateRuntimeMaterial(
+    const asset::AssetHandle<
+        material::MaterialTemplate> templateHandle,
+    const asset::AssetRegistry& assets
+)
+{
+    if (!initialized_ || templateHandle.isNull()) return nullptr;
+
+    const std::uint64_t key = templateHandle.id().value;
+
+    const auto existing = runtimeMaterials_.find(key);
+
+    if (existing != runtimeMaterials_.end())
+        return &existing->second;
+
+    RuntimeMaterial runtimeMaterial{
+        graphicsDevice_,
+        assets,
+        templateHandle
+    };
+
+    if (!runtimeMaterial.isValid()) return nullptr;
+
+    const auto [iterator, inserted] =
+        runtimeMaterials_.emplace(key, std::move(runtimeMaterial));
+
+    if (!inserted) return nullptr;
+    return &iterator->second;
+}
+
 const material::MaterialInstance*
-RuntimeResourceCache::getOrCreateMaterial(
+RuntimeResourceCache::getOrCreateMaterialInstance(
     const asset::AssetHandle<asset::MaterialAsset> materialHandle,
     const asset::AssetHandle<material::MaterialTemplate> templateHandle,
     const asset::AssetRegistry& assets

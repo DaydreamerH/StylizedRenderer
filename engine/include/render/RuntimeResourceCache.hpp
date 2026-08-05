@@ -5,6 +5,7 @@
 #include <graphics/GraphicsDevice.hpp>
 #include <graphics/Texture2D.hpp>
 #include <render/RuntimeMesh.hpp>
+#include <render/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>
 
 #include <cstdint>
@@ -48,7 +49,13 @@ public:
 
     [[nodiscard]] const graphics::Texture2D& errorTexture() const noexcept;
 
-    [[nodiscard]] const material::MaterialInstance* getOrCreateMaterial(
+    [[nodiscard]] RuntimeMaterial* getOrCreateRuntimeMaterial(
+        asset::AssetHandle<
+            material::MaterialTemplate> templateHandle,
+        const asset::AssetRegistry& assets
+    );
+
+    [[nodiscard]] const material::MaterialInstance* getOrCreateMaterialInstance(
         asset::AssetHandle<asset::MaterialAsset> materialHandle,
         asset::AssetHandle<material::MaterialTemplate> templateHandle,
         const asset::AssetRegistry& assets
@@ -98,6 +105,7 @@ private:
 
     std::unordered_map<std::uint64_t, RuntimeMesh> meshes_;
     std::unordered_map<std::uint64_t, graphics::Texture2D> textures_;
+    std::unordered_map<std::uint64_t, RuntimeMaterial> runtimeMaterials_;
 
     graphics::Texture2D whiteTexture_;
     graphics::Texture2D errorTexture_;
