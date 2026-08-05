@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace stylized::asset
+namespace stylized::material
 {
     
 enum class MaterialKind : std::uint8_t
@@ -30,4 +30,4 @@ struct MaterialTemplate
     }
 };
 
-} // namespace stylized::asset
+} // namespace stylized::material

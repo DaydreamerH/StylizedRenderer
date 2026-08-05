@@ -1,25 +1,28 @@
 #pragma once
 
 #include <asset/AssetHandle.hpp>
-#include <asset/MaterialTemplate.hpp>
+#include <material/MaterialTemplate.hpp>
 
 #include <glm/vec4.hpp>
 
 namespace stylized::asset
 {
-    
 struct TextureAsset;
+}
+
+namespace stylized::material
+{
 
 struct MaterialInstance
 {
-    AssetHandle<MaterialTemplate> templateHandle;
+    asset::AssetHandle<MaterialTemplate> templateHandle;
 
     glm::vec4 baseColorFactor{1.F};
 
     float metallic = 0.F;
     float roughness = 1.F;
 
-    AssetHandle<TextureAsset> baseColorTexture;
+    asset::AssetHandle<asset::TextureAsset> baseColorTexture;
 
     [[nodiscard]] bool isValid() const noexcept
     {
@@ -27,4 +30,4 @@ struct MaterialInstance
     }
 };
 
-} // namespace stylized::asset
+} // namespace stylized::material

@@ -2,8 +2,6 @@ add_library(stylized_engine STATIC
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
     include/asset/MaterialAsset.hpp
-    include/asset/MaterialTemplate.hpp
-    include/asset/MaterialInstance.hpp
     include/asset/MeshAsset.hpp
     include/asset/SceneAsset.hpp
     include/asset/TextureAsset.hpp
@@ -22,6 +20,8 @@ add_library(stylized_engine STATIC
     include/graphics/ShaderProgram.hpp
     include/graphics/Texture2D.hpp
     include/graphics/VertexArray.hpp
+    include/material/MaterialInstance.hpp
+    include/material/MaterialTemplate.hpp
     include/math/Bounds.hpp
     include/math/Frustum.hpp
     include/platform/Window.hpp
