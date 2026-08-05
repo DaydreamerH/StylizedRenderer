@@ -137,7 +137,12 @@ protected:
             return;
         }
 
-        if (!extractor_->extract(*sceneAsset, assetRegistry_, camera_, renderWorld_))
+        if (!extractor_->extract(
+                *sceneAsset,
+                assetRegistry_,
+                camera_,
+                unlitTemplateHandle_,
+                renderWorld_))
         {
             std::cerr << "Failed to extract RenderWorld.\n";
 

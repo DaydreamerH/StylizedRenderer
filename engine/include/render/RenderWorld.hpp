@@ -1,7 +1,5 @@
 #pragma once
 
-#include <asset/AssetHandle.hpp>
-
 #include <math/Bounds.hpp>
 #include <math/Frustum.hpp>
 
@@ -15,12 +13,12 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace stylized::asset
+namespace stylized::material
 {
 
-struct MaterialAsset;
+struct MaterialInstance;
 
-} // namespace stylized::asset
+} // namespace stylized::material
 
 namespace stylized::render
 {
@@ -95,7 +93,7 @@ struct RenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
-    asset::AssetHandle<asset::MaterialAsset> material;
+    const material::MaterialInstance* material = nullptr;
 
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};

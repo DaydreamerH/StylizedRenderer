@@ -2,6 +2,7 @@
 
 #include <core/NonCopyable.hpp>
 #include <render/RenderWorld.hpp>
+#include <asset/AssetHandle.hpp>
 
 namespace stylized::asset
 {
@@ -13,6 +14,13 @@ namespace stylized::scene
 {
 class Camera;
 }
+
+namespace stylized::material
+{
+
+struct MaterialTemplate;
+
+} // namespace stylized::material
 
 namespace stylized::render
 {
@@ -29,8 +37,10 @@ public:
         const asset::SceneAsset& sceneAsset,
         const asset::AssetRegistry& assetRegistry,
         const scene::Camera& camera,
-        RenderWorld& renderWorld
-    ) const;
+        asset::AssetHandle<
+            material::MaterialTemplate>
+            materialTemplate,
+        RenderWorld& renderWorld) const;
 
 private:
     RuntimeResourceCache& resourceCache_;

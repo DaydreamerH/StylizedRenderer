@@ -8,6 +8,9 @@
 #include <render/RuntimeMesh.hpp>
 #include <render/RuntimeResourceCache.hpp>
 
+#include <material/MaterialInstance.hpp>
+#include <material/MaterialTemplate.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -24,6 +27,9 @@ bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
+    const asset::AssetHandle<
+        material::MaterialTemplate>
+        materialTemplate,
     RenderWorld& renderWorld) const
 {
     if (!sceneAsset.isValid()) return false;
@@ -117,14 +123,29 @@ bool RenderExtractor::extract(
             }
 
             ++renderWorld.renderStats.visibleItems;
-            
+
             item.primitive = &primitive;
-            
-            item.material = primitive.material();
-            const asset::MaterialAsset* material = assetRegistry.get(item.material);
-            if (material != nullptr)
+
+            const asset::AssetHandle<asset::MaterialAsset>
+                sourceMaterialHandle =
+                    primitive.material();
+
+            item.material =
+                resourceCache_.getOrCreateMaterial(
+                    sourceMaterialHandle,
+                    materialTemplate,
+                    assetRegistry
+                );
+
+            if (item.material == nullptr)
+                return false;
+
+            const asset::MaterialAsset* sourceMaterial =
+                assetRegistry.get(sourceMaterialHandle);
+
+            if (sourceMaterial != nullptr)
             {
-                switch (material->alphaMode)
+                switch (sourceMaterial->alphaMode)
                 {
                 case asset::AlphaMode::Opaque:
                     item.materialClass = RenderMaterialClass::Opaque;
@@ -137,7 +158,7 @@ bool RenderExtractor::extract(
                     break;
                 }
 
-                if (material->doubleSided)
+                if (sourceMaterial->doubleSided)
                 {
                     item.flags = item.flags | RenderItemFlags::DoubleSided;
                 }

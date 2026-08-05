@@ -89,19 +89,13 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (item.primitive == nullptr) continue;
 
-        const material::MaterialInstance* materialInstance =
-            resourceCache_.getOrCreateMaterial(
-                item.material,
-                materialTemplate_,
-                assetRegistry_
-            );
+        if (item.material == nullptr) continue;
 
-        if (materialInstance == nullptr)
-            return false;
+        const material::MaterialInstance& materialInstance = *item.material;
 
         const graphics::Texture2D& texture =
             resourceCache_.getOrCreateTexture(
-                materialInstance->baseColorTexture,
+                materialInstance.baseColorTexture,
                 assetRegistry_
             );
         
@@ -113,7 +107,7 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (!shader_.setVec4(
             "uBaseColorFactor",
-            materialInstance->baseColorFactor))
+            materialInstance.baseColorFactor))
         {
             return false;
         }
