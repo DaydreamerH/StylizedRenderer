@@ -57,6 +57,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/ShaderProgram.cpp
     src/graphics/opengl/Texture2D.cpp
     src/graphics/opengl/VertexArray.cpp
+    src/material/MaterialInstance.cpp
     src/math/Bounds.cpp
     src/math/Frustum.cpp
     src/platform/Window.cpp

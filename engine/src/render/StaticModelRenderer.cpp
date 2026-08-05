@@ -1,7 +1,6 @@
 #include <render/StaticModelRenderer.hpp>
 
 #include <asset/AssetRegistry.hpp>
-#include <asset/MaterialAsset.hpp>
 #include <asset/TextureAsset.hpp>
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/GraphicsDevice.hpp>
@@ -9,6 +8,7 @@
 #include <render/RuntimeMesh.hpp>
 #include <render/RuntimeResourceCache.hpp>
 #include <material/MaterialTemplate.hpp>
+#include <material/MaterialInstance.hpp>
 
 #include <glm/mat3x3.hpp>
 
@@ -89,19 +89,21 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (item.primitive == nullptr) continue;
 
-        const asset::MaterialAsset* material = assetRegistry_.get(item.material);
+        const material::MaterialInstance* materialInstance =
+            resourceCache_.getOrCreateMaterial(
+                item.material,
+                materialTemplate_,
+                assetRegistry_
+            );
 
-        glm::vec4 baseColorFactor{1.F};
+        if (materialInstance == nullptr)
+            return false;
 
-        asset::AssetHandle<asset::TextureAsset> baseColorTexture;
-
-        if (material != nullptr)
-        {
-            baseColorFactor = material->baseColorFactor;
-            baseColorTexture = material->baseColorTexture;
-        }
-
-        const graphics::Texture2D& texture = resourceCache_.getOrCreateTexture(baseColorTexture, assetRegistry_);
+        const graphics::Texture2D& texture =
+            resourceCache_.getOrCreateTexture(
+                materialInstance->baseColorTexture,
+                assetRegistry_
+            );
         
         if (!texture.isValid()) continue;
 
@@ -109,7 +111,9 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (!shader_.setMat3("uNormalMatrix", item.normalMatrix)) return false;
 
-        if (!shader_.setVec4("uBaseColorFactor", baseColorFactor))
+        if (!shader_.setVec4(
+            "uBaseColorFactor",
+            materialInstance->baseColorFactor))
         {
             return false;
         }

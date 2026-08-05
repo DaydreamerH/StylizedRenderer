@@ -3,6 +3,9 @@
 #include <asset/AssetRegistry.hpp>
 #include <asset/MeshAsset.hpp>
 #include <asset/TextureAsset.hpp>
+#include <asset/MaterialAsset.hpp>
+
+#include <material/MaterialInstance.hpp>
 
 #include <array>
 #include <cstdint>
@@ -125,6 +128,8 @@ void RuntimeResourceCache::clear() noexcept
     whiteTexture_ = {};
     errorTexture_ = {};
 
+    materialInstances_.clear();
+
     initialized_ = false;
 }
 
@@ -229,6 +234,51 @@ RuntimeResourceCache::uploadTexture(const asset::TextureAsset& textureAsset)
         desc,
         std::span<const std::byte>{textureAsset.pixels}
     );
+}
+
+const material::MaterialInstance*
+RuntimeResourceCache::getOrCreateMaterial(
+    const asset::AssetHandle<asset::MaterialAsset> materialHandle,
+    const asset::AssetHandle<material::MaterialTemplate> templateHandle,
+    const asset::AssetRegistry& assets
+)
+{
+    if (templateHandle.isNull()) return nullptr;
+
+    const material::MaterialTemplate* materialTemplate = assets.get(templateHandle);
+
+    if (materialTemplate == nullptr || !materialTemplate->isValid())
+        return nullptr;
+
+    const MaterialInstanceKey key {
+        .materialId = materialHandle.id().value,
+        .templateId = templateHandle.id().value
+    };
+
+    const auto existing = materialInstances_.find(key);
+
+    if (existing != materialInstances_.end())
+        return &existing->second;
+
+    material::MaterialInstance instance;
+    instance.templateHandle = templateHandle;
+
+    if (!materialHandle.isNull())
+    {
+        const asset::MaterialAsset* source = assets.get(materialHandle);
+
+        if (source != nullptr)
+        {
+            instance = material::makeMaterialInstance(templateHandle, *source);
+        }
+    }
+
+    const auto [iterator, inserted] =
+        materialInstances_.emplace(
+            key,
+            std::move(instance));
+
+    return &iterator->second;
 }
 
 } // namespace stylized::render

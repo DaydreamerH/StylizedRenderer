@@ -8,6 +8,7 @@
 namespace stylized::asset
 {
 struct TextureAsset;
+struct MaterialAsset;
 }
 
 namespace stylized::material
@@ -29,5 +30,9 @@ struct MaterialInstance
         return !templateHandle.isNull();
     }
 };
+
+[[nodiscard]] MaterialInstance makeMaterialInstance(
+    asset::AssetHandle<MaterialTemplate> templateHandle,
+    const asset::MaterialAsset& source);
 
 } // namespace stylized::material

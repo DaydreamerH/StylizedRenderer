@@ -5,9 +5,12 @@
 #include <graphics/GraphicsDevice.hpp>
 #include <graphics/Texture2D.hpp>
 #include <render/RuntimeMesh.hpp>
+#include <material/MaterialInstance.hpp>
 
 #include <cstdint>
 #include <unordered_map>
+#include <cstddef>
+#include <functional>
 
 namespace stylized::asset
 {
@@ -17,6 +20,7 @@ struct MeshAsset;
 struct TextureAsset;
 enum class TexturePixelFormat : std::uint8_t;
 enum class ColorSpace : std::uint8_t;
+struct MaterialAsset;
 
 } // namespace stylized::asset
 
@@ -44,9 +48,42 @@ public:
 
     [[nodiscard]] const graphics::Texture2D& errorTexture() const noexcept;
 
+    [[nodiscard]] const material::MaterialInstance* getOrCreateMaterial(
+        asset::AssetHandle<asset::MaterialAsset> materialHandle,
+        asset::AssetHandle<material::MaterialTemplate> templateHandle,
+        const asset::AssetRegistry& assets
+    );
+
     void clear() noexcept;
     
 private:
+    struct MaterialInstanceKey
+    {
+        std::uint64_t materialId = 0;
+        std::uint64_t templateId = 0;
+
+        [[nodiscard]] bool operator==(
+            const MaterialInstanceKey&) const noexcept = default;
+    };
+
+    struct MaterialInstanceKeyHash
+    {
+        [[nodiscard]] std::size_t operator()(
+            const MaterialInstanceKey& key) const noexcept
+        {
+            const std::size_t materialHash =
+                std::hash<std::uint64_t>{}(
+                    key.materialId);
+
+            const std::size_t templateHash =
+                std::hash<std::uint64_t>{}(
+                    key.templateId);
+
+            return materialHash ^
+                (templateHash << 1U);
+        }
+    };
+
     [[nodiscard]] graphics::TextureFormat toGraphicsTextureFormat(
         const asset::TexturePixelFormat format,
         const asset::ColorSpace colorSpace) const noexcept;
@@ -64,6 +101,12 @@ private:
 
     graphics::Texture2D whiteTexture_;
     graphics::Texture2D errorTexture_;
+
+    std::unordered_map<
+        MaterialInstanceKey,
+        material::MaterialInstance,
+        MaterialInstanceKeyHash>
+        materialInstances_;
 
     bool initialized_ = false;
 };
