@@ -12,24 +12,18 @@ namespace stylized::render
 ForwardOpaquePass::ForwardOpaquePass(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
-    RuntimeResourceCache& resourceCache,
-    const asset::AssetHandle<
-        material::MaterialTemplate>
-        materialTemplate) noexcept
+    RuntimeResourceCache& resourceCache) noexcept
     : graphicsDevice_(graphicsDevice),
       renderer_(
           graphicsDevice,
           assetRegistry,
-          resourceCache,
-          materialTemplate)
+          resourceCache)
 {
 }
 
 bool ForwardOpaquePass::initialize()
 {
     if (initialized_) return true;
-
-    if (!renderer_.initialize()) return false;
 
     initialized_ = true;
     return true;

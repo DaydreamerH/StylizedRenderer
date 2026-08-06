@@ -1,9 +1,9 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/ShaderProgram.hpp>
 #include <render/RenderWorld.hpp>
-#include <asset/AssetHandle.hpp>
+
+#include <cstddef>
 
 namespace stylized::asset
 {
@@ -19,13 +19,6 @@ class GraphicsDevice;
 
 } // namespace stylized::graphics
 
-namespace stylized::material
-{
-
-struct MaterialTemplate;
-
-} // namespace stylized::material
-
 
 
 namespace stylized::render
@@ -40,27 +33,16 @@ private:
     const asset::AssetRegistry& assetRegistry_;
     RuntimeResourceCache& resourceCache_;
 
-    asset::AssetHandle<material::MaterialTemplate> materialTemplate_;
-
-    graphics::ShaderProgram shader_;
-    bool initialized_ = false;
-
     std::size_t lastDrawCallCount_ = 0;
 
 public:
     StaticModelRenderer(
         graphics::GraphicsDevice& graphicsDevice,
         const asset::AssetRegistry& assetRegistry,
-        RuntimeResourceCache& resourceCache,
-        const asset::AssetHandle<
-            material::MaterialTemplate>
-                materialTemplate
-    ) noexcept;
+        RuntimeResourceCache& resourceCache) noexcept;
 
 
     ~StaticModelRenderer() = default;
-
-    [[nodiscard]] bool initialize();
 
     [[nodiscard]] bool render(const RenderWorld& renderWorld);
 

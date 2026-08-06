@@ -1,131 +1,105 @@
 #include <render/StaticModelRenderer.hpp>
 
 #include <asset/AssetRegistry.hpp>
-#include <asset/TextureAsset.hpp>
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/GraphicsDevice.hpp>
-#include <graphics/Texture2D.hpp>
+#include <graphics/ShaderProgram.hpp>
 #include <render/RuntimeMesh.hpp>
 #include <render/RuntimeResourceCache.hpp>
-#include <material/MaterialTemplate.hpp>
+#include <render/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>
-
-#include <glm/mat3x3.hpp>
 
 namespace stylized::render
 {
 StaticModelRenderer::StaticModelRenderer(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
-    RuntimeResourceCache& resourceCache,
-    const asset::AssetHandle<
-        material::MaterialTemplate>
-        materialTemplate) noexcept
+    RuntimeResourceCache& resourceCache) noexcept
     : graphicsDevice_(graphicsDevice),
       assetRegistry_(assetRegistry),
-      resourceCache_(resourceCache),
-      materialTemplate_(materialTemplate)
+      resourceCache_(resourceCache)
 {
 }
 
-bool StaticModelRenderer::initialize()
-{
-    if (initialized_)
-    {
-        return shader_.isValid();
-    }
-
-    const material::MaterialTemplate* materialTemplate =
-        assetRegistry_.get(materialTemplate_);
-
-    if (materialTemplate == nullptr ||
-        !materialTemplate->isValid())
-    {
-        return false;
-    }
-
-    graphics::ShaderProgramDesc shaderDesc;
-
-    shaderDesc.vertexShaderPath =
-        materialTemplate->vertexShaderPath;
-
-    shaderDesc.fragmentShaderPath =
-        materialTemplate->fragmentShaderPath;
-
-    shaderDesc.debugName =
-        materialTemplate->name;
-
-    shader_ =
-        graphicsDevice_.createShaderProgram(
-            shaderDesc);
-
-    if (!shader_.isValid())
-    {
-        return false;
-    }
-
-    if (!shader_.setInt(
-            "uBaseColorTexture",
-            0))
-    {
-        return false;
-    }
-
-    initialized_ = true;
-    return true;
-}
-
-bool StaticModelRenderer::render(const RenderWorld& renderWorld)
+bool StaticModelRenderer::render(
+    const RenderWorld& renderWorld)
 {
     lastDrawCallCount_ = 0;
 
-    if (!initialized_ || !shader_.isValid()) return false;
-
-    if (!shader_.setMat4("uViewProjection", renderWorld.mainView.viewProjection)) return false;
-
     for (const RenderItem& item : renderWorld.items)
     {
-        if (item.materialClass != RenderMaterialClass::Opaque) continue;
+        if (item.materialClass !=
+            RenderMaterialClass::Opaque)
+        {
+            continue;
+        }
 
-        if (item.primitive == nullptr) continue;
+        if (item.primitive == nullptr ||
+            item.materialInstance == nullptr ||
+            item.runtimeMaterial == nullptr)
+        {
+            continue;
+        }
 
-        if (item.materialInstance == nullptr) continue;
+        RuntimeMaterial& runtimeMaterial =
+            *item.runtimeMaterial;
 
-        const material::MaterialInstance& materialInstance =
-            *item.materialInstance;
+        const material::MaterialInstance&
+            materialInstance =
+                *item.materialInstance;
 
-        const graphics::Texture2D& texture =
-            resourceCache_.getOrCreateTexture(
-                materialInstance.baseColorTexture,
-                assetRegistry_
-            );
-        
-        if (!texture.isValid()) continue;
+        graphics::ShaderProgram* shader =
+            runtimeMaterial.shader();
 
-        if (!shader_.setMat4("uModel", item.world)) return false;
-
-        if (!shader_.setMat3("uNormalMatrix", item.normalMatrix)) return false;
-
-        if (!shader_.setVec4(
-            "uBaseColorFactor",
-            materialInstance.baseColorFactor))
+        if (shader == nullptr)
         {
             return false;
         }
 
-        texture.bind(0);
+        if (!runtimeMaterial.bind(
+                materialInstance,
+                resourceCache_,
+                assetRegistry_))
+        {
+            return false;
+        }
+
+        if (!shader->setMat4(
+                "uViewProjection",
+                renderWorld.mainView.viewProjection))
+        {
+            return false;
+        }
+
+        if (!shader->setMat4(
+                "uModel",
+                item.world))
+        {
+            return false;
+        }
+
+        if (!shader->setMat3(
+                "uNormalMatrix",
+                item.normalMatrix))
+        {
+            return false;
+        }
 
         graphics::DrawIndexedCommand command;
 
-        command.shader = &shader_;
+        command.shader = shader;
 
-        command.vertexArray = &item.primitive->vertexArray();
+        command.vertexArray =
+            &item.primitive->vertexArray();
 
-        command.topology = graphics::PrimitiveTopology::Triangles;
+        command.topology =
+            graphics::PrimitiveTopology::Triangles;
 
-        command.indexType = item.primitive->indexType();
+        command.indexType =
+            item.primitive->indexType();
 
-        command.indexCount = item.primitive->indexCount();
+        command.indexCount =
+            item.primitive->indexCount();
 
         command.firstIndex = 0;
 

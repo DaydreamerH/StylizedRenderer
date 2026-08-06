@@ -284,8 +284,7 @@ private:
             stylized::render::ForwardOpaquePass>(
                 graphicsDevice(),
                 assetRegistry_,
-                *resourceCache_,
-                unlitTemplateHandle_);
+                *resourceCache_);
         if (!forwardPass->initialize()) return false;
 
         forwardOpaquePass_ = forwardPass.get();
