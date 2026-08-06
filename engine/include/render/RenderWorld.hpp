@@ -24,6 +24,7 @@ namespace stylized::render
 {
 
 class RuntimeMeshPrimitive;
+class RuntimeMaterial;
 
 enum class RenderMaterialClass : std::uint8_t
 {
@@ -93,7 +94,9 @@ struct RenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
-    const material::MaterialInstance* material = nullptr;
+    const material::MaterialInstance* materialInstance = nullptr;
+
+    RuntimeMaterial* runtimeMaterial = nullptr;
 
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};

@@ -130,14 +130,23 @@ bool RenderExtractor::extract(
                 sourceMaterialHandle =
                     primitive.material();
 
-            item.material =
+            item.materialInstance =
                 resourceCache_.getOrCreateMaterialInstance(
                     sourceMaterialHandle,
                     materialTemplate,
                     assetRegistry
                 );
 
-            if (item.material == nullptr)
+            if (item.materialInstance == nullptr)
+                return false;
+
+            item.runtimeMaterial =
+                resourceCache_.getOrCreateRuntimeMaterial(
+                    item.materialInstance->templateHandle,
+                    assetRegistry
+                );
+
+            if (item.runtimeMaterial == nullptr)
                 return false;
 
             const asset::MaterialAsset* sourceMaterial =

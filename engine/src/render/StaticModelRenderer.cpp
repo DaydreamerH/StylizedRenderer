@@ -89,9 +89,10 @@ bool StaticModelRenderer::render(const RenderWorld& renderWorld)
 
         if (item.primitive == nullptr) continue;
 
-        if (item.material == nullptr) continue;
+        if (item.materialInstance == nullptr) continue;
 
-        const material::MaterialInstance& materialInstance = *item.material;
+        const material::MaterialInstance& materialInstance =
+            *item.materialInstance;
 
         const graphics::Texture2D& texture =
             resourceCache_.getOrCreateTexture(
