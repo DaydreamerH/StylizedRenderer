@@ -3,6 +3,8 @@
 /out/
 /.vs/
 /CMakeUserPresets.json
+/imgui.ini
+/assets/models/
 
 *.sln
 *.vcxproj
