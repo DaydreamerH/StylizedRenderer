@@ -38,13 +38,12 @@ RuntimeMaterial::RuntimeMaterial(
 
     switch (kind_)
     {
+    case material::MaterialKind::BasicPbr:
     case material::MaterialKind::Unlit:
         if (!shader_.setInt("uBaseColorTexture", 0))
             shader_ = {};
         break;
     case material::MaterialKind::DebugNormal:
-        break;
-    case material::MaterialKind::BasicPbr:
         break;
     }
 }
@@ -130,7 +129,38 @@ bool RuntimeMaterial::bind(
         return true;
 
     case material::MaterialKind::BasicPbr:
-        return false;
+    {
+        const graphics::Texture2D& baseColorTexture =
+            resourceCache.getOrCreateTexture(
+                instance.baseColorTexture,
+                assetRegistry
+            );
+
+        if (!baseColorTexture.isValid()) return false;
+
+        const glm::vec4& baseColorFactor = instance.baseColorFactor;
+        if (!shader_.setVec4(
+                "uBaseColorFactor",
+                baseColorFactor))
+            return false;
+
+        if (!shader_.setFloat(
+                "uMetallic",
+                instance.metallic))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uRoughness",
+                instance.roughness))
+        {
+            return false;
+        }
+
+        baseColorTexture.bind(0);
+        return true;
+    }
     }
 
     return false;

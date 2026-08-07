@@ -8,6 +8,7 @@
 #include <render/RuntimeResourceCache.hpp>
 #include <render/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>
+#include <material/MaterialTemplate.hpp>
 
 namespace stylized::render
 {
@@ -83,6 +84,49 @@ bool StaticModelRenderer::render(
                 item.normalMatrix))
         {
             return false;
+        }
+
+        if (runtimeMaterial.kind() == material::MaterialKind::BasicPbr)
+        {
+            const RenderView& view =
+                renderWorld.mainView;
+
+            const DirectionalLightData& light =
+                view.mainLight;
+
+            if (!shader->setVec3(
+                    "uCameraPosition",
+                    view.cameraPosition.x,
+                    view.cameraPosition.y,
+                    view.cameraPosition.z))
+            {
+                return false;
+            }
+
+            if (!shader->setVec3(
+                    "uLightDirection",
+                    light.direction.x,
+                    light.direction.y,
+                    light.direction.z))
+            {
+                return false;
+            }
+
+            if (!shader->setVec3(
+                    "uLightColor",
+                    light.color.x,
+                    light.color.y,
+                    light.color.z))
+            {
+                return false;
+            }
+
+            if (!shader->setFloat(
+                    "uLightIntensity",
+                    light.intensity))
+            {
+                return false;
+            }
         }
 
         graphics::DrawIndexedCommand command;

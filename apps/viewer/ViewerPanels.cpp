@@ -88,15 +88,27 @@ void ViewerPanels::draw(
         ImGui::TextUnformatted("Scene: not loaded");
     }
 
-    int materialMode =
-        materialKind ==
-            stylized::material::MaterialKind::DebugNormal
-        ? 1
-        : 0;
+    int materialMode = 0;
+
+    switch (materialKind)
+    {
+    case stylized::material::MaterialKind::Unlit:
+        materialMode = 0;
+        break;
+
+    case stylized::material::MaterialKind::DebugNormal:
+        materialMode = 1;
+        break;
+
+    case stylized::material::MaterialKind::BasicPbr:
+        materialMode = 2;
+        break;
+    }
 
     constexpr const char* materialModes[] = {
         "Unlit",
-        "Debug Normal"
+        "Debug Normal",
+        "Basic PBR"
     };
 
     ImGui::Separator();
@@ -107,9 +119,23 @@ void ViewerPanels::draw(
             materialModes,
             IM_ARRAYSIZE(materialModes)))
     {
-        materialKind = materialMode == 1
-            ? stylized::material::MaterialKind::DebugNormal
-            : stylized::material::MaterialKind::Unlit;
+        switch (materialMode)
+        {
+        case 0:
+            materialKind =
+                stylized::material::MaterialKind::Unlit;
+            break;
+
+        case 1:
+            materialKind =
+                stylized::material::MaterialKind::DebugNormal;
+            break;
+
+        case 2:
+            materialKind =
+                stylized::material::MaterialKind::BasicPbr;
+            break;
+        }
     }
 
     ImGui::Separator();

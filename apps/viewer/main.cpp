@@ -390,6 +390,33 @@ private:
 
         if (debugNormalTemplateHandle_.isNull()) return false;
 
+        stylized::material::MaterialTemplate basicPbrTemplate;
+
+        basicPbrTemplate.name = "Basic PBR";
+
+        basicPbrTemplate.kind =
+            stylized::material::MaterialKind::BasicPbr;
+
+        basicPbrTemplate.vertexShaderPath =
+            "assets/shaders/static_model/static_model.vert";
+
+        basicPbrTemplate.fragmentShaderPath =
+            "assets/shaders/material/basic_pbr.frag";
+
+        if (!basicPbrTemplate.isValid())
+        {
+            return false;
+        }
+
+        basicPbrTemplateHandle_ = assetRegistry_.emplace<
+            stylized::material::MaterialTemplate>(
+                std::move(basicPbrTemplate));
+
+        if (basicPbrTemplateHandle_.isNull())
+        {
+            return false;
+        }
+
         activeMaterialKind_ =
             stylized::material::MaterialKind::Unlit;
 
@@ -411,7 +438,9 @@ private:
             break;
 
         case stylized::material::MaterialKind::BasicPbr:
-            return false;
+            activeMaterialTemplateHandle_ =
+                basicPbrTemplateHandle_;
+            break;
         }
 
         return !activeMaterialTemplateHandle_.isNull();
@@ -448,6 +477,10 @@ private:
     stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
         debugNormalTemplateHandle_;
+
+    stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        basicPbrTemplateHandle_;
 
     stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
