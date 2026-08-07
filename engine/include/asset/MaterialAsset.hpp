@@ -27,6 +27,9 @@ struct MaterialAsset
 
     AssetHandle<TextureAsset> baseColorTexture;
 
+    float metallicFactor = 0.0F;
+    float roughnessFactor = 1.0F;
+
     AlphaMode alphaMode = AlphaMode::Opaque;
 
     float alphaCutoff = 0.5F;

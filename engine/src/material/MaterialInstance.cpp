@@ -26,6 +26,12 @@ MaterialInstance makeMaterialInstance(
     instance.baseColorTexture =
         source.baseColorTexture;
 
+    instance.metallic =
+        source.metallicFactor;
+
+    instance.roughness =
+        source.roughnessFactor;
+
     return instance;
 }
 

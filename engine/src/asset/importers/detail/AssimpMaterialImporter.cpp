@@ -1,5 +1,6 @@
 #include <asset/importers/detail/AssimpImportInternal.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <filesystem>
 #include <string>
@@ -121,6 +122,34 @@ bool stageMaterials(
             baseColor.g,
             baseColor.b,
             baseColor.a};
+
+        float metallicFactor =
+            staged.asset.metallicFactor;
+
+        if (sourceMaterial->Get(
+                AI_MATKEY_METALLIC_FACTOR,
+                metallicFactor) == AI_SUCCESS)
+        {
+            staged.asset.metallicFactor =
+                std::clamp(
+                    metallicFactor,
+                    0.0F,
+                    1.0F);
+        }
+
+        float roughnessFactor =
+            staged.asset.roughnessFactor;
+
+        if (sourceMaterial->Get(
+                AI_MATKEY_ROUGHNESS_FACTOR,
+                roughnessFactor) == AI_SUCCESS)
+        {
+            staged.asset.roughnessFactor =
+                std::clamp(
+                    roughnessFactor,
+                    0.04F,
+                    1.0F);
+        }
 
         staged.asset.alphaMode =
             readAlphaMode(*sourceMaterial);
