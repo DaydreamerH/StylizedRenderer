@@ -141,7 +141,7 @@ protected:
                 *sceneAsset,
                 assetRegistry_,
                 camera_,
-                unlitTemplateHandle_,
+                activeMaterialTemplateHandle_,
                 renderWorld_))
         {
             std::cerr << "Failed to extract RenderWorld.\n";
@@ -214,7 +214,18 @@ protected:
             assetRegistry_,
             sceneAsset,
             renderWorld_,
-            renderWorld_.renderStats.drawCalls);
+            renderWorld_.renderStats.drawCalls,
+            activeMaterialKind_);
+
+        if (!updateActiveMaterialTemplate())
+        {
+            std::cerr
+                << "Failed to select material template.\n";
+
+            viewerPanels_.endFrame();
+            requestExit();
+            return;
+        }
 
         viewerPanels_.endFrame();
 
@@ -343,18 +354,66 @@ private:
 
         unlitTemplate.name = "Default Unlit";
         unlitTemplate.kind = stylized::material::MaterialKind::Unlit;
+
         unlitTemplate.vertexShaderPath =
             "assets/shaders/static_model/static_model.vert";
         unlitTemplate.fragmentShaderPath =
-            "assets/shaders/static_model/static_model.frag";
+            "assets/shaders/material/unlit.frag";
 
         if (!unlitTemplate.isValid()) return false;
 
         unlitTemplateHandle_ = assetRegistry_.emplace<
             stylized::material::MaterialTemplate>(
                 std::move(unlitTemplate));
+        if (unlitTemplateHandle_.isNull()) return false;
 
-        return !unlitTemplateHandle_.isNull();
+        stylized::material::MaterialTemplate
+            debugNormalTemplate;
+
+        debugNormalTemplate.name = "Debug Normal";
+
+        debugNormalTemplate.kind =
+            stylized::material::MaterialKind::DebugNormal;
+
+        debugNormalTemplate.vertexShaderPath =
+            "assets/shaders/static_model/static_model.vert";
+
+        debugNormalTemplate.fragmentShaderPath =
+            "assets/shaders/material/debug_normal.frag";
+
+        if (!debugNormalTemplate.isValid()) return false;
+
+        debugNormalTemplateHandle_ = assetRegistry_.emplace<
+            stylized::material::MaterialTemplate>(
+                std::move(debugNormalTemplate));
+
+        if (debugNormalTemplateHandle_.isNull()) return false;
+
+        activeMaterialKind_ =
+            stylized::material::MaterialKind::Unlit;
+
+        return updateActiveMaterialTemplate();
+    }
+
+    bool updateActiveMaterialTemplate() noexcept
+    {
+        switch (activeMaterialKind_)
+        {
+        case stylized::material::MaterialKind::Unlit:
+            activeMaterialTemplateHandle_ =
+                unlitTemplateHandle_;
+            break;
+
+        case stylized::material::MaterialKind::DebugNormal:
+            activeMaterialTemplateHandle_ =
+                debugNormalTemplateHandle_;
+            break;
+
+        case stylized::material::MaterialKind::BasicPbr:
+            return false;
+        }
+
+        return !activeMaterialTemplateHandle_.isNull();
     }
 
     bool smokeTest_ = false;
@@ -384,6 +443,17 @@ private:
     stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
         unlitTemplateHandle_;
+
+    stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        debugNormalTemplateHandle_;
+
+    stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        activeMaterialTemplateHandle_;
+
+    stylized::material::MaterialKind activeMaterialKind_ =
+        stylized::material::MaterialKind::Unlit;
 
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
 

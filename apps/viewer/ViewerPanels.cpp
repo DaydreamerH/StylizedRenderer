@@ -66,7 +66,8 @@ void ViewerPanels::draw(
     const stylized::asset::AssetRegistry& assets,
     const stylized::asset::SceneAsset* scene,
     const stylized::render::RenderWorld& renderWorld,
-    const std::size_t drawCallCount) const
+    const std::size_t drawCallCount,
+    stylized::material::MaterialKind& materialKind) const
 {
     if (!initialized_)
     {
@@ -85,6 +86,30 @@ void ViewerPanels::draw(
     else
     {
         ImGui::TextUnformatted("Scene: not loaded");
+    }
+
+    int materialMode =
+        materialKind ==
+            stylized::material::MaterialKind::DebugNormal
+        ? 1
+        : 0;
+
+    constexpr const char* materialModes[] = {
+        "Unlit",
+        "Debug Normal"
+    };
+
+    ImGui::Separator();
+
+    if (ImGui::Combo(
+            "Material Mode",
+            &materialMode,
+            materialModes,
+            IM_ARRAYSIZE(materialModes)))
+    {
+        materialKind = materialMode == 1
+            ? stylized::material::MaterialKind::DebugNormal
+            : stylized::material::MaterialKind::Unlit;
     }
 
     ImGui::Separator();

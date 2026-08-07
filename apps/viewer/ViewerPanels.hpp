@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
+#include <material/MaterialTemplate.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -32,7 +33,8 @@ public:
         const stylized::asset::AssetRegistry& assets,
         const stylized::asset::SceneAsset* scene,
         const stylized::render::RenderWorld& renderWorld,
-        std::size_t drawCallCount) const;
+        std::size_t drawCallCount,
+        stylized::material::MaterialKind& materialKind) const;
 
     void endFrame() noexcept;
     void shutdown() noexcept;
