@@ -141,6 +141,7 @@ protected:
                 *sceneAsset,
                 assetRegistry_,
                 camera_,
+                mainLight_,
                 activeMaterialTemplateHandle_,
                 renderWorld_))
         {
@@ -460,6 +461,20 @@ private:
     stylized::graphics::Extent2D pipelineExtent_{};
 
     stylized::render::RenderWorld renderWorld_;
+
+    stylized::render::DirectionalLightData mainLight_{
+        .direction = {
+            -0.4F,
+            -1.0F,
+            -0.6F
+        },
+        .color = {
+            1.0F,
+            1.0F,
+            1.0F
+        },
+        .intensity = 2.0F
+    };
 
     ViewerPanels viewerPanels_;
 

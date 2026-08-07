@@ -37,6 +37,7 @@ public:
         const asset::SceneAsset& sceneAsset,
         const asset::AssetRegistry& assetRegistry,
         const scene::Camera& camera,
+        const DirectionalLightData& mainLight,
         asset::AssetHandle<
             material::MaterialTemplate>
             materialTemplate,

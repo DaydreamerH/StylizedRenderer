@@ -27,6 +27,7 @@ bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
+    const DirectionalLightData& mainLight,
     const asset::AssetHandle<
         material::MaterialTemplate>
         materialTemplate,
@@ -47,6 +48,8 @@ bool RenderExtractor::extract(
     renderWorld.mainView.frustum = 
         math::Frustum::fromViewProjection(renderWorld.mainView.viewProjection);
     if (!renderWorld.mainView.frustum.isValid()) return false;
+
+    renderWorld.mainView.mainLight = mainLight;
 
     const std::size_t nodeCount = sceneAsset.nodes.size();
     
