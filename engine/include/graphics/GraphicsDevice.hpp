@@ -10,6 +10,7 @@
 #include <graphics/RenderTexture.hpp>
 #include <graphics/DepthTexture.hpp>
 #include <graphics/Framebuffer.hpp>
+#include <graphics/GpuTimerQuery.hpp>
 
 #include <cstddef>
 #include <span>
@@ -62,6 +63,7 @@ public:
     [[nodiscard]] DepthTexture createDepthTexture(const DepthTextureDesc& desc);
 
     [[nodiscard]] Framebuffer createFramebuffer(const FramebufferDesc& desc);
+    [[nodiscard]] GpuTimerQuery createGpuTimerQuery();
     void bindFramebuffer(const Framebuffer* framebuffer);
     void blitColorToDefaultFramebuffer(
         const Framebuffer& source,

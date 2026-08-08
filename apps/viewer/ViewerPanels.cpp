@@ -2,6 +2,7 @@
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
+#include <render/FramePipeline.hpp>
 #include <render/ForwardOpaquePass.hpp>
 #include <render/PostProcessPass.hpp>
 #include <render/RenderWorld.hpp>
@@ -49,13 +50,27 @@ const char* depthTextureFormatName(
 void drawPassStatus(
     const char* name,
     const char* status,
-    const std::size_t drawCallCount)
+    const std::size_t drawCallCount,
+    const bool hasGpuTime,
+    const double gpuTimeMilliseconds)
 {
-    ImGui::Text(
-        "%s: %s, Draws: %zu",
-        name,
-        status,
-        drawCallCount);
+    if (hasGpuTime)
+    {
+        ImGui::Text(
+            "%s: %s, Draws: %zu, GPU: %.3f ms",
+            name,
+            status,
+            drawCallCount,
+            gpuTimeMilliseconds);
+    }
+    else
+    {
+        ImGui::Text(
+            "%s: %s, Draws: %zu, GPU: pending",
+            name,
+            status,
+            drawCallCount);
+    }
 }
 
 } // namespace
@@ -117,6 +132,7 @@ void ViewerPanels::draw(
     const stylized::asset::SceneAsset* scene,
     const stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
+    const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
     const stylized::render::PostProcessPass* postProcessPass,
@@ -242,29 +258,66 @@ void ViewerPanels::draw(
         shadowPass == nullptr
             ? "Unavailable"
             : shadowsEnabled
-                ? "Active"
+                ? framePipeline != nullptr &&
+                        !framePipeline->passLastExecutionSucceeded(0)
+                    ? "Failed"
+                    : "Active"
                 : "Disabled",
         shadowPass != nullptr
             ? shadowPass->lastDrawCallCount()
-            : 0);
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(0),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(0)
+            : 0.0);
 
     drawPassStatus(
         "ForwardOpaquePass",
-        forwardPass != nullptr
-            ? "Active"
-            : "Unavailable",
+        forwardPass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline->passLastExecutionSucceeded(1)
+                ? "Failed"
+                : "Active",
         forwardPass != nullptr
             ? forwardPass->lastDrawCallCount()
-            : 0);
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(1),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(1)
+            : 0.0);
 
     drawPassStatus(
         "PostProcessPass",
-        postProcessPass != nullptr
-            ? "Active"
-            : "Unavailable",
+        postProcessPass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline->passLastExecutionSucceeded(2)
+                ? "Failed"
+                : "Active",
         postProcessPass != nullptr
             ? postProcessPass->lastDrawCallCount()
-            : 0);
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(2),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(2)
+            : 0.0);
+
+    if (framePipeline != nullptr &&
+        framePipeline->hasCompleteGpuTiming())
+    {
+        ImGui::Text(
+            "Pipeline GPU: %.3f ms",
+            framePipeline->totalGpuTimeMilliseconds());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Pipeline GPU: pending");
+    }
 
     ImGui::Separator();
     ImGui::TextUnformatted("Render Targets");

@@ -17,6 +17,7 @@ struct SceneAsset;
 namespace stylized::render
 {
 class ForwardOpaquePass;
+class FramePipeline;
 class PostProcessPass;
 class ShadowPass;
 struct RenderWorld;
@@ -37,6 +38,7 @@ public:
         const stylized::asset::SceneAsset* scene,
         const stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
+        const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,
         const stylized::render::ForwardOpaquePass* forwardPass,
         const stylized::render::PostProcessPass* postProcessPass,

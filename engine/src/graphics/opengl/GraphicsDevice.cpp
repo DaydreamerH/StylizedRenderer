@@ -210,6 +210,13 @@ Framebuffer GraphicsDevice::createFramebuffer(const FramebufferDesc& desc)
     return Framebuffer{desc};
 }
 
+GpuTimerQuery GraphicsDevice::createGpuTimerQuery()
+{
+    if (!initialized_) return {};
+
+    return GpuTimerQuery{*this};
+}
+
 void GraphicsDevice::bindFramebuffer(const Framebuffer* framebuffer)
 {
     if (!initialized_) return;

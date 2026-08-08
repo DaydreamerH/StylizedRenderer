@@ -222,6 +222,7 @@ protected:
             sceneAsset,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
+            framePipeline_.get(),
             shadowPass_,
             forwardOpaquePass_,
             postProcessPass_,
@@ -304,7 +305,8 @@ private:
                 *resourceCache_);
 
         framePipeline_ =
-            std::make_unique<stylized::render::FramePipeline>();
+            std::make_unique<stylized::render::FramePipeline>(
+                graphicsDevice());
 
         auto shadowPass =
             std::make_unique<

@@ -15,6 +15,7 @@ add_library(stylized_engine STATIC
     include/graphics/GraphicsCommands.hpp
     include/graphics/GraphicsDevice.hpp
     include/graphics/GraphicsTypes.hpp
+    include/graphics/GpuTimerQuery.hpp
     include/graphics/OpenGLContext.hpp
     include/graphics/RenderTexture.hpp
     include/graphics/ShaderProgram.hpp
@@ -55,6 +56,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/DepthTexture.cpp
     src/graphics/opengl/Framebuffer.cpp
     src/graphics/opengl/GraphicsDevice.cpp
+    src/graphics/opengl/GpuTimerQuery.cpp
     src/graphics/opengl/OpenGLContext.cpp
     src/graphics/opengl/RenderTexture.cpp
     src/graphics/opengl/ShaderProgram.cpp
