@@ -4,7 +4,7 @@ add_library(stylized_imgui STATIC
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ViewerImGuiOpenGL3.cpp
+    ui/ViewerImGuiOpenGL3.cpp
 )
 
 target_include_directories(stylized_imgui
@@ -26,10 +26,10 @@ set_target_properties(stylized_imgui PROPERTIES
 
 add_executable(stylized_viewer
     main.cpp
-    OrbitCameraController.hpp
-    OrbitCameraController.cpp
-    ViewerPanels.hpp
-    ViewerPanels.cpp
+    camera/OrbitCameraController.hpp
+    camera/OrbitCameraController.cpp
+    ui/ViewerPanels.hpp
+    ui/ViewerPanels.cpp
 )
 
 target_link_libraries(stylized_viewer

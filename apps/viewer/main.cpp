@@ -22,8 +22,8 @@
 
 #include <material/MaterialTemplate.hpp>
 
-#include "OrbitCameraController.hpp"
-#include "ViewerPanels.hpp"
+#include "camera/OrbitCameraController.hpp"
+#include "ui/ViewerPanels.hpp"
 
 #include <cstdint>
 #include <filesystem>
