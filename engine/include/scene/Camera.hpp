@@ -33,7 +33,7 @@ private:
     float verticalFieldOfView_ = 60.0F;
     float aspectRatio_ = 16.0F / 9.0F;
     float nearPlane_ = 0.1F;
-    float farPlane_ = 1000.0F;
+    float farPlane_ = 2000.0F;
 
     glm::vec3 position_{0.0F, 0.0F, 3.0F};
     glm::vec3 target_{0.0F, 0.0F, 0.0F};
