@@ -120,6 +120,11 @@ bool ShadowPass::execute(
         return false;
     }
 
+    if (!frame.shadowsEnabled)
+    {
+        return true;
+    }
+
     const RenderWorld& renderWorld =
         *frame.renderWorld;
 

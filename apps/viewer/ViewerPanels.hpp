@@ -35,6 +35,7 @@ public:
         const stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
         stylized::material::MaterialKind& materialKind,
+        bool& shadowsEnabled,
         float& exposure,
         bool& toneMappingEnabled) const;
 

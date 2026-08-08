@@ -29,6 +29,7 @@ struct FrameContext
     graphics::DepthTexture* shadowMap = nullptr;
 
     float deltaTime = 0.0F;
+    bool shadowsEnabled = true;
     float exposure = 1.0F;
     bool toneMappingEnabled = true;
 };

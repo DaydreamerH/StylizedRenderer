@@ -194,6 +194,8 @@ protected:
         frame.framebuffer = nullptr;
         frame.hdrColor = nullptr;
         frame.deltaTime = 0.F;
+        frame.shadowsEnabled =
+            shadowsEnabled_;
         frame.exposure = exposure_;
         frame.toneMappingEnabled =
             toneMappingEnabled_;
@@ -221,6 +223,7 @@ protected:
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
             activeMaterialKind_,
+            shadowsEnabled_,
             exposure_,
             toneMappingEnabled_);
 
@@ -531,6 +534,7 @@ private:
     stylized::material::MaterialKind activeMaterialKind_ =
         stylized::material::MaterialKind::Unlit;
 
+    bool shadowsEnabled_ = true;
     float exposure_ = 1.0F;
     bool toneMappingEnabled_ = true;
 

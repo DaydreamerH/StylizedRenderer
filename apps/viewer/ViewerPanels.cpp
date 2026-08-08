@@ -68,6 +68,7 @@ void ViewerPanels::draw(
     const stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
     stylized::material::MaterialKind& materialKind,
+    bool& shadowsEnabled,
     float& exposure,
     bool& toneMappingEnabled) const
 {
@@ -139,6 +140,13 @@ void ViewerPanels::draw(
             break;
         }
     }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Lighting");
+
+    ImGui::Checkbox(
+        "Shadows",
+        &shadowsEnabled);
 
     ImGui::Separator();
     ImGui::TextUnformatted("Post Process");
