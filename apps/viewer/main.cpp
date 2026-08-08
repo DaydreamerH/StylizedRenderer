@@ -15,6 +15,7 @@
 #include <render/ForwardOpaquePass.hpp>
 #include <render/FrameContext.hpp>
 #include <render/FramePipeline.hpp>
+#include <render/ShadowPass.hpp>
 
 #include <scene/Camera.hpp>
 
@@ -291,6 +292,22 @@ private:
 
         framePipeline_ =
             std::make_unique<stylized::render::FramePipeline>();
+
+        auto shadowPass =
+            std::make_unique<
+                stylized::render::ShadowPass>(
+                    graphicsDevice());
+
+        if (!shadowPass->initialize())
+        {
+            return false;
+        }
+
+        if (!framePipeline_->addPass(
+                std::move(shadowPass)))
+        {
+            return false;
+        }
 
         auto forwardPass = std::make_unique<
             stylized::render::ForwardOpaquePass>(
