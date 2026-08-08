@@ -1,8 +1,8 @@
 #include <render/passes/PostProcessPass.hpp>
 
-#include <graphics/GraphicsCommands.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/RenderTexture.hpp>
+#include <graphics/device/GraphicsCommands.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 
 #include <array>
 #include <cstddef>

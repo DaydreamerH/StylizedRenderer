@@ -1,5 +1,5 @@
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/OpenGLContext.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/device/OpenGLContext.hpp>
 
 #include <glad/gl.h>
 

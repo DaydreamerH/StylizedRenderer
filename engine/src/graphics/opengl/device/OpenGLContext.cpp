@@ -1,4 +1,4 @@
-#include <graphics/OpenGLContext.hpp>
+#include <graphics/device/OpenGLContext.hpp>
 #include <platform/Window.hpp>
 
 #include <GLFW/glfw3.h>

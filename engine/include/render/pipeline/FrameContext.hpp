@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 
 namespace stylized::graphics
 {

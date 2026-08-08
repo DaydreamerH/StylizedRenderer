@@ -1,7 +1,7 @@
 #include <render/passes/ShadowPass.hpp>
 
-#include <graphics/GraphicsCommands.hpp>
-#include <graphics/GraphicsDevice.hpp>
+#include <graphics/device/GraphicsCommands.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeMesh.hpp>

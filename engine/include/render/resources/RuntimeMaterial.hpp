@@ -2,7 +2,7 @@
 
 #include <asset/AssetHandle.hpp>
 #include <core/NonCopyable.hpp>
-#include <graphics/ShaderProgram.hpp>
+#include <graphics/resources/ShaderProgram.hpp>
 #include <material/MaterialTemplate.hpp>
 
 namespace stylized::asset

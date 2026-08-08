@@ -3,7 +3,7 @@
 #include <math/Bounds.hpp>
 #include <math/Frustum.hpp>
 
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 
 #include <cstdint>
 #include <vector>

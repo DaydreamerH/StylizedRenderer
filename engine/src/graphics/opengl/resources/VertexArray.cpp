@@ -1,4 +1,4 @@
-#include <graphics/VertexArray.hpp>
+#include <graphics/resources/VertexArray.hpp>
 
 #include <glad/gl.h>
 

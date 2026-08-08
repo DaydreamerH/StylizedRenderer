@@ -1,10 +1,10 @@
 #include <render/renderers/StaticModelRenderer.hpp>
 
 #include <asset/AssetRegistry.hpp>
-#include <graphics/GraphicsCommands.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/ShaderProgram.hpp>
-#include <graphics/DepthTexture.hpp>
+#include <graphics/device/GraphicsCommands.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/resources/ShaderProgram.hpp>
+#include <graphics/resources/DepthTexture.hpp>
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMaterial.hpp>

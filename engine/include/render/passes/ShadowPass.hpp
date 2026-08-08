@@ -2,9 +2,9 @@
 
 #include <core/NonCopyable.hpp>
 
-#include <graphics/DepthTexture.hpp>
-#include <graphics/Framebuffer.hpp>
-#include <graphics/ShaderProgram.hpp>
+#include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/Framebuffer.hpp>
+#include <graphics/resources/ShaderProgram.hpp>
 
 #include <render/pipeline/IRenderPass.hpp>
 

@@ -2,9 +2,9 @@
 
 #include <core/NonCopyable.hpp>
 
-#include <graphics/Buffer.hpp>
-#include <graphics/ShaderProgram.hpp>
-#include <graphics/VertexArray.hpp>
+#include <graphics/resources/Buffer.hpp>
+#include <graphics/resources/ShaderProgram.hpp>
+#include <graphics/resources/VertexArray.hpp>
 
 #include <render/pipeline/IRenderPass.hpp>
 

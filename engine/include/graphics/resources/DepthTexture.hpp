@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 
 #include <cstdint>
 
@@ -11,19 +11,19 @@ namespace stylized::graphics
 class GraphicsDevice;
 class Framebuffer;
 
-class RenderTexture final : public core::NonCopyable
+class DepthTexture final : public core::NonCopyable
 {
 public:
-    RenderTexture() = default;
+    DepthTexture() = default;
+ 
+    DepthTexture(DepthTexture&& other) noexcept;
+    DepthTexture& operator=(DepthTexture&& other) noexcept;
 
-    RenderTexture(RenderTexture&& other) noexcept;
-    RenderTexture& operator=(RenderTexture&& other) noexcept;
-
-    ~RenderTexture();
+    ~DepthTexture();
 
     [[nodiscard]] bool isValid() const noexcept;
     [[nodiscard]] Extent2D extent() const noexcept;
-    [[nodiscard]] RenderTextureFormat format() const noexcept;
+    [[nodiscard]] DepthTextureFormat format() const noexcept;
 
     void bind(std::uint32_t slot) const noexcept;
 
@@ -31,13 +31,14 @@ private:
     friend class GraphicsDevice;
     friend class Framebuffer;
 
-    explicit RenderTexture(const RenderTextureDesc& desc);
+    explicit DepthTexture(const DepthTextureDesc& desc);
 
     void release() noexcept;
 
     std::uint32_t id_ = 0;
     Extent2D extent_{};
-    RenderTextureFormat format_ = RenderTextureFormat::RGBA16Float;
+
+    DepthTextureFormat format_ = DepthTextureFormat::Depth24Stencil8;
 };
 
 } // namespace stylized::graphics

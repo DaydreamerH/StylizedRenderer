@@ -1,8 +1,8 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/DepthTexture.hpp>
-#include <graphics/RenderTexture.hpp>
+#include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 
 #include <cstdint>
 #include <string>

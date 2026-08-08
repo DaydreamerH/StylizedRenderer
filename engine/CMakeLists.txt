@@ -9,18 +9,18 @@ add_library(stylized_engine STATIC
     include/asset/importers/detail/AssimpImportInternal.hpp
     include/core/Application.hpp
     include/core/NonCopyable.hpp
-    include/graphics/Buffer.hpp
-    include/graphics/DepthTexture.hpp
-    include/graphics/Framebuffer.hpp
-    include/graphics/GraphicsCommands.hpp
-    include/graphics/GraphicsDevice.hpp
-    include/graphics/GraphicsTypes.hpp
-    include/graphics/GpuTimerQuery.hpp
-    include/graphics/OpenGLContext.hpp
-    include/graphics/RenderTexture.hpp
-    include/graphics/ShaderProgram.hpp
-    include/graphics/Texture2D.hpp
-    include/graphics/VertexArray.hpp
+    include/graphics/device/GraphicsCommands.hpp
+    include/graphics/device/GraphicsDevice.hpp
+    include/graphics/device/GraphicsTypes.hpp
+    include/graphics/device/OpenGLContext.hpp
+    include/graphics/resources/Buffer.hpp
+    include/graphics/resources/DepthTexture.hpp
+    include/graphics/resources/Framebuffer.hpp
+    include/graphics/resources/GpuTimerQuery.hpp
+    include/graphics/resources/RenderTexture.hpp
+    include/graphics/resources/ShaderProgram.hpp
+    include/graphics/resources/Texture2D.hpp
+    include/graphics/resources/VertexArray.hpp
     include/material/MaterialInstance.hpp
     include/material/MaterialTemplate.hpp
     include/math/Bounds.hpp
@@ -52,16 +52,16 @@ add_library(stylized_engine STATIC
     src/asset/importers/detail/AssimpTextureImporter.cpp
     src/asset/importers/detail/StbImage.cpp
     src/core/Application.cpp
-    src/graphics/opengl/Buffer.cpp
-    src/graphics/opengl/DepthTexture.cpp
-    src/graphics/opengl/Framebuffer.cpp
-    src/graphics/opengl/GraphicsDevice.cpp
-    src/graphics/opengl/GpuTimerQuery.cpp
-    src/graphics/opengl/OpenGLContext.cpp
-    src/graphics/opengl/RenderTexture.cpp
-    src/graphics/opengl/ShaderProgram.cpp
-    src/graphics/opengl/Texture2D.cpp
-    src/graphics/opengl/VertexArray.cpp
+    src/graphics/opengl/device/GraphicsDevice.cpp
+    src/graphics/opengl/device/OpenGLContext.cpp
+    src/graphics/opengl/resources/Buffer.cpp
+    src/graphics/opengl/resources/DepthTexture.cpp
+    src/graphics/opengl/resources/Framebuffer.cpp
+    src/graphics/opengl/resources/GpuTimerQuery.cpp
+    src/graphics/opengl/resources/RenderTexture.cpp
+    src/graphics/opengl/resources/ShaderProgram.cpp
+    src/graphics/opengl/resources/Texture2D.cpp
+    src/graphics/opengl/resources/VertexArray.cpp
     src/material/MaterialInstance.cpp
     src/math/Bounds.cpp
     src/math/Frustum.cpp

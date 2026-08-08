@@ -1,7 +1,7 @@
 #include <render/resources/RuntimeMesh.hpp>
 
 #include <asset/MeshAsset.hpp>
-#include <graphics/GraphicsDevice.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 
 #include <array>
 #include <cstddef>

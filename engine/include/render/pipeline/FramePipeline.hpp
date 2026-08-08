@@ -1,8 +1,8 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/GpuTimerQuery.hpp>
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/resources/GpuTimerQuery.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 #include <render/pipeline/IRenderPass.hpp>
 
 #include <cstddef>

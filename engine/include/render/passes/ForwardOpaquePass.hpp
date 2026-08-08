@@ -1,10 +1,10 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/GraphicsTypes.hpp>
-#include <graphics/DepthTexture.hpp>
-#include <graphics/Framebuffer.hpp>
-#include <graphics/RenderTexture.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
+#include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/Framebuffer.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 #include <render/pipeline/IRenderPass.hpp>
 #include <render/renderers/StaticModelRenderer.hpp>
 

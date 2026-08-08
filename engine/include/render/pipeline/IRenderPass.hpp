@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 #include <render/pipeline/FrameContext.hpp>
 
 #include <string_view>

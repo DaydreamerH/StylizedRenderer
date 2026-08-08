@@ -1,6 +1,6 @@
 #include <core/Application.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/OpenGLContext.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/device/OpenGLContext.hpp>
 #include <platform/Window.hpp>
 
 #include <iostream>

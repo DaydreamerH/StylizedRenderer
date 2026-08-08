@@ -1,6 +1,6 @@
 #include <render/pipeline/FramePipeline.hpp>
 
-#include <graphics/GraphicsDevice.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 
 #include <algorithm>
 #include <utility>

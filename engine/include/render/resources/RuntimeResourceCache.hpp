@@ -2,8 +2,8 @@
 
 #include <asset/AssetHandle.hpp>
 #include <core/NonCopyable.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/Texture2D.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/resources/Texture2D.hpp>
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>

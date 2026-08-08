@@ -1,4 +1,4 @@
-#include <graphics/DepthTexture.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 
 #include <glad/gl.h>
 
@@ -8,67 +8,57 @@
 
 namespace stylized::graphics
 {
-
+    
 namespace
 {
-
-GLenum toInternalFormat(
-    const DepthTextureFormat format) noexcept
+    
+GLenum toInternalFormat(const RenderTextureFormat format) noexcept
 {
     switch (format)
     {
-    case DepthTextureFormat::Depth24Stencil8:
-        return GL_DEPTH24_STENCIL8;
-
-    case DepthTextureFormat::Depth32Float:
-        return GL_DEPTH_COMPONENT32F;
+    case RenderTextureFormat::RGBA8:
+        return GL_RGBA8;
+    
+    case RenderTextureFormat::RGBA16Float:
+        return GL_RGBA16F;
     }
 
-    return GL_DEPTH24_STENCIL8;
+    return GL_RGBA16F;
 }
 
-bool fitsGLsizei(
-    const std::uint32_t value) noexcept
+bool fitsGLsizei(const std::uint32_t value) noexcept
 {
-    return value <= static_cast<std::uint32_t>(
-        std::numeric_limits<GLsizei>::max());
+    return value <= static_cast<std::uint32_t>(std::numeric_limits<GLsizei>::max());
 }
 
 } // namespace
 
-DepthTexture::DepthTexture(
-    const DepthTextureDesc& desc)
-    : extent_(desc.extent),
-      format_(desc.format)
+RenderTexture::RenderTexture(const RenderTextureDesc& desc)
+    : extent_(desc.extent), format_(desc.format)
 {
-    if (desc.extent.width == 0 ||
-        desc.extent.height == 0)
+    if (desc.extent.width == 0 || desc.extent.height == 0)
     {
-        std::cerr << "Cannot create a zero-sized DepthTexture.\n";
+        std::cerr << "Cannot create a zero-sized RenderTexture.\n";
 
         extent_ = {};
         return;
     }
 
-    if (!fitsGLsizei(desc.extent.width) ||
-        !fitsGLsizei(desc.extent.height))
+    if (!fitsGLsizei(desc.extent.width) || !fitsGLsizei(desc.extent.height))
     {
-        std::cerr << "DepthTexture extent exceeds OpenGL range.\n";
+        std::cerr << "RenderTexture extent exceeds OpenGL range.\n";
 
         extent_ = {};
         return;
     }
 
-    glCreateTextures(
-        GL_TEXTURE_2D,
-        1,
-        &id_);
+    glCreateTextures(GL_TEXTURE_2D, 1, &id_);
 
     if (id_ == 0)
     {
-        std::cerr << "OpenGL failed to create DepthTexture.\n";
-
+        std::cerr << "OpenGL failed to create RenderTexture.\n";
         extent_ = {};
+
         return;
     }
 
@@ -82,12 +72,12 @@ DepthTexture::DepthTexture(
     glTextureParameteri(
         id_,
         GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST);
+        GL_LINEAR);
 
     glTextureParameteri(
         id_,
         GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST);
+        GL_LINEAR);
 
     glTextureParameteri(
         id_,
@@ -98,11 +88,6 @@ DepthTexture::DepthTexture(
         id_,
         GL_TEXTURE_WRAP_T,
         GL_CLAMP_TO_EDGE);
-
-    glTextureParameteri(
-        id_,
-        GL_TEXTURE_COMPARE_MODE,
-        GL_NONE);
 
 #ifndef NDEBUG
     if (!desc.debugName.empty() &&
@@ -120,16 +105,14 @@ DepthTexture::DepthTexture(
 #endif
 }
 
-DepthTexture::DepthTexture(
-    DepthTexture&& other) noexcept
+RenderTexture::RenderTexture(RenderTexture&& other) noexcept
     : id_(std::exchange(other.id_, 0)),
       extent_(std::exchange(other.extent_, {})),
       format_(other.format_)
 {
 }
 
-DepthTexture& DepthTexture::operator=(
-    DepthTexture&& other) noexcept
+RenderTexture& RenderTexture::operator=(RenderTexture&& other) noexcept
 {
     if (this == &other)
     {
@@ -145,38 +128,34 @@ DepthTexture& DepthTexture::operator=(
     return *this;
 }
 
-DepthTexture::~DepthTexture()
+RenderTexture::~RenderTexture()
 {
     release();
 }
 
-bool DepthTexture::isValid() const noexcept
+bool RenderTexture::isValid() const noexcept
 {
     return id_ != 0;
 }
 
-Extent2D DepthTexture::extent() const noexcept
+Extent2D RenderTexture::extent() const noexcept
 {
     return extent_;
 }
 
-DepthTextureFormat DepthTexture::format() const noexcept
+RenderTextureFormat RenderTexture::format() const noexcept
 {
     return format_;
 }
 
-void DepthTexture::bind(
-    const std::uint32_t slot) const noexcept
+void RenderTexture::bind(const std::uint32_t slot) const noexcept
 {
-    if (id_ == 0)
-    {
-        return;
-    }
+    if (id_ == 0) return;
 
     glBindTextureUnit(slot, id_);
 }
 
-void DepthTexture::release() noexcept
+void RenderTexture::release() noexcept
 {
     if (id_ != 0)
     {

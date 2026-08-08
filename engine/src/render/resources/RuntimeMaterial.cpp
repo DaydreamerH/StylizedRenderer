@@ -1,8 +1,8 @@
 #include <render/resources/RuntimeMaterial.hpp>
 
 #include <asset/AssetRegistry.hpp>
-#include <graphics/GraphicsDevice.hpp>
-#include <graphics/Texture2D.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/resources/Texture2D.hpp>
 #include <material/MaterialInstance.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 

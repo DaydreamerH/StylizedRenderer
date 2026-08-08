@@ -1,7 +1,7 @@
 #include <render/passes/ForwardOpaquePass.hpp>
 
-#include <graphics/Framebuffer.hpp>
-#include <graphics/GraphicsDevice.hpp>
+#include <graphics/resources/Framebuffer.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 
 #include <utility>

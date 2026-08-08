@@ -2,9 +2,9 @@
 
 #include <asset/AssetHandle.hpp>
 #include <core/NonCopyable.hpp>
-#include <graphics/Buffer.hpp>
-#include <graphics/GraphicsTypes.hpp>
-#include <graphics/VertexArray.hpp>
+#include <graphics/resources/Buffer.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
+#include <graphics/resources/VertexArray.hpp>
 #include <math/Bounds.hpp>
 
 #include <cstdint>

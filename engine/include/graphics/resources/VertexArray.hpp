@@ -1,8 +1,8 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/Buffer.hpp>
-#include <graphics/GraphicsTypes.hpp>
+#include <graphics/resources/Buffer.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
 
 #include <cstddef>
 #include <cstdint>

@@ -1,6 +1,6 @@
-#include <graphics/GpuTimerQuery.hpp>
+#include <graphics/resources/GpuTimerQuery.hpp>
 
-#include <graphics/GraphicsDevice.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 
 #include <glad/gl.h>
 

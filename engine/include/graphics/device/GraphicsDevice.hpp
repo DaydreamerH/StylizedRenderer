@@ -1,16 +1,16 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <graphics/GraphicsTypes.hpp>
-#include <graphics/Buffer.hpp>
-#include <graphics/VertexArray.hpp>
-#include <graphics/ShaderProgram.hpp>
-#include <graphics/GraphicsCommands.hpp>
-#include <graphics/Texture2D.hpp>
-#include <graphics/RenderTexture.hpp>
-#include <graphics/DepthTexture.hpp>
-#include <graphics/Framebuffer.hpp>
-#include <graphics/GpuTimerQuery.hpp>
+#include <graphics/device/GraphicsTypes.hpp>
+#include <graphics/resources/Buffer.hpp>
+#include <graphics/resources/VertexArray.hpp>
+#include <graphics/resources/ShaderProgram.hpp>
+#include <graphics/device/GraphicsCommands.hpp>
+#include <graphics/resources/Texture2D.hpp>
+#include <graphics/resources/RenderTexture.hpp>
+#include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/Framebuffer.hpp>
+#include <graphics/resources/GpuTimerQuery.hpp>
 
 #include <cstddef>
 #include <span>
