@@ -15,11 +15,10 @@ class AssetRegistry;
 namespace stylized::graphics
 {
     
-class GraphicsDevice;    
+class GraphicsDevice;
+class DepthTexture;
 
 } // namespace stylized::graphics
-
-
 
 namespace stylized::render
 {
@@ -44,7 +43,9 @@ public:
 
     ~StaticModelRenderer() = default;
 
-    [[nodiscard]] bool render(const RenderWorld& renderWorld);
+    [[nodiscard]] bool render(
+        const RenderWorld& renderWorld,
+        const graphics::DepthTexture* shadowMap);
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
 };

@@ -56,8 +56,12 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
     graphicsDevice_.setViewport(extent_);
     graphicsDevice_.clear(clearValue_);
 
-    if (!renderer_.render(*frame.renderWorld))
+    if (!renderer_.render(
+        *frame.renderWorld,
+        frame.shadowMap))
+    {
         return false;
+    }
 
     lastDrawCallCount_ =
         renderer_.lastDrawCallCount();

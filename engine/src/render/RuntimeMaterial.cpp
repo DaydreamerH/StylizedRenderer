@@ -39,6 +39,16 @@ RuntimeMaterial::RuntimeMaterial(
     switch (kind_)
     {
     case material::MaterialKind::BasicPbr:
+        if (!shader_.setInt(
+            "uBaseColorTexture",
+            0) ||
+        !shader_.setInt(
+            "uShadowMap",
+            1))
+        {
+            shader_ = {};
+        }
+        break;
     case material::MaterialKind::Unlit:
         if (!shader_.setInt("uBaseColorTexture", 0))
             shader_ = {};

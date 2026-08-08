@@ -18,6 +18,10 @@ uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
 uniform float uLightIntensity;
 
+uniform sampler2D uShadowMap;
+uniform mat4 uLightViewProjection;
+uniform int uShadowEnabled;
+
 const float PI = 3.14159265359;
 
 float distributionGGX(
@@ -67,6 +71,53 @@ vec3 fresnelSchlick(
     return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosine, 0.0, 1.0), 5.0);
 }
 
+float calculateShadowVisibility(
+    const vec3 worldPosition,
+    const vec3 normal,
+    const vec3 lightDirection
+)
+{
+    if (uShadowEnabled == 0) return 1.0;
+
+    const vec4 lightClipPosition =
+        uLightViewProjection * vec4(worldPosition, 1.0);
+
+    const vec3 lightNdcPosition = lightClipPosition.xyz / lightClipPosition.w;
+
+    const vec3 shadowCoordinate = lightNdcPosition * 0.5 + 0.5;
+
+    if (any(lessThan(
+            shadowCoordinate,
+            vec3(0.0))) ||
+        any(greaterThan(
+            shadowCoordinate,
+            vec3(1.0))))
+    {
+        return 1.0;
+    }
+
+    const float storedDepth =
+        texture(
+            uShadowMap,
+            shadowCoordinate.xy).r;
+
+    const float normalDotLight =
+        max(
+            dot(normal, lightDirection),
+            0.0);
+
+    const float bias =
+        max(
+            0.0025 *
+                (1.0 - normalDotLight),
+            0.0005);
+
+    return shadowCoordinate.z - bias <=
+        storedDepth
+        ? 1.0
+        : 0.0;
+}
+
 void main()
 {
     const vec4 sampledBaseColor = texture(uBaseColorTexture, vertexTexCoord0);
@@ -111,9 +162,15 @@ void main()
 
     const vec3 directLighting = (diffuseContribution * baseColor / PI + specular) * radiance * NdotL;
 
+    const float shadowVisibility =
+        calculateShadowVisibility(
+            vertexWorldPosition,
+            normal,
+            lightDirection);
+
     const vec3 ambientLighting = baseColor * 0.03;
 
-    const vec3 finalColor = ambientLighting + directLighting;
+    const vec3 finalColor = ambientLighting + directLighting * shadowVisibility;
 
     const float alpha = sampledBaseColor.a * uBaseColorFactor.a;
 
