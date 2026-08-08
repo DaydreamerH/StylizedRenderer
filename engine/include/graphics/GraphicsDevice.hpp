@@ -68,6 +68,8 @@ public:
         Extent2D destinationExtent
     );
 
+    void clearDepth(float value = 1.0F);
+
     void drawIndexed(const DrawIndexedCommand& command);
 
 private:

@@ -34,6 +34,7 @@ add_library(stylized_engine STATIC
     include/render/RenderWorld.hpp
     include/render/IRenderPass.hpp
     include/render/RuntimeMaterial.hpp
+    include/render/ShadowPass.hpp
     include/render/StaticModelRenderer.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
@@ -68,6 +69,7 @@ add_library(stylized_engine STATIC
     src/render/RuntimeMaterial.cpp
     src/render/RuntimeMesh.cpp
     src/render/RuntimeResourceCache.cpp
+    src/render/ShadowPass.cpp
     src/render/StaticModelRenderer.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp

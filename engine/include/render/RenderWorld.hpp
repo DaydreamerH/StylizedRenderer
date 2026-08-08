@@ -73,6 +73,24 @@ struct DirectionalLightData
     float intensity = 1.0F;
 };
 
+
+struct ShadowView
+{
+    glm::mat4 viewProjection{1.0F};
+
+    graphics::Extent2D extent{
+        2048,
+        2048
+    };
+};
+
+struct ShadowRenderItem
+{
+    const RuntimeMeshPrimitive* primitive = nullptr;
+
+    glm::mat4 world{1.0F};
+};
+
 struct RenderView
 {
     glm::mat4 view{1.F};
@@ -127,13 +145,20 @@ struct RenderStats
 struct RenderWorld
 {
     RenderView mainView;
-    RenderStats renderStats;
+    ShadowView shadowView;
+
     std::vector<RenderItem> items;
+    std::vector<ShadowRenderItem> shadowItems;
+
+    RenderStats renderStats;
 
     void clear() noexcept
     {
         items.clear();
+        shadowItems.clear();
+
         renderStats = {};
+        shadowView = {};
     }
 
     [[nodiscard]] bool empty() const noexcept

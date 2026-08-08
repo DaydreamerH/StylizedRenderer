@@ -119,6 +119,17 @@ ShaderProgram GraphicsDevice::createShaderProgram(const ShaderProgramDesc &desc)
     return ShaderProgram{desc};
 }
 
+void GraphicsDevice::clearDepth(const float value)
+{
+    if (!initialized_) return;
+
+    glClearDepth(
+        static_cast<GLdouble>(value)
+    );
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+}
+
 void GraphicsDevice::drawIndexed(const DrawIndexedCommand& command)
 {
     if (!initialized_) return;

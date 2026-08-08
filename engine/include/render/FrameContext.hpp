@@ -26,6 +26,8 @@ struct FrameContext
     graphics::DepthTexture* depth = nullptr;
     graphics::Framebuffer* framebuffer = nullptr;
 
+    graphics::DepthTexture* shadowMap = nullptr;
+
     float deltaTime = 0.0F;
     float exposure = 1.0F;
 };

@@ -11,12 +11,102 @@
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
 
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/geometric.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <vector>
+#include <cmath>
+
 namespace stylized::render
 {
+
+namespace
+{
+
+constexpr float minimumShadowRadius = 1.0e-5F;
+constexpr float minimumDirectionLength = 1.0e-6F;
+
+constexpr float shadowNearPlaneScale = 0.01F;
+constexpr float shadowEyeDistanceScale = 2.0F;
+constexpr float shadowFarMarginScale = 2.0F;
+
+bool buildDirectionalShadowView(
+    const math::Bounds& bounds,
+    const DirectionalLightData& light,
+    ShadowView& destination
+) noexcept
+{
+    if (!bounds.isValid()) return false;
+
+    const float radius =
+        glm::length(bounds.extent());
+
+    if (!std::isfinite(radius) ||
+        radius <= minimumShadowRadius)
+    {
+        return false;
+    }
+
+    const float directionLength =
+        glm::length(light.direction);
+
+    if (!std::isfinite(directionLength) ||
+        directionLength <= minimumDirectionLength)
+    {
+        return false;
+    }
+
+    const glm::vec3 lightDirection =
+        glm::normalize(light.direction);
+
+    const glm::vec3 center =
+        bounds.center();
+
+    const float eyeDistance =
+        radius * shadowEyeDistanceScale;
+
+    const glm::vec3 lightPosition =
+        center - lightDirection * eyeDistance;
+
+    const glm::vec3 up =
+        std::abs(lightDirection.y) > 0.99F
+        ? glm::vec3{1.F, 0.F, 0.F}
+        : glm::vec3{0.F, 1.F, 0.F};
+
+    const float nearPlane = std::max(
+        radius * shadowNearPlaneScale,
+        minimumShadowRadius
+    );
+
+    const float farPlane =
+        eyeDistance + radius * shadowFarMarginScale;
+
+    const glm::mat4 view =
+        glm::lookAtRH(
+            lightPosition,
+            center,
+            up);
+
+    const glm::mat4 projection =
+        glm::orthoRH_NO(
+            -radius,
+            radius,
+            -radius,
+            radius,
+            nearPlane,
+            farPlane);
+
+    destination.viewProjection =
+        projection * view;
+
+    return true;
+}
+
+} // namespace
     
 RenderExtractor::RenderExtractor(RuntimeResourceCache& resourceCache) noexcept
     : resourceCache_(resourceCache)
@@ -97,6 +187,8 @@ bool RenderExtractor::extract(
             return false;
     }
 
+    math::Bounds shadowCasterBounds;
+
     for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
     {
         const asset::SceneNodeAsset& node = sceneAsset.nodes[nodeIndex];
@@ -118,7 +210,19 @@ bool RenderExtractor::extract(
             
             RenderItem item;
 
-            item.worldBounds = primitive.localBounds().transformed(worldMatrix);
+            item.worldBounds =
+                primitive.localBounds().transformed(worldMatrix);
+
+            if (hasFlag(item.flags, RenderItemFlags::CastShadow))
+            {
+                shadowCasterBounds.expand(item.worldBounds);
+
+                ShadowRenderItem shadowItem;
+                shadowItem.primitive = &primitive;
+                shadowItem.world = worldMatrix;
+                renderWorld.shadowItems.push_back(shadowItem);
+            }
+
             if (!renderWorld.mainView.frustum.intersects(item.worldBounds))
             {
                 ++renderWorld.renderStats.culledItems;
@@ -199,6 +303,18 @@ bool RenderExtractor::extract(
             renderWorld.items.push_back(item);
         }
 
+    }
+
+    if (shadowCasterBounds.isValid())
+    {
+        if (!buildDirectionalShadowView(
+            shadowCasterBounds,
+            mainLight,
+            renderWorld.shadowView
+        ))
+        {
+            return false;
+        }
     }
 
     return true;
