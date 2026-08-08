@@ -79,6 +79,9 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
         extent_.height == extent.height)
         return true;
 
+    const bool rebuilding =
+        framebuffer_.isValid();
+
     graphics::RenderTextureDesc colorDesc;
     colorDesc.extent = extent;
     colorDesc.format = graphics::RenderTextureFormat::RGBA16Float;
@@ -113,6 +116,11 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
     framebuffer_ = std::move(newFramebuffer);
     extent_ = extent;
 
+    if (rebuilding)
+    {
+        ++renderTargetRebuildCount_;
+    }
+
     return true;
 }
 
@@ -124,6 +132,37 @@ std::string_view ForwardOpaquePass::name() const noexcept
 std::size_t ForwardOpaquePass::lastDrawCallCount() const noexcept
 {
     return lastDrawCallCount_;
+}
+
+bool ForwardOpaquePass::hasRenderTargets() const noexcept
+{
+    return hdrColor_.isValid() &&
+        depth_.isValid() &&
+        framebuffer_.isValid();
+}
+
+graphics::Extent2D ForwardOpaquePass::renderTargetExtent()
+    const noexcept
+{
+    return extent_;
+}
+
+graphics::RenderTextureFormat ForwardOpaquePass::colorFormat()
+    const noexcept
+{
+    return hdrColor_.format();
+}
+
+graphics::DepthTextureFormat ForwardOpaquePass::depthFormat()
+    const noexcept
+{
+    return depth_.format();
+}
+
+std::size_t ForwardOpaquePass::renderTargetRebuildCount()
+    const noexcept
+{
+    return renderTargetRebuildCount_;
 }
 
 void ForwardOpaquePass::setClearValue(const graphics::ClearValue& value) noexcept

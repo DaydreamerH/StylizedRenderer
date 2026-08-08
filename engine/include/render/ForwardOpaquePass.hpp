@@ -48,6 +48,12 @@ public:
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
 
+    [[nodiscard]] bool hasRenderTargets() const noexcept;
+    [[nodiscard]] graphics::Extent2D renderTargetExtent() const noexcept;
+    [[nodiscard]] graphics::RenderTextureFormat colorFormat() const noexcept;
+    [[nodiscard]] graphics::DepthTextureFormat depthFormat() const noexcept;
+    [[nodiscard]] std::size_t renderTargetRebuildCount() const noexcept;
+
     void setClearValue(const graphics::ClearValue& value) noexcept;
 
 private:
@@ -63,6 +69,7 @@ private:
     };
 
     std::size_t lastDrawCallCount_ = 0;
+    std::size_t renderTargetRebuildCount_ = 0;
     bool initialized_ = false;
 
     graphics::RenderTexture hdrColor_;

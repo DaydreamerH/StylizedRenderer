@@ -43,6 +43,17 @@ public:
     [[nodiscard]] std::size_t
         lastDrawCallCount() const noexcept;
 
+    [[nodiscard]] bool hasShadowMap() const noexcept;
+
+    [[nodiscard]] graphics::Extent2D
+        shadowMapExtent() const noexcept;
+
+    [[nodiscard]] graphics::DepthTextureFormat
+        shadowMapFormat() const noexcept;
+
+    [[nodiscard]] std::size_t
+        shadowMapRebuildCount() const noexcept;
+
 private:
     [[nodiscard]] bool ensureResources(
         graphics::Extent2D extent);
@@ -56,6 +67,7 @@ private:
     graphics::Extent2D extent_{};
 
     std::size_t lastDrawCallCount_ = 0;
+    std::size_t shadowMapRebuildCount_ = 0;
 
     bool initialized_ = false;
 };

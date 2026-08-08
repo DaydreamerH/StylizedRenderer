@@ -65,6 +65,9 @@ bool ShadowPass::ensureResources(
         return true;
     }
 
+    const bool rebuilding =
+        framebuffer_.isValid();
+
     graphics::DepthTextureDesc depthDesc;
 
     depthDesc.extent = extent;
@@ -104,6 +107,11 @@ bool ShadowPass::ensureResources(
     depth_ = std::move(newDepth);
     framebuffer_ = std::move(newFramebuffer);
     extent_ = extent;
+
+    if (rebuilding)
+    {
+        ++shadowMapRebuildCount_;
+    }
 
     return true;
 }
@@ -227,6 +235,30 @@ std::size_t ShadowPass::lastDrawCallCount()
     const noexcept
 {
     return lastDrawCallCount_;
+}
+
+bool ShadowPass::hasShadowMap() const noexcept
+{
+    return depth_.isValid() &&
+        framebuffer_.isValid();
+}
+
+graphics::Extent2D ShadowPass::shadowMapExtent()
+    const noexcept
+{
+    return extent_;
+}
+
+graphics::DepthTextureFormat ShadowPass::shadowMapFormat()
+    const noexcept
+{
+    return depth_.format();
+}
+
+std::size_t ShadowPass::shadowMapRebuildCount()
+    const noexcept
+{
+    return shadowMapRebuildCount_;
 }
 
 } // namespace stylized::render

@@ -222,6 +222,9 @@ protected:
             sceneAsset,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
+            shadowPass_,
+            forwardOpaquePass_,
+            postProcessPass_,
             activeMaterialKind_,
             shadowsEnabled_,
             exposure_,
@@ -263,7 +266,9 @@ protected:
     {
         viewerPanels_.shutdown();
         framePipeline_.reset();
+        shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
+        postProcessPass_ = nullptr;
         extractor_.reset();
         resourceCache_.reset();
     }
@@ -311,6 +316,8 @@ private:
             return false;
         }
 
+        shadowPass_ = shadowPass.get();
+
         if (!framePipeline_->addPass(
                 std::move(shadowPass)))
         {
@@ -342,6 +349,8 @@ private:
 
             return false;
         }
+
+        postProcessPass_ = postProcessPass.get();
 
         if (!framePipeline_->addPass(
                 std::move(postProcessPass)))
@@ -538,7 +547,9 @@ private:
     float exposure_ = 1.0F;
     bool toneMappingEnabled_ = true;
 
+    stylized::render::ShadowPass* shadowPass_ = nullptr;
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
+    stylized::render::PostProcessPass* postProcessPass_ = nullptr;
 
     stylized::graphics::Extent2D pipelineExtent_{};
 

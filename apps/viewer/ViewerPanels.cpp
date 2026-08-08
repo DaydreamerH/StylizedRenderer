@@ -2,13 +2,63 @@
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
+#include <render/ForwardOpaquePass.hpp>
+#include <render/PostProcessPass.hpp>
 #include <render/RenderWorld.hpp>
+#include <render/ShadowPass.hpp>
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
 #include <string>
+
+namespace
+{
+
+const char* renderTextureFormatName(
+    const stylized::graphics::RenderTextureFormat format) noexcept
+{
+    switch (format)
+    {
+    case stylized::graphics::RenderTextureFormat::RGBA8:
+        return "RGBA8";
+
+    case stylized::graphics::RenderTextureFormat::RGBA16Float:
+        return "RGBA16F";
+    }
+
+    return "Unknown";
+}
+
+const char* depthTextureFormatName(
+    const stylized::graphics::DepthTextureFormat format) noexcept
+{
+    switch (format)
+    {
+    case stylized::graphics::DepthTextureFormat::Depth24Stencil8:
+        return "Depth24Stencil8";
+
+    case stylized::graphics::DepthTextureFormat::Depth32Float:
+        return "Depth32F";
+    }
+
+    return "Unknown";
+}
+
+void drawPassStatus(
+    const char* name,
+    const char* status,
+    const std::size_t drawCallCount)
+{
+    ImGui::Text(
+        "%s: %s, Draws: %zu",
+        name,
+        status,
+        drawCallCount);
+}
+
+} // namespace
 
 ViewerPanels::~ViewerPanels()
 {
@@ -67,6 +117,9 @@ void ViewerPanels::draw(
     const stylized::asset::SceneAsset* scene,
     const stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
+    const stylized::render::ShadowPass* shadowPass,
+    const stylized::render::ForwardOpaquePass* forwardPass,
+    const stylized::render::PostProcessPass* postProcessPass,
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
     float& exposure,
@@ -148,6 +201,25 @@ void ViewerPanels::draw(
         "Shadows",
         &shadowsEnabled);
 
+    const stylized::render::DirectionalLightData& mainLight =
+        renderWorld.mainView.mainLight;
+
+    ImGui::Text(
+        "Direction: (%.2f, %.2f, %.2f)",
+        mainLight.direction.x,
+        mainLight.direction.y,
+        mainLight.direction.z);
+
+    ImGui::Text(
+        "Color: (%.2f, %.2f, %.2f)",
+        mainLight.color.r,
+        mainLight.color.g,
+        mainLight.color.b);
+
+    ImGui::Text(
+        "Intensity: %.2f",
+        mainLight.intensity);
+
     ImGui::Separator();
     ImGui::TextUnformatted("Post Process");
 
@@ -161,6 +233,92 @@ void ViewerPanels::draw(
     ImGui::Checkbox(
         "Tone Mapping",
         &toneMappingEnabled);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Render Pipeline");
+
+    drawPassStatus(
+        "ShadowPass",
+        shadowPass == nullptr
+            ? "Unavailable"
+            : shadowsEnabled
+                ? "Active"
+                : "Disabled",
+        shadowPass != nullptr
+            ? shadowPass->lastDrawCallCount()
+            : 0);
+
+    drawPassStatus(
+        "ForwardOpaquePass",
+        forwardPass != nullptr
+            ? "Active"
+            : "Unavailable",
+        forwardPass != nullptr
+            ? forwardPass->lastDrawCallCount()
+            : 0);
+
+    drawPassStatus(
+        "PostProcessPass",
+        postProcessPass != nullptr
+            ? "Active"
+            : "Unavailable",
+        postProcessPass != nullptr
+            ? postProcessPass->lastDrawCallCount()
+            : 0);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Render Targets");
+
+    if (shadowPass != nullptr &&
+        shadowPass->hasShadowMap())
+    {
+        const stylized::graphics::Extent2D extent =
+            shadowPass->shadowMapExtent();
+
+        ImGui::Text(
+            "Shadow Map: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            depthTextureFormatName(
+                shadowPass->shadowMapFormat()),
+            shadowPass->shadowMapRebuildCount());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Shadow Map: not created");
+    }
+
+    if (forwardPass != nullptr &&
+        forwardPass->hasRenderTargets())
+    {
+        const stylized::graphics::Extent2D extent =
+            forwardPass->renderTargetExtent();
+
+        const std::size_t rebuildCount =
+            forwardPass->renderTargetRebuildCount();
+
+        ImGui::Text(
+            "HDR Color: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                forwardPass->colorFormat()),
+            rebuildCount);
+
+        ImGui::Text(
+            "Forward Depth: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            depthTextureFormatName(
+                forwardPass->depthFormat()),
+            rebuildCount);
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Forward targets: not created");
+    }
 
     ImGui::Separator();
     ImGui::Text("Assets: %zu", assets.size());
