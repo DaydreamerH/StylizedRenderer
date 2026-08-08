@@ -96,11 +96,6 @@ float calculateShadowVisibility(
         return 1.0;
     }
 
-    const float storedDepth =
-        texture(
-            uShadowMap,
-            shadowCoordinate.xy).r;
-
     const float normalDotLight =
         max(
             dot(normal, lightDirection),
@@ -112,10 +107,32 @@ float calculateShadowVisibility(
                 (1.0 - normalDotLight),
             0.0005);
 
-    return shadowCoordinate.z - bias <=
-        storedDepth
-        ? 1.0
-        : 0.0;
+    const vec2 texelSize =
+        1.0 / vec2(textureSize(uShadowMap, 0));
+    
+    const float currentDepth =
+        shadowCoordinate.z - bias;
+    
+    float visibility = 0.0;
+
+    for (int offsetY = -1; offsetY <= 1; ++offsetY)
+    {
+        for (int offsetX = -1; offsetX <= 1; ++offsetX)
+        {
+            const vec2 sampleCoordinate =
+                shadowCoordinate.xy + vec2(float(offsetX), float(offsetY)) * texelSize;
+            
+            const float storedDepth =
+                texture(uShadowMap, sampleCoordinate).r;
+
+            visibility +=
+                currentDepth <= storedDepth
+                ? 1.0
+                : 0.0;
+        }
+    }
+    
+    return visibility / 9.0;
 }
 
 void main()
