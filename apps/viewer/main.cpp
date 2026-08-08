@@ -16,6 +16,7 @@
 #include <render/FrameContext.hpp>
 #include <render/FramePipeline.hpp>
 #include <render/ShadowPass.hpp>
+#include <render/PostProcessPass.hpp>
 
 #include <scene/Camera.hpp>
 
@@ -320,6 +321,26 @@ private:
 
         if (!framePipeline_->addPass(std::move(forwardPass)))
             return false;
+
+        auto postProcessPass =
+            std::make_unique<
+                stylized::render::PostProcessPass>(
+                    graphicsDevice());
+
+        if (!postProcessPass->initialize())
+        {
+            std::cerr
+                << "Failed to initialize "
+                << "PostProcessPass.\n";
+
+            return false;
+        }
+
+        if (!framePipeline_->addPass(
+                std::move(postProcessPass)))
+        {
+            return false;
+        }
 
         return true;
     }

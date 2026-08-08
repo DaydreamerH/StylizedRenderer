@@ -66,12 +66,6 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
     lastDrawCallCount_ =
         renderer_.lastDrawCallCount();
 
-    graphicsDevice_.blitColorToDefaultFramebuffer(
-        framebuffer_,
-        frame.framebufferSize);
-
-    graphicsDevice_.setViewport(frame.framebufferSize);
-
     return true;
 }
 
