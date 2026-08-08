@@ -1,4 +1,4 @@
-#include <render/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/MeshAsset.hpp>

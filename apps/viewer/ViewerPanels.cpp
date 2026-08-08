@@ -2,11 +2,11 @@
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
-#include <render/FramePipeline.hpp>
-#include <render/ForwardOpaquePass.hpp>
-#include <render/PostProcessPass.hpp>
-#include <render/RenderWorld.hpp>
-#include <render/ShadowPass.hpp>
+#include <render/pipeline/FramePipeline.hpp>
+#include <render/passes/ForwardOpaquePass.hpp>
+#include <render/passes/PostProcessPass.hpp>
+#include <render/world/RenderWorld.hpp>
+#include <render/passes/ShadowPass.hpp>
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>

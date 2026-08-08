@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/NonCopyable.hpp>
-#include <render/RenderWorld.hpp>
+#include <render/world/RenderWorld.hpp>
 #include <asset/AssetHandle.hpp>
 
 namespace stylized::asset

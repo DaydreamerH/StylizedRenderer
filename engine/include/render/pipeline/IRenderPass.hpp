@@ -1,7 +1,7 @@
 #pragma once
 
 #include <graphics/GraphicsTypes.hpp>
-#include <render/FrameContext.hpp>
+#include <render/pipeline/FrameContext.hpp>
 
 #include <string_view>
 

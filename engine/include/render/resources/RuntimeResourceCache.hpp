@@ -4,8 +4,8 @@
 #include <core/NonCopyable.hpp>
 #include <graphics/GraphicsDevice.hpp>
 #include <graphics/Texture2D.hpp>
-#include <render/RuntimeMesh.hpp>
-#include <render/RuntimeMaterial.hpp>
+#include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>
 
 #include <cstdint>

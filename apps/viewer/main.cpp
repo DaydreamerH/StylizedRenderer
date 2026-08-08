@@ -8,15 +8,15 @@
 
 #include <platform/Window.hpp>
 
-#include <render/RenderExtractor.hpp>
-#include <render/RenderWorld.hpp>
-#include <render/RuntimeResourceCache.hpp>
-#include <render/StaticModelRenderer.hpp>
-#include <render/ForwardOpaquePass.hpp>
-#include <render/FrameContext.hpp>
-#include <render/FramePipeline.hpp>
-#include <render/ShadowPass.hpp>
-#include <render/PostProcessPass.hpp>
+#include <render/world/RenderExtractor.hpp>
+#include <render/world/RenderWorld.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
+#include <render/renderers/StaticModelRenderer.hpp>
+#include <render/passes/ForwardOpaquePass.hpp>
+#include <render/pipeline/FrameContext.hpp>
+#include <render/pipeline/FramePipeline.hpp>
+#include <render/passes/ShadowPass.hpp>
+#include <render/passes/PostProcessPass.hpp>
 
 #include <scene/Camera.hpp>
 

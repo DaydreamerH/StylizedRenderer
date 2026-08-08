@@ -1,13 +1,13 @@
-#include <render/StaticModelRenderer.hpp>
+#include <render/renderers/StaticModelRenderer.hpp>
 
 #include <asset/AssetRegistry.hpp>
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/GraphicsDevice.hpp>
 #include <graphics/ShaderProgram.hpp>
 #include <graphics/DepthTexture.hpp>
-#include <render/RuntimeMesh.hpp>
-#include <render/RuntimeResourceCache.hpp>
-#include <render/RuntimeMaterial.hpp>
+#include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeMaterial.hpp>
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
 

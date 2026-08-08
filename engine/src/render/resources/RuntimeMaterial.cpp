@@ -1,10 +1,10 @@
-#include <render/RuntimeMaterial.hpp>
+#include <render/resources/RuntimeMaterial.hpp>
 
 #include <asset/AssetRegistry.hpp>
 #include <graphics/GraphicsDevice.hpp>
 #include <graphics/Texture2D.hpp>
 #include <material/MaterialInstance.hpp>
-#include <render/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 namespace stylized::render
 {

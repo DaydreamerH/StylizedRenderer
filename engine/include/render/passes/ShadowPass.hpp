@@ -6,7 +6,7 @@
 #include <graphics/Framebuffer.hpp>
 #include <graphics/ShaderProgram.hpp>
 
-#include <render/IRenderPass.hpp>
+#include <render/pipeline/IRenderPass.hpp>
 
 #include <cstddef>
 #include <string_view>

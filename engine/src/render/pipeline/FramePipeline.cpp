@@ -1,4 +1,4 @@
-#include <render/FramePipeline.hpp>
+#include <render/pipeline/FramePipeline.hpp>
 
 #include <graphics/GraphicsDevice.hpp>
 

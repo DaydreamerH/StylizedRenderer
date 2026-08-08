@@ -1,10 +1,10 @@
-#include <render/ShadowPass.hpp>
+#include <render/passes/ShadowPass.hpp>
 
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/GraphicsDevice.hpp>
 
-#include <render/RenderWorld.hpp>
-#include <render/RuntimeMesh.hpp>
+#include <render/world/RenderWorld.hpp>
+#include <render/resources/RuntimeMesh.hpp>
 
 #include <utility>
 

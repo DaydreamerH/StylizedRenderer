@@ -3,7 +3,7 @@
 #include <core/NonCopyable.hpp>
 #include <graphics/GpuTimerQuery.hpp>
 #include <graphics/GraphicsTypes.hpp>
-#include <render/IRenderPass.hpp>
+#include <render/pipeline/IRenderPass.hpp>
 
 #include <cstddef>
 #include <memory>

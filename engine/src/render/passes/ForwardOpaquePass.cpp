@@ -1,8 +1,8 @@
-#include <render/ForwardOpaquePass.hpp>
+#include <render/passes/ForwardOpaquePass.hpp>
 
 #include <graphics/Framebuffer.hpp>
 #include <graphics/GraphicsDevice.hpp>
-#include <render/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 #include <utility>
 

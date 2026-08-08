@@ -1,4 +1,4 @@
-#include <render/PostProcessPass.hpp>
+#include <render/passes/PostProcessPass.hpp>
 
 #include <graphics/GraphicsCommands.hpp>
 #include <graphics/GraphicsDevice.hpp>

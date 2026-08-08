@@ -1,12 +1,12 @@
-#include <render/RenderExtractor.hpp>
+#include <render/world/RenderExtractor.hpp>
 
 #include <asset/AssetRegistry.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Camera.hpp>
 #include <asset/MaterialAsset.hpp>
 
-#include <render/RuntimeMesh.hpp>
-#include <render/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>

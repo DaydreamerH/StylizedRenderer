@@ -26,18 +26,18 @@ add_library(stylized_engine STATIC
     include/math/Bounds.hpp
     include/math/Frustum.hpp
     include/platform/Window.hpp
-    include/render/RuntimeMesh.hpp
-    include/render/RuntimeResourceCache.hpp
-    include/render/RenderExtractor.hpp
-    include/render/FrameContext.hpp
-    include/render/FramePipeline.hpp
-    include/render/ForwardOpaquePass.hpp
-    include/render/RenderWorld.hpp
-    include/render/IRenderPass.hpp
-    include/render/PostProcessPass.hpp
-    include/render/RuntimeMaterial.hpp
-    include/render/ShadowPass.hpp
-    include/render/StaticModelRenderer.hpp
+    include/render/passes/ForwardOpaquePass.hpp
+    include/render/passes/PostProcessPass.hpp
+    include/render/passes/ShadowPass.hpp
+    include/render/pipeline/FrameContext.hpp
+    include/render/pipeline/FramePipeline.hpp
+    include/render/pipeline/IRenderPass.hpp
+    include/render/renderers/StaticModelRenderer.hpp
+    include/render/resources/RuntimeMaterial.hpp
+    include/render/resources/RuntimeMesh.hpp
+    include/render/resources/RuntimeResourceCache.hpp
+    include/render/world/RenderExtractor.hpp
+    include/render/world/RenderWorld.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
     include/scene/Scene.hpp
@@ -66,15 +66,15 @@ add_library(stylized_engine STATIC
     src/math/Bounds.cpp
     src/math/Frustum.cpp
     src/platform/Window.cpp
-    src/render/RenderExtractor.cpp
-    src/render/FramePipeline.cpp
-    src/render/ForwardOpaquePass.cpp
-    src/render/PostProcessPass.cpp
-    src/render/RuntimeMaterial.cpp
-    src/render/RuntimeMesh.cpp
-    src/render/RuntimeResourceCache.cpp
-    src/render/ShadowPass.cpp
-    src/render/StaticModelRenderer.cpp
+    src/render/passes/ForwardOpaquePass.cpp
+    src/render/passes/PostProcessPass.cpp
+    src/render/passes/ShadowPass.cpp
+    src/render/pipeline/FramePipeline.cpp
+    src/render/renderers/StaticModelRenderer.cpp
+    src/render/resources/RuntimeMaterial.cpp
+    src/render/resources/RuntimeMesh.cpp
+    src/render/resources/RuntimeResourceCache.cpp
+    src/render/world/RenderExtractor.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp
     src/scene/Transform.cpp

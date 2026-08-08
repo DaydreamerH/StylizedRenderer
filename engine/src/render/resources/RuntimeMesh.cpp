@@ -1,4 +1,4 @@
-#include <render/RuntimeMesh.hpp>
+#include <render/resources/RuntimeMesh.hpp>
 
 #include <asset/MeshAsset.hpp>
 #include <graphics/GraphicsDevice.hpp>

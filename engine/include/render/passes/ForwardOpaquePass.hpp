@@ -5,8 +5,8 @@
 #include <graphics/DepthTexture.hpp>
 #include <graphics/Framebuffer.hpp>
 #include <graphics/RenderTexture.hpp>
-#include <render/IRenderPass.hpp>
-#include <render/StaticModelRenderer.hpp>
+#include <render/pipeline/IRenderPass.hpp>
+#include <render/renderers/StaticModelRenderer.hpp>
 
 #include <cstddef>
 #include <string_view>
