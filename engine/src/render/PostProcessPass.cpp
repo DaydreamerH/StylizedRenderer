@@ -239,6 +239,13 @@ bool PostProcessPass::execute(
         return false;
     }
 
+    if (!shader_.setInt(
+            "uToneMappingEnabled",
+            frame.toneMappingEnabled ? 1 : 0))
+    {
+        return false;
+    }
+
     graphics::DrawIndexedCommand command;
 
     command.shader =

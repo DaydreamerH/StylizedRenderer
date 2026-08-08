@@ -6,6 +6,7 @@ layout(location = 0) out vec4 fragmentColor;
 
 uniform sampler2D uHdrColor;
 uniform float uExposure;
+uniform int uToneMappingEnabled;
 
 void main()
 {
@@ -19,9 +20,16 @@ void main()
             uExposure,
             0.0);
 
+    const vec3 exposedColor =
+        hdrColor * exposure;
+
     const vec3 mappedColor =
-        vec3(1.0) -
-        exp(-hdrColor * exposure);
+        uToneMappingEnabled != 0
+        ? vec3(1.0) - exp(-exposedColor)
+        : clamp(
+            exposedColor,
+            vec3(0.0),
+            vec3(1.0));
 
     const vec3 gammaCorrectedColor =
         pow(

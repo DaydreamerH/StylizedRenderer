@@ -67,7 +67,9 @@ void ViewerPanels::draw(
     const stylized::asset::SceneAsset* scene,
     const stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
-    stylized::material::MaterialKind& materialKind) const
+    stylized::material::MaterialKind& materialKind,
+    float& exposure,
+    bool& toneMappingEnabled) const
 {
     if (!initialized_)
     {
@@ -137,6 +139,20 @@ void ViewerPanels::draw(
             break;
         }
     }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Post Process");
+
+    ImGui::SliderFloat(
+        "Exposure",
+        &exposure,
+        0.0F,
+        5.0F,
+        "%.2f");
+
+    ImGui::Checkbox(
+        "Tone Mapping",
+        &toneMappingEnabled);
 
     ImGui::Separator();
     ImGui::Text("Assets: %zu", assets.size());

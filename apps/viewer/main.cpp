@@ -194,7 +194,9 @@ protected:
         frame.framebuffer = nullptr;
         frame.hdrColor = nullptr;
         frame.deltaTime = 0.F;
-        frame.exposure = 1.F;
+        frame.exposure = exposure_;
+        frame.toneMappingEnabled =
+            toneMappingEnabled_;
 
         if (!framePipeline_->execute(frame))
         {
@@ -218,7 +220,9 @@ protected:
             sceneAsset,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
-            activeMaterialKind_);
+            activeMaterialKind_,
+            exposure_,
+            toneMappingEnabled_);
 
         if (!updateActiveMaterialTemplate())
         {
@@ -526,6 +530,9 @@ private:
 
     stylized::material::MaterialKind activeMaterialKind_ =
         stylized::material::MaterialKind::Unlit;
+
+    float exposure_ = 1.0F;
+    bool toneMappingEnabled_ = true;
 
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
 

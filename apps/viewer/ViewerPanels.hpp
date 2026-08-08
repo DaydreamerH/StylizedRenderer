@@ -34,7 +34,9 @@ public:
         const stylized::asset::SceneAsset* scene,
         const stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
-        stylized::material::MaterialKind& materialKind) const;
+        stylized::material::MaterialKind& materialKind,
+        float& exposure,
+        bool& toneMappingEnabled) const;
 
     void endFrame() noexcept;
     void shutdown() noexcept;

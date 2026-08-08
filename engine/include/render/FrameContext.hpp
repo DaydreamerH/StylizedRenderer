@@ -30,6 +30,7 @@ struct FrameContext
 
     float deltaTime = 0.0F;
     float exposure = 1.0F;
+    bool toneMappingEnabled = true;
 };
 
 } // namespace stylized::render
