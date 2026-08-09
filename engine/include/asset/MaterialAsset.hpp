@@ -27,6 +27,10 @@ struct MaterialAsset
 
     AssetHandle<TextureAsset> baseColorTexture;
 
+    AssetHandle<TextureAsset> normalTexture;
+
+    float normalScale = 1.0F;
+
     float metallicFactor = 0.0F;
     float roughnessFactor = 1.0F;
 

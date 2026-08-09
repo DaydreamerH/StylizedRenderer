@@ -1,8 +1,11 @@
 #include <asset/importers/detail/AssimpImportInternal.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -16,6 +19,57 @@ namespace stylized::asset::importers::detail
 
 namespace
 {
+
+enum class ImportedTextureSemantic
+{
+    Color,
+    Normal
+};
+
+[[nodiscard]] bool isGltfModelPath(
+    const std::filesystem::path& path)
+{
+    std::string extension =
+        path.extension().string();
+
+    std::transform(
+        extension.begin(),
+        extension.end(),
+        extension.begin(),
+        [](const unsigned char character)
+        {
+            return static_cast<char>(
+                std::tolower(character));
+        });
+
+    return extension == ".gltf" ||
+        extension == ".glb";
+}
+
+void invertNormalMapY(
+    TextureAsset& texture) noexcept
+{
+    const std::size_t bytesPerPixel =
+        texture.bytesPerPixel();
+
+    if (bytesPerPixel < 2)
+    {
+        return;
+    }
+
+    for (std::size_t byteOffset = 1;
+         byteOffset < texture.pixels.size();
+         byteOffset += bytesPerPixel)
+    {
+        const std::uint8_t green =
+            std::to_integer<std::uint8_t>(
+                texture.pixels[byteOffset]);
+
+        texture.pixels[byteOffset] =
+            static_cast<std::byte>(
+                255U - green);
+    }
+}
 
 [[nodiscard]] AlphaMode readAlphaMode(
     const aiMaterial& sourceMaterial)
@@ -67,6 +121,129 @@ namespace
     }
 
     return false;
+}
+
+[[nodiscard]] bool findNormalTexture(
+    const aiMaterial& sourceMaterial,
+    aiString& textureReference)
+{
+    if (sourceMaterial.GetTextureCount(
+            aiTextureType_NORMALS) > 0)
+    {
+        return sourceMaterial.GetTexture(
+                   aiTextureType_NORMALS,
+                   0,
+                   &textureReference) == AI_SUCCESS;
+    }
+
+    if (sourceMaterial.GetTextureCount(
+            aiTextureType_NORMAL_CAMERA) > 0)
+    {
+        return sourceMaterial.GetTexture(
+                   aiTextureType_NORMAL_CAMERA,
+                   0,
+                   &textureReference) == AI_SUCCESS;
+    }
+
+    return false;
+}
+
+[[nodiscard]] bool stageTexture(
+    const aiScene& importedScene,
+    const std::filesystem::path& modelPath,
+    const aiString& textureReference,
+    const ImportedTextureSemantic semantic,
+    std::vector<TextureAsset>& textures,
+    std::unordered_map<std::string, std::size_t>&
+        textureIndices,
+    std::optional<std::size_t>& destinationIndex)
+{
+    const bool isNormalMap =
+        semantic == ImportedTextureSemantic::Normal;
+
+    const ColorSpace colorSpace =
+        isNormalMap
+            ? ColorSpace::Linear
+            : ColorSpace::Srgb;
+
+    const auto embeddedResult =
+        importedScene.GetEmbeddedTextureAndIndex(
+            textureReference.C_Str());
+
+    const aiTexture* embeddedTexture =
+        embeddedResult.first;
+
+    std::filesystem::path externalPath;
+
+    std::string cacheKey =
+        isNormalMap
+            ? "normal:"
+            : "color:";
+
+    if (embeddedTexture != nullptr)
+    {
+        cacheKey +=
+            "embedded:" +
+            (embeddedResult.second >= 0
+                 ? std::to_string(embeddedResult.second)
+                 : std::string{
+                       textureReference.C_Str()});
+    }
+    else
+    {
+        externalPath =
+            (modelPath.parent_path() /
+             std::filesystem::path{
+                 textureReference.C_Str()})
+                .lexically_normal();
+
+        cacheKey += externalPath.generic_string();
+    }
+
+    const auto existing =
+        textureIndices.find(cacheKey);
+
+    if (existing != textureIndices.end())
+    {
+        destinationIndex = existing->second;
+        return true;
+    }
+
+    TextureAsset texture;
+
+    const bool decoded =
+        embeddedTexture != nullptr
+            ? decodeEmbeddedTexture(
+                  *embeddedTexture,
+                  modelPath,
+                  texture)
+            : decodeExternalTexture(
+                  externalPath,
+                  texture);
+
+    if (!decoded)
+    {
+        return false;
+    }
+
+    texture.colorSpace = colorSpace;
+
+    if (isNormalMap &&
+        isGltfModelPath(modelPath))
+    {
+        invertNormalMapY(texture);
+    }
+
+    const std::size_t textureIndex =
+        textures.size();
+
+    textures.push_back(std::move(texture));
+    textureIndices.emplace(
+        std::move(cacheKey),
+        textureIndex);
+
+    destinationIndex = textureIndex;
+    return true;
 }
 
 } // namespace
@@ -181,75 +358,52 @@ bool stageMaterials(
         staged.asset.doubleSided = doubleSided != 0;
 
         aiString textureReference;
+
         if (findBaseColorTexture(
                 *sourceMaterial,
                 textureReference))
         {
-            const auto embeddedResult =
-                importedScene.GetEmbeddedTextureAndIndex(
-                    textureReference.C_Str());
-
-            const aiTexture* embeddedTexture =
-                embeddedResult.first;
-
-            std::string cacheKey;
-            std::filesystem::path externalPath;
-
-            if (embeddedTexture != nullptr)
+            if (!stageTexture(
+                    importedScene,
+                    modelPath,
+                    textureReference,
+                    ImportedTextureSemantic::Color,
+                    textures,
+                    textureIndices,
+                    staged.baseColorTextureIndex))
             {
-                cacheKey =
-                    "embedded:" +
-                    (embeddedResult.second >= 0
-                         ? std::to_string(embeddedResult.second)
-                         : std::string{
-                               textureReference.C_Str()});
+                return false;
             }
-            else
+        }
+
+        if (findNormalTexture(
+                *sourceMaterial,
+                textureReference))
+        {
+            if (!stageTexture(
+                    importedScene,
+                    modelPath,
+                    textureReference,
+                    ImportedTextureSemantic::Normal,
+                    textures,
+                    textureIndices,
+                    staged.normalTextureIndex))
             {
-                externalPath =
-                    (modelPath.parent_path() /
-                     std::filesystem::path{
-                         textureReference.C_Str()})
-                        .lexically_normal();
-
-                cacheKey = externalPath.generic_string();
+                return false;
             }
+        }
 
-            const auto existing =
-                textureIndices.find(cacheKey);
+        float normalScale =
+            staged.asset.normalScale;
 
-            if (existing != textureIndices.end())
-            {
-                staged.textureIndex = existing->second;
-            }
-            else
-            {
-                TextureAsset texture;
-
-                const bool decoded =
-                    embeddedTexture != nullptr
-                        ? decodeEmbeddedTexture(
-                              *embeddedTexture,
-                              modelPath,
-                              texture)
-                        : decodeExternalTexture(
-                              externalPath,
-                              texture);
-
-                if (!decoded)
-                {
-                    return false;
-                }
-
-                const std::size_t textureIndex =
-                    textures.size();
-
-                textures.push_back(std::move(texture));
-                textureIndices.emplace(
-                    std::move(cacheKey),
-                    textureIndex);
-                staged.textureIndex = textureIndex;
-            }
+        if (sourceMaterial->Get(
+                AI_MATKEY_GLTF_TEXTURE_SCALE(
+                    aiTextureType_NORMALS,
+                    0),
+                normalScale) == AI_SUCCESS)
+        {
+            staged.asset.normalScale =
+                std::max(normalScale, 0.0F);
         }
 
         materials.push_back(std::move(staged));

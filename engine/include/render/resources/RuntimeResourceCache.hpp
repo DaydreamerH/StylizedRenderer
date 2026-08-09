@@ -47,6 +47,9 @@ public:
     
     [[nodiscard]] const graphics::Texture2D& whiteTexture() const noexcept;
 
+    [[nodiscard]] const graphics::Texture2D&
+        neutralNormalTexture() const noexcept;
+
     [[nodiscard]] const graphics::Texture2D& errorTexture() const noexcept;
 
     [[nodiscard]] RuntimeMaterial* getOrCreateRuntimeMaterial(
@@ -97,9 +100,12 @@ private:
 
     [[nodiscard]] graphics::Texture2D createWhiteTexture();
 
+    [[nodiscard]] graphics::Texture2D createNeutralNormalTexture();
+
     [[nodiscard]] graphics::Texture2D createErrorTexture();
 
-    [[nodiscard]] graphics::Texture2D uploadTexture(const asset::TextureAsset& textureAsset);
+    [[nodiscard]] graphics::Texture2D uploadTexture(
+        const asset::TextureAsset& textureAsset);
 
     graphics::GraphicsDevice& graphicsDevice_;
 
@@ -108,6 +114,7 @@ private:
     std::unordered_map<std::uint64_t, RuntimeMaterial> runtimeMaterials_;
 
     graphics::Texture2D whiteTexture_;
+    graphics::Texture2D neutralNormalTexture_;
     graphics::Texture2D errorTexture_;
 
     std::unordered_map<

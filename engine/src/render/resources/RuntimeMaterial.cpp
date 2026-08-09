@@ -62,6 +62,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uShadowMap",
                 1
+            ) ||
+            !shader_.setInt(
+                "uNormalTexture",
+                2
             ))
         {
             shader_ = {};
@@ -205,6 +209,19 @@ bool RuntimeMaterial::bind(
             parameters =
                 instance.mtoonParameters.value();
 
+        const graphics::Texture2D& normalTexture =
+            parameters.textures.normalTexture.isNull()
+            ? resourceCache.neutralNormalTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.normalTexture,
+                assetRegistry
+            );
+
+        if (!normalTexture.isValid())
+        {
+            return false;
+        }
+
         if (!shader_.setVec4(
                 "uBaseColorFactor",
                 instance.baseColorFactor))
@@ -235,7 +252,16 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setFloat(
+            "uNormalScale",
+            parameters.normalScale
+        ))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
+        normalTexture.bind(2);
         return true;
     }
     }

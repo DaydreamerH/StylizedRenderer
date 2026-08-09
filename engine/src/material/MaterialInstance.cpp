@@ -40,6 +40,18 @@ MaterialInstance makeMaterialInstance(
     instance.roughness =
         source->roughnessFactor;
 
+    if (instance.mtoonParameters.has_value())
+    {
+        MToonMaterialParameters& parameters =
+            instance.mtoonParameters.value();
+
+        parameters.normalScale =
+            source->normalScale;
+
+        parameters.textures.normalTexture =
+            source->normalTexture;
+    }
+
     return instance;
 }
 

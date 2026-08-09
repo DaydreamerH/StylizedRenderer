@@ -27,14 +27,22 @@ RuntimeResourceCache::~RuntimeResourceCache()
 
 bool RuntimeResourceCache::initialize()
 {
-    if (initialized_) return whiteTexture_.isValid() && errorTexture_.isValid();
+    if (initialized_)
+    {
+        return whiteTexture_.isValid() &&
+            neutralNormalTexture_.isValid() &&
+            errorTexture_.isValid();
+    }
 
     whiteTexture_ = createWhiteTexture();
+    neutralNormalTexture_ = createNeutralNormalTexture();
     errorTexture_ = createErrorTexture();
 
     initialized_ = true;
 
-    return whiteTexture_.isValid() && errorTexture_.isValid();
+    return whiteTexture_.isValid() &&
+        neutralNormalTexture_.isValid() &&
+        errorTexture_.isValid();
 }
 
 const RuntimeMesh*
@@ -115,6 +123,13 @@ RuntimeResourceCache::whiteTexture() const noexcept
 }
 
 const graphics::Texture2D&
+RuntimeResourceCache::neutralNormalTexture()
+    const noexcept
+{
+    return neutralNormalTexture_;
+}
+
+const graphics::Texture2D&
 RuntimeResourceCache::errorTexture() const noexcept
 {
     return errorTexture_;
@@ -126,6 +141,7 @@ void RuntimeResourceCache::clear() noexcept
     meshes_.clear();
 
     whiteTexture_ = {};
+    neutralNormalTexture_ = {};
     errorTexture_ = {};
 
     materialInstances_.clear();
@@ -207,6 +223,39 @@ RuntimeResourceCache::createErrorTexture()
     desc.minFilter = graphics::TextureFilter::Nearest;
     desc.magFilter = graphics::TextureFilter::Nearest;
     desc.debugName = "Runtime Error Texture";
+
+    return graphicsDevice_.createTexture2D(
+        desc,
+        std::span<const std::uint8_t>{
+            pixels
+        });
+}
+
+graphics::Texture2D
+RuntimeResourceCache::createNeutralNormalTexture()
+{
+    constexpr std::array<std::uint8_t, 4> pixels{
+        128,
+        128,
+        255,
+        255
+    };
+
+    graphics::Texture2DDesc desc;
+    desc.width = 1;
+    desc.height = 1;
+    desc.format =
+        graphics::TextureFormat::RGBA8;
+    desc.wrapU =
+        graphics::TextureWrap::Repeat;
+    desc.wrapV =
+        graphics::TextureWrap::Repeat;
+    desc.minFilter =
+        graphics::TextureFilter::Linear;
+    desc.magFilter =
+        graphics::TextureFilter::Linear;
+    desc.debugName =
+        "Runtime Neutral Normal Texture";
 
     return graphicsDevice_.createTexture2D(
         desc,

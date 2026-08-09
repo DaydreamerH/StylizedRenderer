@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 vertexNormal;
 layout(location = 1) in vec2 vertexTexCoord0;
 layout(location = 2) in vec3 vertexWorldPosition;
+layout(location = 3) in vec4 vertexWorldTangent;
 
 layout(location = 0) out vec4 outColor;
 
@@ -20,6 +21,75 @@ uniform float uLightIntensity;
 uniform sampler2D uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
+
+uniform sampler2D uNormalTexture;
+uniform float uNormalScale;
+
+vec3 calculateSurfaceNormal()
+{
+    const vec3 geometricNormal =
+        normalize(vertexNormal);
+
+    const vec3 orthogonalTangent =
+        vertexWorldTangent.xyz -
+        geometricNormal *
+        dot(
+            geometricNormal,
+            vertexWorldTangent.xyz);
+
+    const float tangentLengthSquared =
+        dot(
+            orthogonalTangent,
+            orthogonalTangent);
+
+    if (tangentLengthSquared <= 1.0e-8)
+    {
+        return geometricNormal;
+    }
+
+    const vec3 tangent =
+        orthogonalTangent *
+        inversesqrt(
+            tangentLengthSquared);
+
+    const vec3 bitangent =
+        cross(
+            geometricNormal,
+            tangent) *
+        vertexWorldTangent.w;
+
+    vec3 tangentSpaceNormal =
+        texture(uNormalTexture, vertexTexCoord0).xyz * 2.0 - 1.0;
+
+    tangentSpaceNormal.xy *=
+        max(
+            uNormalScale,
+            0.0);
+
+    const float sampledLengthSquared =
+        dot(
+            tangentSpaceNormal,
+            tangentSpaceNormal);
+
+    if (sampledLengthSquared <= 1.0e-8)
+    {
+        return geometricNormal;
+    }
+
+    tangentSpaceNormal *=
+        inversesqrt(
+            sampledLengthSquared);
+
+    const mat3 tangentFrame =
+        mat3(
+            tangent,
+            bitangent,
+            geometricNormal);
+
+    return normalize(
+        tangentFrame *
+        tangentSpaceNormal);
+}
 
 float calculateShadowVisibility(
     const vec3 worldPosition,
@@ -112,7 +182,7 @@ void main()
         uBaseColorFactor * sampledBaseColor;
 
     const vec3 normal =
-        normalize(vertexNormal);
+        calculateSurfaceNormal();
 
     const vec3 lightDirection =
         normalize(-uLightDirection);
