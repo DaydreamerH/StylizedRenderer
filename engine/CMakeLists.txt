@@ -23,6 +23,7 @@ add_library(stylized_engine STATIC
     include/graphics/resources/VertexArray.hpp
     include/material/MaterialInstance.hpp
     include/material/MaterialTemplate.hpp
+    include/material/mtoon/MToonMaterialParameters.hpp
     include/math/Bounds.hpp
     include/math/Frustum.hpp
     include/platform/Window.hpp
