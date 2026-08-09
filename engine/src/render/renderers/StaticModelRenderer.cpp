@@ -88,22 +88,19 @@ bool StaticModelRenderer::render(
             return false;
         }
 
-        if (runtimeMaterial.kind() == material::MaterialKind::BasicPbr)
+        const material::MaterialKind materialKind =
+            runtimeMaterial.kind();
+
+        if (materialKind ==
+                material::MaterialKind::BasicPbr ||
+            materialKind ==
+                material::MaterialKind::MToon)
         {
             const RenderView& view =
                 renderWorld.mainView;
 
             const DirectionalLightData& light =
                 view.mainLight;
-
-            if (!shader->setVec3(
-                    "uCameraPosition",
-                    view.cameraPosition.x,
-                    view.cameraPosition.y,
-                    view.cameraPosition.z))
-            {
-                return false;
-            }
 
             if (!shader->setVec3(
                     "uLightDirection",
@@ -130,30 +127,43 @@ bool StaticModelRenderer::render(
                 return false;
             }
 
-            const bool shadowEnabled =
-                shadowMap != nullptr &&
-                shadowMap->isValid() &&
-                hasFlag(
-                    item.flags,
-                    RenderItemFlags::ReceiveShadow);
-
-            if (!shader->setInt(
-                    "uShadowEnabled",
-                    shadowEnabled ? 1 : 0))
+            if (materialKind ==
+                material::MaterialKind::BasicPbr)
             {
-                return false;
-            }
+                if (!shader->setVec3(
+                        "uCameraPosition",
+                        view.cameraPosition.x,
+                        view.cameraPosition.y,
+                        view.cameraPosition.z))
+                {
+                    return false;
+                }
 
-            if (!shader->setMat4(
-                    "uLightViewProjection",
-                    renderWorld.shadowView.viewProjection))
-            {
-                return false;
-            }
+                const bool shadowEnabled =
+                    shadowMap != nullptr &&
+                    shadowMap->isValid() &&
+                    hasFlag(
+                        item.flags,
+                        RenderItemFlags::ReceiveShadow);
 
-            if (shadowEnabled)
-            {
-                shadowMap->bind(1);
+                if (!shader->setInt(
+                        "uShadowEnabled",
+                        shadowEnabled ? 1 : 0))
+                {
+                    return false;
+                }
+
+                if (!shader->setMat4(
+                        "uLightViewProjection",
+                        renderWorld.shadowView.viewProjection))
+                {
+                    return false;
+                }
+
+                if (shadowEnabled)
+                {
+                    shadowMap->bind(1);
+                }
             }
         }
 

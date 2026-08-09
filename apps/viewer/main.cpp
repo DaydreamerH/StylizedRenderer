@@ -473,6 +473,33 @@ private:
             return false;
         }
 
+        stylized::material::MaterialTemplate mtoonTemplate;
+
+        mtoonTemplate.name = "MToon";
+
+        mtoonTemplate.kind =
+            stylized::material::MaterialKind::MToon;
+
+        mtoonTemplate.vertexShaderPath =
+            "assets/shaders/static_model/static_model.vert";
+
+        mtoonTemplate.fragmentShaderPath =
+            "assets/shaders/material/mtoon.frag";
+
+        if (!mtoonTemplate.isValid())
+        {
+            return false;
+        }
+
+        mtoonTemplateHandle_ = assetRegistry_.emplace<
+            stylized::material::MaterialTemplate>(
+                std::move(mtoonTemplate));
+
+        if (mtoonTemplateHandle_.isNull())
+        {
+            return false;
+        }
+
         activeMaterialKind_ =
             stylized::material::MaterialKind::Unlit;
 
@@ -496,6 +523,11 @@ private:
         case stylized::material::MaterialKind::BasicPbr:
             activeMaterialTemplateHandle_ =
                 basicPbrTemplateHandle_;
+            break;
+
+        case stylized::material::MaterialKind::MToon:
+            activeMaterialTemplateHandle_ =
+                mtoonTemplateHandle_;
             break;
         }
 
@@ -537,6 +569,10 @@ private:
     stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
         basicPbrTemplateHandle_;
+
+    stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        mtoonTemplateHandle_;
 
     stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>

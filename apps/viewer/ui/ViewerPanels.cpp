@@ -175,12 +175,17 @@ void ViewerPanels::draw(
     case stylized::material::MaterialKind::BasicPbr:
         materialMode = 2;
         break;
+
+    case stylized::material::MaterialKind::MToon:
+        materialMode = 3;
+        break;
     }
 
     constexpr const char* materialModes[] = {
         "Unlit",
         "Debug Normal",
-        "Basic PBR"
+        "Basic PBR",
+        "MToon"
     };
 
     ImGui::Separator();
@@ -206,6 +211,11 @@ void ViewerPanels::draw(
         case 2:
             materialKind =
                 stylized::material::MaterialKind::BasicPbr;
+            break;
+
+        case 3:
+            materialKind =
+                stylized::material::MaterialKind::MToon;
             break;
         }
     }

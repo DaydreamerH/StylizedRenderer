@@ -56,6 +56,12 @@ RuntimeMaterial::RuntimeMaterial(
     case material::MaterialKind::DebugNormal:
         break;
     case material::MaterialKind::MToon:
+        if (!shader_.setInt(
+                "uBaseColorTexture",
+                0))
+        {
+            shader_ = {};
+        }
         break;
     }
 }
@@ -175,7 +181,59 @@ bool RuntimeMaterial::bind(
     }
 
     case material::MaterialKind::MToon:
-        return false;
+    {
+        if (!instance.mtoonParameters.has_value())
+        {
+            return false;
+        }
+
+        const graphics::Texture2D& baseColorTexture =
+            resourceCache.getOrCreateTexture(
+                instance.baseColorTexture,
+                assetRegistry);
+
+        if (!baseColorTexture.isValid())
+        {
+            return false;
+        }
+
+        const material::MToonMaterialParameters&
+            parameters =
+                instance.mtoonParameters.value();
+
+        if (!shader_.setVec4(
+                "uBaseColorFactor",
+                instance.baseColorFactor))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+                "uShadeColor",
+                parameters.shadeColor.x,
+                parameters.shadeColor.y,
+                parameters.shadeColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadingShift",
+                parameters.shadingShift))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadingToony",
+                parameters.shadingToony))
+        {
+            return false;
+        }
+
+        baseColorTexture.bind(0);
+        return true;
+    }
     }
 
     return false;
