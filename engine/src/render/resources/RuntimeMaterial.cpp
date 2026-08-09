@@ -55,6 +55,8 @@ RuntimeMaterial::RuntimeMaterial(
         break;
     case material::MaterialKind::DebugNormal:
         break;
+    case material::MaterialKind::MToon:
+        break;
     }
 }
 
@@ -171,6 +173,9 @@ bool RuntimeMaterial::bind(
         baseColorTexture.bind(0);
         return true;
     }
+
+    case material::MaterialKind::MToon:
+        return false;
     }
 
     return false;

@@ -291,17 +291,27 @@ RuntimeResourceCache::getOrCreateMaterialInstance(
     if (existing != materialInstances_.end())
         return &existing->second;
 
-    material::MaterialInstance instance;
-    instance.templateHandle = templateHandle;
+    const asset::MaterialAsset* source = nullptr;
 
     if (!materialHandle.isNull())
     {
-        const asset::MaterialAsset* source = assets.get(materialHandle);
+        source = assets.get(materialHandle);
 
-        if (source != nullptr)
+        if (source == nullptr)
         {
-            instance = material::makeMaterialInstance(templateHandle, *source);
+            return nullptr;
         }
+    }
+
+    material::MaterialInstance instance =
+        material::makeMaterialInstance(
+            templateHandle,
+            materialTemplate->kind,
+            source);
+
+    if (!instance.isValid())
+    {
+        return nullptr;
     }
 
     const auto [iterator, inserted] =

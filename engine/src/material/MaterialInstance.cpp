@@ -6,9 +6,9 @@ namespace stylized::material
 {
 
 MaterialInstance makeMaterialInstance(
-    const asset::AssetHandle<MaterialTemplate>
-        templateHandle,
-    const asset::MaterialAsset& source)
+    const asset::AssetHandle<MaterialTemplate> templateHandle,
+    const MaterialKind kind,
+    const asset::MaterialAsset* source)
 {
     if (templateHandle.isNull())
     {
@@ -16,21 +16,29 @@ MaterialInstance makeMaterialInstance(
     }
 
     MaterialInstance instance;
+    instance.templateHandle = templateHandle;
 
-    instance.templateHandle =
-        templateHandle;
+    if (kind == MaterialKind::MToon)
+    {
+        instance.mtoonParameters.emplace();
+    }
+
+    if (source == nullptr)
+    {
+        return instance;
+    }
 
     instance.baseColorFactor =
-        source.baseColorFactor;
+        source->baseColorFactor;
 
     instance.baseColorTexture =
-        source.baseColorTexture;
+        source->baseColorTexture;
 
     instance.metallic =
-        source.metallicFactor;
+        source->metallicFactor;
 
     instance.roughness =
-        source.roughnessFactor;
+        source->roughnessFactor;
 
     return instance;
 }

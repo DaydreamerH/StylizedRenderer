@@ -38,6 +38,7 @@ struct MaterialInstance
 
 [[nodiscard]] MaterialInstance makeMaterialInstance(
     asset::AssetHandle<MaterialTemplate> templateHandle,
-    const asset::MaterialAsset& source);
+    MaterialKind kind,
+    const asset::MaterialAsset* source);
 
 } // namespace stylized::material
