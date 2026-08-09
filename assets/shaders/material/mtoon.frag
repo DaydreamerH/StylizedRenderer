@@ -31,8 +31,13 @@ uniform float uNormalScale;
 
 vec3 calculateSurfaceNormal()
 {
+    const float faceSign =
+        gl_FrontFacing
+            ? 1.0
+            : -1.0;
+
     const vec3 geometricNormal =
-        normalize(vertexNormal);
+        normalize(vertexNormal) * faceSign;
 
     const vec3 orthogonalTangent =
         vertexWorldTangent.xyz -
