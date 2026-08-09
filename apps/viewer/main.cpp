@@ -69,7 +69,7 @@ protected:
         {
             std::cerr
                 << "Usage: stylized_viewer "
-                << "<model.gltf|model.glb>\n";
+                << "<model-file>\n";
 
             return false;
         }

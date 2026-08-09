@@ -30,17 +30,20 @@ bool RuntimeResourceCache::initialize()
     if (initialized_)
     {
         return whiteTexture_.isValid() &&
+            blackTexture_.isValid() &&
             neutralNormalTexture_.isValid() &&
             errorTexture_.isValid();
     }
 
     whiteTexture_ = createWhiteTexture();
+    blackTexture_ = createBlackTexture();
     neutralNormalTexture_ = createNeutralNormalTexture();
     errorTexture_ = createErrorTexture();
 
     initialized_ = true;
 
     return whiteTexture_.isValid() &&
+        blackTexture_.isValid() &&
         neutralNormalTexture_.isValid() &&
         errorTexture_.isValid();
 }
@@ -123,6 +126,12 @@ RuntimeResourceCache::whiteTexture() const noexcept
 }
 
 const graphics::Texture2D&
+RuntimeResourceCache::blackTexture() const noexcept
+{
+    return blackTexture_;
+}
+
+const graphics::Texture2D&
 RuntimeResourceCache::neutralNormalTexture()
     const noexcept
 {
@@ -141,6 +150,7 @@ void RuntimeResourceCache::clear() noexcept
     meshes_.clear();
 
     whiteTexture_ = {};
+    blackTexture_ = {};
     neutralNormalTexture_ = {};
     errorTexture_ = {};
 
@@ -196,6 +206,39 @@ RuntimeResourceCache::createWhiteTexture()
     desc.minFilter = graphics::TextureFilter::Linear;
     desc.magFilter = graphics::TextureFilter::Linear;
     desc.debugName = "Runtime White Texture";
+
+    return graphicsDevice_.createTexture2D(
+        desc,
+        std::span<const std::uint8_t>{
+            pixels
+        });
+}
+
+graphics::Texture2D
+RuntimeResourceCache::createBlackTexture()
+{
+    constexpr std::array<std::uint8_t, 4> pixels{
+        0,
+        0,
+        0,
+        255
+    };
+
+    graphics::Texture2DDesc desc;
+    desc.width = 1;
+    desc.height = 1;
+    desc.format =
+        graphics::TextureFormat::RGBA8;
+    desc.wrapU =
+        graphics::TextureWrap::Repeat;
+    desc.wrapV =
+        graphics::TextureWrap::Repeat;
+    desc.minFilter =
+        graphics::TextureFilter::Linear;
+    desc.magFilter =
+        graphics::TextureFilter::Linear;
+    desc.debugName =
+        "Runtime Black Texture";
 
     return graphicsDevice_.createTexture2D(
         desc,

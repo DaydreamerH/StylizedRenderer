@@ -47,6 +47,8 @@ public:
     
     [[nodiscard]] const graphics::Texture2D& whiteTexture() const noexcept;
 
+    [[nodiscard]] const graphics::Texture2D& blackTexture() const noexcept;
+
     [[nodiscard]] const graphics::Texture2D&
         neutralNormalTexture() const noexcept;
 
@@ -100,6 +102,8 @@ private:
 
     [[nodiscard]] graphics::Texture2D createWhiteTexture();
 
+    [[nodiscard]] graphics::Texture2D createBlackTexture();
+
     [[nodiscard]] graphics::Texture2D createNeutralNormalTexture();
 
     [[nodiscard]] graphics::Texture2D createErrorTexture();
@@ -114,6 +118,7 @@ private:
     std::unordered_map<std::uint64_t, RuntimeMaterial> runtimeMaterials_;
 
     graphics::Texture2D whiteTexture_;
+    graphics::Texture2D blackTexture_;
     graphics::Texture2D neutralNormalTexture_;
     graphics::Texture2D errorTexture_;
 

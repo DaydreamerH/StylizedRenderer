@@ -66,6 +66,14 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uNormalTexture",
                 2
+            ) ||
+            !shader_.setInt(
+                "uShadeTexture",
+                3
+            ) ||
+            !shader_.setInt(
+                "uShadingShiftTexture",
+                4
             ))
         {
             shader_ = {};
@@ -209,6 +217,22 @@ bool RuntimeMaterial::bind(
             parameters =
                 instance.mtoonParameters.value();
 
+        const graphics::Texture2D& shadeTexture =
+            parameters.textures.shadeTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.shadeTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& shadingShiftTexture =
+            parameters.textures.shadingShiftTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.shadingShiftTexture,
+                assetRegistry
+            );
+
         const graphics::Texture2D& normalTexture =
             parameters.textures.normalTexture.isNull()
             ? resourceCache.neutralNormalTexture()
@@ -217,7 +241,9 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
-        if (!normalTexture.isValid())
+        if (!shadeTexture.isValid() ||
+            !shadingShiftTexture.isValid() ||
+            !normalTexture.isValid())
         {
             return false;
         }
@@ -253,6 +279,13 @@ bool RuntimeMaterial::bind(
         }
 
         if (!shader_.setFloat(
+                "uShadingShiftTextureScale",
+                parameters.shadingShiftTextureScale))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
             "uNormalScale",
             parameters.normalScale
         ))
@@ -262,6 +295,8 @@ bool RuntimeMaterial::bind(
 
         baseColorTexture.bind(0);
         normalTexture.bind(2);
+        shadeTexture.bind(3);
+        shadingShiftTexture.bind(4);
         return true;
     }
     }

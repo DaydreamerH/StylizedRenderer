@@ -45,6 +45,12 @@ MaterialInstance makeMaterialInstance(
         MToonMaterialParameters& parameters =
             instance.mtoonParameters.value();
 
+        parameters.shadeColor =
+            glm::vec3{source->baseColorFactor} * 0.45F;
+
+        parameters.textures.shadeTexture =
+            source->baseColorTexture;
+
         parameters.normalScale =
             source->normalScale;
 

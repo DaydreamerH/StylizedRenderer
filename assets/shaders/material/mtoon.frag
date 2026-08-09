@@ -11,6 +11,10 @@ uniform sampler2D uBaseColorTexture;
 uniform vec4 uBaseColorFactor;
 
 uniform vec3 uShadeColor;
+uniform sampler2D uShadeTexture;
+uniform sampler2D uShadingShiftTexture;
+uniform float uShadingShiftTextureScale;
+
 uniform float uShadingShift;
 uniform float uShadingToony;
 
@@ -196,9 +200,19 @@ void main()
     const float transitionWidth =
         max(1.0 - shadingToony, 0.0001);
 
+    const float sampledShadingShift =
+        texture(
+            uShadingShiftTexture,
+            vertexTexCoord0).r;
+
+    const float finalShadingShift =
+        uShadingShift +
+        sampledShadingShift *
+        uShadingShiftTextureScale;
+
     const float shadingFactor =
         clamp(
-            (normalDotLight + uShadingShift) / transitionWidth,
+            (normalDotLight + finalShadingShift) / transitionWidth,
             0.0,
             1.0);
 
@@ -208,8 +222,14 @@ void main()
     const vec3 litColor =
         baseColor.rgb * lightRadiance;
 
+    const vec3 sampledShadeColor =
+        texture(uShadeTexture, vertexTexCoord0).rgb;
+
+    const vec3 shadeSurfaceColor =
+        uShadeColor * sampledShadeColor;
+
     const vec3 shadeColor =
-        baseColor.rgb * uShadeColor * lightRadiance;
+        shadeSurfaceColor * lightRadiance;
     
     const float shadowVisibility =
         calculateShadowVisibility(
