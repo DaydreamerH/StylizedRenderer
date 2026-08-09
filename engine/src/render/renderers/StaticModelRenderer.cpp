@@ -138,32 +138,31 @@ bool StaticModelRenderer::render(
                 {
                     return false;
                 }
+            }
+            const bool shadowEnabled =
+                shadowMap != nullptr &&
+                shadowMap->isValid() &&
+                hasFlag(
+                    item.flags,
+                    RenderItemFlags::ReceiveShadow);
 
-                const bool shadowEnabled =
-                    shadowMap != nullptr &&
-                    shadowMap->isValid() &&
-                    hasFlag(
-                        item.flags,
-                        RenderItemFlags::ReceiveShadow);
+            if (!shader->setInt(
+                    "uShadowEnabled",
+                    shadowEnabled ? 1 : 0))
+            {
+                return false;
+            }
 
-                if (!shader->setInt(
-                        "uShadowEnabled",
-                        shadowEnabled ? 1 : 0))
-                {
-                    return false;
-                }
+            if (!shader->setMat4(
+                    "uLightViewProjection",
+                    renderWorld.shadowView.viewProjection))
+            {
+                return false;
+            }
 
-                if (!shader->setMat4(
-                        "uLightViewProjection",
-                        renderWorld.shadowView.viewProjection))
-                {
-                    return false;
-                }
-
-                if (shadowEnabled)
-                {
-                    shadowMap->bind(1);
-                }
+            if (shadowEnabled)
+            {
+                shadowMap->bind(1);
             }
         }
 

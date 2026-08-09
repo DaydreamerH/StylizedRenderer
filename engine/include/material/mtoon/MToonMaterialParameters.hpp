@@ -37,7 +37,7 @@ struct MToonTextureBindings
 
 struct MToonMaterialParameters
 {
-    glm::vec3 shadeColor{0.97F};
+    glm::vec3 shadeColor{0.1F};
 
     float shadingShift = 0.0F;
     float shadingShiftTextureScale = 1.0F;

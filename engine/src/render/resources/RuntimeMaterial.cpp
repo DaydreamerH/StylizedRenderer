@@ -58,7 +58,11 @@ RuntimeMaterial::RuntimeMaterial(
     case material::MaterialKind::MToon:
         if (!shader_.setInt(
                 "uBaseColorTexture",
-                0))
+                0) ||
+            !shader_.setInt(
+                "uShadowMap",
+                1
+            ))
         {
             shader_ = {};
         }
