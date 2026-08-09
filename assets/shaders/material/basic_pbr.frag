@@ -151,8 +151,6 @@ void main()
 
     const vec3 lightDirection = normalize(-uLightDirection);
 
-    const vec3 halfwayDirection = normalize(lightDirection + viewDirection);
-
     const float NdotL = max(dot(normal, lightDirection), 0.0);
 
     const float NdotV = max(dot(normal, viewDirection), 0.0);
@@ -161,23 +159,71 @@ void main()
 
     const vec3 F0 = mix(dielectriReflectance, baseColor, metallic);
 
-    const float normalDistribution = distributionGGX(normal, halfwayDirection, roughness);
-
-    const float geometry = geometrySmith(normal, viewDirection, lightDirection, roughness);
-
-    const vec3 fresnel = fresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
-
-    const vec3 numerator = normalDistribution * geometry * fresnel;
-
-    const float denominator = max(4.0 * NdotV * NdotL, 0.0001);
-
-    const vec3 specular = numerator / denominator;
-
-    const vec3 diffuseContribution = (vec3(1.0) - fresnel) * (vec3(1.0) - metallic);
-
     const vec3 radiance = uLightColor * max(uLightIntensity, 0.0);
 
-    const vec3 directLighting = (diffuseContribution * baseColor / PI + specular) * radiance * NdotL;
+    vec3 directLighting = vec3(0.0);
+
+    const vec3 halfwayVector =
+        lightDirection + viewDirection;
+
+    const float halfwayLengthSquared =
+        dot(
+            halfwayVector,
+            halfwayVector);
+
+    if (NdotL > 0.0 &&
+        NdotV > 0.0 &&
+        halfwayLengthSquared > 1.0e-8)
+    {
+        const vec3 halfwayDirection =
+            normalize(halfwayVector);
+
+        const float normalDistribution =
+            distributionGGX(
+                normal,
+                halfwayDirection,
+                roughness);
+
+        const float geometry =
+            geometrySmith(
+                normal,
+                viewDirection,
+                lightDirection,
+                roughness);
+
+        const vec3 fresnel =
+            fresnelSchlick(
+                max(
+                    dot(
+                        halfwayDirection,
+                        viewDirection),
+                    0.0),
+                F0);
+
+        const vec3 numerator =
+            normalDistribution *
+            geometry *
+            fresnel;
+
+        const float denominator =
+            max(
+                4.0 * NdotV * NdotL,
+                0.0001);
+
+        const vec3 specular =
+            numerator / denominator;
+
+        const vec3 diffuseContribution =
+            (vec3(1.0) - fresnel) *
+            (vec3(1.0) - metallic);
+
+        directLighting =
+            (diffuseContribution *
+                 baseColor / PI +
+             specular) *
+            radiance *
+            NdotL;
+    }
 
     const float shadowVisibility =
         calculateShadowVisibility(
