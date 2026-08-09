@@ -293,6 +293,14 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setFloat(
+            "uGiEqualization",
+            parameters.giEqualization
+        ))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);

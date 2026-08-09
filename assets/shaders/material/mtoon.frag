@@ -22,6 +22,12 @@ uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
 uniform float uLightIntensity;
 
+uniform vec3 uEnvironmentSkyColor;
+uniform vec3 uEnvironmentGroundColor;
+uniform float uEnvironmentIntensity;
+
+uniform float uGiEqualization;
+
 uniform sampler2D uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
@@ -246,8 +252,40 @@ void main()
         shadingFactor *
         shadowVisibility;
 
-    const vec3 finalColor =
+    const vec3 directColor =
         mix(shadeColor, litColor, visibleShadingFactor);
+
+    const float hemisphereWeight =
+        clamp(
+            normal.y * 0.5 + 0.5,
+            0.0,
+            1.0
+        );
+
+    const vec3 directionalEnvironment =
+        mix(
+            uEnvironmentGroundColor,
+            uEnvironmentSkyColor,
+            hemisphereWeight
+        );
+
+    const vec3 uniformEnvironment =
+        (uEnvironmentSkyColor + uEnvironmentGroundColor) * 0.5;
+
+    const vec3 environmentRadiance =
+        mix(
+            directionalEnvironment,
+            uniformEnvironment,
+            clamp(
+                uGiEqualization,
+                0.0,
+                1.0)
+            ) * max(uEnvironmentIntensity, 0.0);
+
+    const vec3 indirectColor =
+        baseColor.rgb * environmentRadiance;
+
+    const vec3 finalColor = directColor + indirectColor;
 
     outColor = vec4(finalColor, baseColor.a);
 }

@@ -139,6 +139,40 @@ bool StaticModelRenderer::render(
                     return false;
                 }
             }
+
+            if (materialKind ==
+                material::MaterialKind::MToon)
+            {
+                const EnvironmentLightData& environment =
+                    view.environmentLight;
+
+                if (!shader->setVec3(
+                    "uEnvironmentSkyColor",
+                    environment.skyColor.r,
+                    environment.skyColor.g,
+                    environment.skyColor.b
+                ))
+                {
+                    return false;
+                }
+
+                if (!shader->setVec3(
+                    "uEnvironmentGroundColor",
+                    environment.groundColor.r,
+                    environment.groundColor.g,
+                    environment.groundColor.b))
+                {
+                    return false;
+                }
+
+                if (!shader->setFloat(
+                    "uEnvironmentIntensity",
+                    environment.intensity))
+                {
+                    return false;
+                }
+            }
+
             const bool shadowEnabled =
                 shadowMap != nullptr &&
                 shadowMap->isValid() &&

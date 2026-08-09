@@ -73,6 +73,22 @@ struct DirectionalLightData
     float intensity = 1.0F;
 };
 
+struct EnvironmentLightData
+{
+    glm::vec3 skyColor{
+        0.04F,
+        0.05F,
+        0.07F
+    };
+
+    glm::vec3 groundColor{
+        0.015F,
+        0.012F,
+        0.01F
+    };
+
+    float intensity = 1.0F;
+};
 
 struct ShadowView
 {
@@ -104,6 +120,8 @@ struct RenderView
     float exposure = 1.F;
 
     DirectionalLightData mainLight;
+
+    EnvironmentLightData environmentLight;
 
     math::Frustum frustum;
 };
