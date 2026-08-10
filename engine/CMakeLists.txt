@@ -25,6 +25,8 @@ add_library(stylized_engine STATIC
     include/material/MaterialInstance.hpp
     include/material/MaterialTemplate.hpp
     include/material/mtoon/MToonMaterialParameters.hpp
+    include/material/mtoon/MToonMaterialSidecar.hpp
+    include/material/mtoon/MToonMaterialSidecarSerializer.hpp
     include/math/Bounds.hpp
     include/math/Frustum.hpp
     include/platform/Window.hpp
@@ -66,6 +68,7 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/resources/Texture2D.cpp
     src/graphics/opengl/resources/VertexArray.cpp
     src/material/MaterialInstance.cpp
+    src/material/mtoon/MToonMaterialSidecarSerializer.cpp
     src/math/Bounds.cpp
     src/math/Frustum.cpp
     src/platform/Window.cpp
