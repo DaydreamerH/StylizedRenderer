@@ -1,6 +1,8 @@
 #include "ViewerPanels.hpp"
 
 #include <asset/AssetRegistry.hpp>
+#include <asset/MaterialAsset.hpp>
+#include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
@@ -12,7 +14,9 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#include <algorithm>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -71,6 +75,62 @@ void drawPassStatus(
             status,
             drawCallCount);
     }
+}
+
+std::vector<
+    stylized::asset::AssetHandle<
+        stylized::asset::MaterialAsset>>
+collectMaterialHandles(
+    const stylized::asset::AssetRegistry& assets,
+    const stylized::asset::SceneAsset* scene)
+{
+    using MaterialHandle =
+        stylized::asset::AssetHandle<
+            stylized::asset::MaterialAsset>;
+
+    std::vector<MaterialHandle> handles;
+
+    if (scene == nullptr)
+    {
+        return handles;
+    }
+
+    for (const stylized::asset::SceneNodeAsset& node :
+         scene->nodes)
+    {
+        const stylized::asset::MeshAsset* mesh =
+            assets.get(node.mesh);
+
+        if (mesh == nullptr)
+        {
+            continue;
+        }
+
+        for (const stylized::asset::MeshPrimitiveAsset& primitive :
+             mesh->primitives)
+        {
+            const MaterialHandle handle =
+                primitive.material;
+
+            if (handle.isNull())
+            {
+                continue;
+            }
+
+            const auto existing =
+                std::find(
+                    handles.begin(),
+                    handles.end(),
+                    handle);
+
+            if (existing == handles.end())
+            {
+                handles.push_back(handle);
+            }
+        }
+    }
+
+    return handles;
 }
 
 } // namespace
@@ -139,7 +199,7 @@ void ViewerPanels::draw(
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
     float& exposure,
-    bool& toneMappingEnabled) const
+    bool& toneMappingEnabled)
 {
     if (!initialized_)
     {
@@ -247,6 +307,82 @@ void ViewerPanels::draw(
                     stylized::render::MToonDebugView>(
                         debugView);
         }
+    }
+
+    const auto materialHandles =
+        collectMaterialHandles(
+            assets,
+            scene);
+
+    const auto selectedIterator =
+        std::find(
+            materialHandles.begin(),
+            materialHandles.end(),
+            selectedMaterial_);
+
+    if (selectedIterator == materialHandles.end())
+    {
+        selectedMaterial_ =
+            materialHandles.empty()
+            ? decltype(selectedMaterial_){}
+            : materialHandles.front();
+    }
+
+    const stylized::asset::MaterialAsset* selectedMaterial =
+        assets.get(selectedMaterial_);
+
+    const char* selectedMaterialName =
+        selectedMaterial != nullptr &&
+            !selectedMaterial->name.empty()
+        ? selectedMaterial->name.c_str()
+        : "None";
+
+    ImGui::Separator();
+    ImGui::Text(
+        "Materials: %zu",
+        materialHandles.size());
+
+    if (ImGui::BeginCombo(
+            "Selected Material",
+            selectedMaterialName))
+    {
+        for (const auto handle : materialHandles)
+        {
+            const stylized::asset::MaterialAsset* material =
+                assets.get(handle);
+
+            if (material == nullptr)
+            {
+                continue;
+            }
+
+            const std::string visibleName =
+                material->name.empty()
+                ? "Unnamed Material"
+                : material->name;
+
+            const std::string label =
+                visibleName +
+                "##material_" +
+                std::to_string(handle.id().value);
+
+            const bool selected =
+                handle == selectedMaterial_;
+
+            if (ImGui::Selectable(
+                    label.c_str(),
+                    selected))
+            {
+                selectedMaterial_ = handle;
+            }
+
+            if (selected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
     }
 
     ImGui::Separator();

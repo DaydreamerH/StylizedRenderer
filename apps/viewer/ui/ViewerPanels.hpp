@@ -1,5 +1,6 @@
 #pragma once
 
+#include <asset/AssetHandle.hpp>
 #include <core/NonCopyable.hpp>
 #include <material/MaterialTemplate.hpp>
 
@@ -11,6 +12,7 @@ struct GLFWwindow;
 namespace stylized::asset
 {
 class AssetRegistry;
+struct MaterialAsset;
 struct SceneAsset;
 }
 
@@ -45,12 +47,16 @@ public:
         stylized::material::MaterialKind& materialKind,
         bool& shadowsEnabled,
         float& exposure,
-        bool& toneMappingEnabled) const;
+        bool& toneMappingEnabled);
 
     void endFrame() noexcept;
     void shutdown() noexcept;
 
 private:
+    stylized::asset::AssetHandle<
+        stylized::asset::MaterialAsset>
+        selectedMaterial_;
+
     bool initialized_ = false;
 };
 
