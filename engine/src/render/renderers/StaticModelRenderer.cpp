@@ -127,17 +127,13 @@ bool StaticModelRenderer::render(
                 return false;
             }
 
-            if (materialKind ==
-                material::MaterialKind::BasicPbr)
+            if (!shader->setVec3(
+                    "uCameraPosition",
+                    view.cameraPosition.x,
+                    view.cameraPosition.y,
+                    view.cameraPosition.z))
             {
-                if (!shader->setVec3(
-                        "uCameraPosition",
-                        view.cameraPosition.x,
-                        view.cameraPosition.y,
-                        view.cameraPosition.z))
-                {
-                    return false;
-                }
+                return false;
             }
 
             if (materialKind ==

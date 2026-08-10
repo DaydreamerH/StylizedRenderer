@@ -78,6 +78,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uMatcapTexture",
                 5
+            ) ||
+            !shader_.setInt(
+                "uRimMaskTexture",
+                6
             ))
         {
             shader_ = {};
@@ -253,10 +257,19 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& rimMaskTexture =
+            parameters.textures.rimMaskTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.rimMaskTexture,
+                assetRegistry
+            );
+
         if (!shadeTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
             !normalTexture.isValid() ||
-            !matcapTexture.isValid())
+            !matcapTexture.isValid() ||
+            !rimMaskTexture.isValid())
         {
             return false;
         }
@@ -330,11 +343,42 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setVec3(
+            "uRimColor",
+            parameters.rimColor.x,
+            parameters.rimColor.y,
+            parameters.rimColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimFresnelPower",
+            parameters.rimFresnelPower))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimLift",
+            parameters.rimLift))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimLightingMix",
+            parameters.rimLightingMix))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);
         shadingShiftTexture.bind(4);
         matcapTexture.bind(5);
+        rimMaskTexture.bind(6);
 
         return true;
     }

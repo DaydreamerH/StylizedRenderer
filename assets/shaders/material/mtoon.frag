@@ -41,6 +41,14 @@ uniform sampler2D uMatcapTexture;
 uniform vec3 uMatcapColor;
 uniform float uMatcapStrength;
 
+uniform vec3 uCameraPosition;
+
+uniform sampler2D uRimMaskTexture;
+uniform vec3 uRimColor;
+uniform float uRimFresnelPower;
+uniform float uRimLift;
+uniform float uRimLightingMix;
+
 vec3 calculateSurfaceNormal()
 {
     const float faceSign =
@@ -303,7 +311,47 @@ void main()
     const vec3 matcapContribution =
         sampledMatcap * uMatcapColor * max(uMatcapStrength, 0.0);
 
-    const vec3 finalColor = directColor + indirectColor + matcapContribution;
+    const vec3 toCamera =
+        uCameraPosition - vertexWorldPosition;
+
+    const float toCameraLengthSquared =
+        dot(toCamera, toCamera);
+
+    const vec3 viewDirection =
+        toCameraLengthSquared > 1.0e-8
+        ? toCamera * inversesqrt(toCameraLengthSquared)
+        : normal;
+
+    const float normalDotView =
+        max(dot(normal, viewDirection), 0.0);
+
+    const float rimBase =
+        clamp(
+            1.0 - normalDotView + uRimLift,
+            0.0,
+            1.0);
+
+    const float rimFactor =
+        pow(rimBase,
+            max(uRimFresnelPower, 0.0001));
+
+    const float rimMask =
+        texture(uRimMaskTexture, vertexTexCoord0).r;
+
+    const vec3 rimLighting =
+        mix(
+            vec3(1.0),
+            lightRadiance * visibleShadingFactor,
+            clamp(
+                uRimLightingMix,
+                0.0,
+                1.0
+            ));
+
+    const vec3 rimContribution =
+        uRimColor * rimMask * rimFactor * rimLighting;
+
+    const vec3 finalColor = directColor + indirectColor + matcapContribution + rimContribution;
 
     outColor = vec4(finalColor, baseColor.a);
 }
