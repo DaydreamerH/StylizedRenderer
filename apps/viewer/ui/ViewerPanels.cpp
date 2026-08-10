@@ -220,6 +220,16 @@ bool ViewerPanels::initialize(GLFWwindow* window)
     return true;
 }
 
+bool ViewerPanels::wantsMouseCapture() const noexcept
+{
+    if (!initialized_)
+    {
+        return false;
+    }
+
+    return ImGui::GetIO().WantCaptureMouse;
+}
+
 void ViewerPanels::beginFrame() noexcept
 {
     if (!initialized_)

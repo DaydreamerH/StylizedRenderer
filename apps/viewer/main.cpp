@@ -101,7 +101,9 @@ protected:
 
     void onUpdate(const float) override
     {
-        cameraController_.update(window());
+        cameraController_.update(
+            window(),
+            !viewerPanels_.wantsMouseCapture());
 
         if (window().isKeyPressed(
                 stylized::platform::Key::Escape))

@@ -33,6 +33,8 @@ public:
     ~ViewerPanels();
 
     [[nodiscard]] bool initialize(GLFWwindow* window);
+    [[nodiscard]] bool wantsMouseCapture() const noexcept;
+
     void beginFrame() noexcept;
 
     void draw(

@@ -15,7 +15,9 @@ class OrbitCameraController
 public:
     explicit OrbitCameraController(stylized::scene::Camera& camera) noexcept;
 
-    void update(stylized::platform::Window& window);
+    void update(
+        stylized::platform::Window& window,
+        bool inputEnabled = true);
 
     void focus(const stylized::math::Bounds& bounds) noexcept;
 
