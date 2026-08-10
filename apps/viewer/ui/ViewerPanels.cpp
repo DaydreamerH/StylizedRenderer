@@ -9,6 +9,9 @@
 #include <render/passes/PostProcessPass.hpp>
 #include <render/world/RenderWorld.hpp>
 #include <render/passes/ShadowPass.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
+
+#include <material/MaterialInstance.hpp>
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -189,6 +192,10 @@ void ViewerPanels::beginFrame() noexcept
 void ViewerPanels::draw(
     const std::filesystem::path& modelPath,
     const stylized::asset::AssetRegistry& assets,
+    stylized::render::RuntimeResourceCache& resourceCache,
+    const stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        materialTemplate,
     const stylized::asset::SceneAsset* scene,
     stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
@@ -383,6 +390,56 @@ void ViewerPanels::draw(
         }
 
         ImGui::EndCombo();
+    }
+
+    if (materialKind ==
+            stylized::material::MaterialKind::MToon &&
+        !selectedMaterial_.isNull())
+    {
+        stylized::material::MaterialInstance* materialInstance =
+            resourceCache.getOrCreateMaterialInstance(
+                selectedMaterial_,
+                materialTemplate,
+                assets);
+
+        if (materialInstance != nullptr &&
+            materialInstance->mtoonParameters.has_value() &&
+            ImGui::CollapsingHeader(
+                "Base / Shade",
+                ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            stylized::material::MToonMaterialParameters& parameters =
+                materialInstance->mtoonParameters.value();
+
+            ImGui::ColorEdit4(
+                "Base Color Factor",
+                &materialInstance->baseColorFactor.x);
+
+            ImGui::ColorEdit3(
+                "Shade Color",
+                &parameters.shadeColor.x);
+
+            ImGui::SliderFloat(
+                "Shading Shift",
+                &parameters.shadingShift,
+                -1.0F,
+                1.0F,
+                "%.3f");
+
+            ImGui::SliderFloat(
+                "Shift Texture Scale",
+                &parameters.shadingShiftTextureScale,
+                -2.0F,
+                2.0F,
+                "%.3f");
+
+            ImGui::SliderFloat(
+                "Shading Toony",
+                &parameters.shadingToony,
+                0.0F,
+                1.0F,
+                "%.3f");
+        }
     }
 
     ImGui::Separator();

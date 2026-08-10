@@ -21,6 +21,7 @@ namespace stylized::render
 class ForwardOpaquePass;
 class FramePipeline;
 class PostProcessPass;
+class RuntimeResourceCache;
 class ShadowPass;
 struct RenderWorld;
 }
@@ -37,6 +38,10 @@ public:
     void draw(
         const std::filesystem::path& modelPath,
         const stylized::asset::AssetRegistry& assets,
+        stylized::render::RuntimeResourceCache& resourceCache,
+        stylized::asset::AssetHandle<
+            stylized::material::MaterialTemplate>
+            materialTemplate,
         const stylized::asset::SceneAsset* scene,
         stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,

@@ -359,7 +359,7 @@ RuntimeMaterial* RuntimeResourceCache::getOrCreateRuntimeMaterial(
     return &iterator->second;
 }
 
-const material::MaterialInstance*
+material::MaterialInstance*
 RuntimeResourceCache::getOrCreateMaterialInstance(
     const asset::AssetHandle<asset::MaterialAsset> materialHandle,
     const asset::AssetHandle<material::MaterialTemplate> templateHandle,

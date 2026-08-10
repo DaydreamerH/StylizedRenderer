@@ -219,6 +219,8 @@ protected:
         viewerPanels_.draw(
             modelPath_,
             assetRegistry_,
+            *resourceCache_,
+            activeMaterialTemplateHandle_,
             sceneAsset,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,

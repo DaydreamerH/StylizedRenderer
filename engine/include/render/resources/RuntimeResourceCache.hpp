@@ -60,7 +60,7 @@ public:
         const asset::AssetRegistry& assets
     );
 
-    [[nodiscard]] const material::MaterialInstance* getOrCreateMaterialInstance(
+    [[nodiscard]] material::MaterialInstance* getOrCreateMaterialInstance(
         asset::AssetHandle<asset::MaterialAsset> materialHandle,
         asset::AssetHandle<material::MaterialTemplate> templateHandle,
         const asset::AssetRegistry& assets
