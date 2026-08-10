@@ -74,6 +74,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uShadingShiftTexture",
                 4
+            ) ||
+            !shader_.setInt(
+                "uMatcapTexture",
+                5
             ))
         {
             shader_ = {};
@@ -241,9 +245,18 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& matcapTexture =
+            parameters.textures.matcapTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.matcapTexture,
+                assetRegistry
+            );
+
         if (!shadeTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
-            !normalTexture.isValid())
+            !normalTexture.isValid() ||
+            !matcapTexture.isValid())
         {
             return false;
         }
@@ -301,10 +314,28 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setVec3(
+            "uMatcapColor",
+            parameters.matcapColor.x,
+            parameters.matcapColor.y,
+            parameters.matcapColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uMatcapStrength",
+            parameters.matcapStrength))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);
         shadingShiftTexture.bind(4);
+        matcapTexture.bind(5);
+
         return true;
     }
     }

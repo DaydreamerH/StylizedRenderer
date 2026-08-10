@@ -6,6 +6,7 @@ add_library(stylized_engine STATIC
     include/asset/SceneAsset.hpp
     include/asset/TextureAsset.hpp
     include/asset/importers/ModelImporter.hpp
+    include/asset/importers/TextureImporter.hpp
     include/asset/importers/detail/AssimpImportInternal.hpp
     include/core/Application.hpp
     include/core/NonCopyable.hpp
@@ -47,6 +48,7 @@ add_library(stylized_engine STATIC
     src/asset/SceneAsset.cpp
     src/asset/TextureAsset.cpp
     src/asset/importers/ModelImporter.cpp
+    src/asset/importers/TextureImporter.cpp
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp

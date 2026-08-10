@@ -143,6 +143,14 @@ bool StaticModelRenderer::render(
             if (materialKind ==
                 material::MaterialKind::MToon)
             {
+                if (!shader->setMat4(
+                    "uView",
+                    view.view
+                ))
+                {
+                    return false;
+                }
+
                 const EnvironmentLightData& environment =
                     view.environmentLight;
 

@@ -35,6 +35,12 @@ uniform int uShadowEnabled;
 uniform sampler2D uNormalTexture;
 uniform float uNormalScale;
 
+uniform mat4 uView;
+
+uniform sampler2D uMatcapTexture;
+uniform vec3 uMatcapColor;
+uniform float uMatcapStrength;
+
 vec3 calculateSurfaceNormal()
 {
     const float faceSign =
@@ -285,7 +291,19 @@ void main()
     const vec3 indirectColor =
         baseColor.rgb * environmentRadiance;
 
-    const vec3 finalColor = directColor + indirectColor;
+    const vec3 viewNormal =
+        normalize(mat3(uView) * normal);
+
+    const vec2 matcapUv =
+        viewNormal.xy * 0.5 + 0.5;
+
+    const vec3 sampledMatcap =
+        texture(uMatcapTexture, matcapUv).rgb;
+
+    const vec3 matcapContribution =
+        sampledMatcap * uMatcapColor * max(uMatcapStrength, 0.0);
+
+    const vec3 finalColor = directColor + indirectColor + matcapContribution;
 
     outColor = vec4(finalColor, baseColor.a);
 }
