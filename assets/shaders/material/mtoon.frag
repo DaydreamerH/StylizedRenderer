@@ -49,6 +49,10 @@ uniform float uRimFresnelPower;
 uniform float uRimLift;
 uniform float uRimLightingMix;
 
+uniform sampler2D uEmissionTexture;
+uniform vec3 uEmissionColor;
+uniform float uEmissionStrength;
+
 vec3 calculateSurfaceNormal()
 {
     const float faceSign =
@@ -351,7 +355,19 @@ void main()
     const vec3 rimContribution =
         uRimColor * rimMask * rimFactor * rimLighting;
 
-    const vec3 finalColor = directColor + indirectColor + matcapContribution + rimContribution;
+    const vec3 sampledEmission =
+        texture(
+            uEmissionTexture,
+            vertexTexCoord0).rgb;
+
+    const vec3 emissionContribution =
+        sampledEmission *
+        uEmissionColor *
+        max(
+            uEmissionStrength,
+            0.0);
+
+    const vec3 finalColor = directColor + indirectColor + matcapContribution + rimContribution + emissionContribution;
 
     outColor = vec4(finalColor, baseColor.a);
 }
