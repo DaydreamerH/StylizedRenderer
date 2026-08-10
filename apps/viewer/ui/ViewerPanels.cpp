@@ -458,6 +458,24 @@ void ViewerPanels::draw(
         if (materialInstance != nullptr &&
             materialInstance->mtoonParameters.has_value())
         {
+            bool resetFailed = false;
+
+            if (ImGui::Button("Reset Selected Material"))
+            {
+                resetFailed =
+                    !resourceCache.resetMaterialInstance(
+                        selectedMaterial_,
+                        materialTemplate,
+                        assets);
+            }
+
+            if (resetFailed)
+            {
+                ImGui::TextColored(
+                    ImVec4{1.0F, 0.3F, 0.3F, 1.0F},
+                    "Failed to reset selected material.");
+            }
+
             stylized::material::MToonMaterialParameters& parameters =
                 materialInstance->mtoonParameters.value();
 

@@ -66,6 +66,11 @@ public:
         const asset::AssetRegistry& assets
     );
 
+    [[nodiscard]] bool resetMaterialInstance(
+        asset::AssetHandle<asset::MaterialAsset> materialHandle,
+        asset::AssetHandle<material::MaterialTemplate> templateHandle,
+        const asset::AssetRegistry& assets);
+
     void clear() noexcept;
     
 private:
