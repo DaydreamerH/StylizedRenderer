@@ -2,6 +2,7 @@
 
 #include <material/mtoon/MToonMaterialSidecar.hpp>
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -30,6 +31,16 @@ struct MToonSidecarError
 [[nodiscard]] bool deserializeMToonSidecar(
     std::string_view source,
     MToonMaterialSidecar& destination,
+    MToonSidecarError& error);
+
+[[nodiscard]] bool loadMToonSidecarFile(
+    const std::filesystem::path& path,
+    MToonMaterialSidecar& destination,
+    MToonSidecarError& error);
+
+[[nodiscard]] bool saveMToonSidecarFile(
+    const std::filesystem::path& path,
+    const MToonMaterialSidecar& sidecar,
     MToonSidecarError& error);
 
 } // namespace stylized::material

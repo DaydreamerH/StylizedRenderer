@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
+#include <system_error>
 #include <unordered_set>
 
 #include <nlohmann/json.hpp>
@@ -675,6 +678,225 @@ bool deserializeMToonSidecar(
 
         return false;
     }
+}
+
+bool loadMToonSidecarFile(
+    const std::filesystem::path& path,
+    MToonMaterialSidecar& destination,
+    MToonSidecarError& error)
+{
+    error.clear();
+
+    std::ifstream input{
+        path,
+        std::ios::binary
+    };
+
+    if (!input.is_open())
+    {
+        setError(
+            error,
+            {},
+            {},
+            "Failed to open sidecar file: " +
+                path.string());
+
+        return false;
+    }
+
+    const std::string source{
+        std::istreambuf_iterator<char>{input},
+        std::istreambuf_iterator<char>{}
+    };
+
+    if (input.bad())
+    {
+        setError(
+            error,
+            {},
+            {},
+            "Failed to read sidecar file: " +
+                path.string());
+
+        return false;
+    }
+
+    return deserializeMToonSidecar(
+        source,
+        destination,
+        error);
+}
+
+bool saveMToonSidecarFile(
+    const std::filesystem::path& path,
+    const MToonMaterialSidecar& sidecar,
+    MToonSidecarError& error)
+{
+    error.clear();
+
+    std::string serialized;
+
+    if (!serializeMToonSidecar(
+            sidecar,
+            serialized,
+            error))
+    {
+        return false;
+    }
+
+    std::filesystem::path temporaryPath = path;
+    temporaryPath += ".tmp";
+
+    std::filesystem::path backupPath = path;
+    backupPath += ".bak";
+
+    {
+        std::ofstream output{
+            temporaryPath,
+            std::ios::binary |
+                std::ios::trunc
+        };
+
+        if (!output.is_open())
+        {
+            setError(
+                error,
+                {},
+                {},
+                "Failed to open temporary sidecar file: " +
+                    temporaryPath.string());
+
+            return false;
+        }
+
+        output.write(
+            serialized.data(),
+            static_cast<std::streamsize>(
+                serialized.size()));
+
+        output.close();
+
+        if (!output)
+        {
+            std::error_code cleanupError;
+
+            std::filesystem::remove(
+                temporaryPath,
+                cleanupError);
+
+            setError(
+                error,
+                {},
+                {},
+                "Failed to write temporary sidecar file: " +
+                    temporaryPath.string());
+
+            return false;
+        }
+    }
+
+    std::error_code filesystemError;
+
+    const bool destinationExists =
+        std::filesystem::exists(
+            path,
+            filesystemError);
+
+    if (filesystemError)
+    {
+        std::error_code cleanupError;
+
+        std::filesystem::remove(
+            temporaryPath,
+            cleanupError);
+
+        setError(
+            error,
+            {},
+            {},
+            "Failed to inspect sidecar destination: " +
+                path.string());
+
+        return false;
+    }
+
+    if (destinationExists)
+    {
+        std::filesystem::remove(
+            backupPath,
+            filesystemError);
+
+        filesystemError.clear();
+
+        std::filesystem::rename(
+            path,
+            backupPath,
+            filesystemError);
+
+        if (filesystemError)
+        {
+            std::error_code cleanupError;
+
+            std::filesystem::remove(
+                temporaryPath,
+                cleanupError);
+
+            setError(
+                error,
+                {},
+                {},
+                "Failed to prepare existing sidecar for replacement: " +
+                    path.string());
+
+            return false;
+        }
+    }
+
+    filesystemError.clear();
+
+    std::filesystem::rename(
+        temporaryPath,
+        path,
+        filesystemError);
+
+    if (filesystemError)
+    {
+        if (destinationExists)
+        {
+            std::error_code restoreError;
+
+            std::filesystem::rename(
+                backupPath,
+                path,
+                restoreError);
+        }
+
+        std::error_code cleanupError;
+
+        std::filesystem::remove(
+            temporaryPath,
+            cleanupError);
+
+        setError(
+            error,
+            {},
+            {},
+            "Failed to replace sidecar file: " +
+                path.string());
+
+        return false;
+    }
+
+    if (destinationExists)
+    {
+        std::error_code cleanupError;
+
+        std::filesystem::remove(
+            backupPath,
+            cleanupError);
+    }
+
+    return true;
 }
 
 } // namespace stylized::material
