@@ -4,6 +4,7 @@
 #include <asset/MaterialAsset.hpp>
 #include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
+#include <asset/TextureAsset.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
 #include <render/passes/PostProcessPass.hpp>
@@ -134,6 +135,48 @@ collectMaterialHandles(
     }
 
     return handles;
+}
+
+void drawTextureStatus(
+    const char* label,
+    const stylized::asset::AssetHandle<
+        stylized::asset::TextureAsset> handle,
+    const stylized::asset::AssetRegistry& assets,
+    const char* fallbackName)
+{
+    ImGui::TextUnformatted(label);
+    ImGui::SameLine();
+
+    if (handle.isNull())
+    {
+        ImGui::TextDisabled(
+            "Missing (%s fallback)",
+            fallbackName);
+        return;
+    }
+
+    const stylized::asset::TextureAsset* texture =
+        assets.get(handle);
+
+    if (texture == nullptr)
+    {
+        ImGui::TextColored(
+            ImVec4{1.0F, 0.3F, 0.3F, 1.0F},
+            "Invalid texture asset");
+        return;
+    }
+
+    const std::string textureName =
+        !texture->sourcePath.empty()
+        ? texture->sourcePath.string()
+        : !texture->debugName.empty()
+            ? texture->debugName
+            : "Texture asset " +
+                std::to_string(handle.id().value);
+
+    ImGui::TextWrapped(
+        "%s",
+        textureName.c_str());
 }
 
 } // namespace
@@ -403,42 +446,164 @@ void ViewerPanels::draw(
                 assets);
 
         if (materialInstance != nullptr &&
-            materialInstance->mtoonParameters.has_value() &&
-            ImGui::CollapsingHeader(
-                "Base / Shade",
-                ImGuiTreeNodeFlags_DefaultOpen))
+            materialInstance->mtoonParameters.has_value())
         {
             stylized::material::MToonMaterialParameters& parameters =
                 materialInstance->mtoonParameters.value();
 
-            ImGui::ColorEdit4(
-                "Base Color Factor",
-                &materialInstance->baseColorFactor.x);
+            if (ImGui::CollapsingHeader(
+                    "Base / Shade",
+                    ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::ColorEdit4(
+                    "Base Color Factor",
+                    &materialInstance->baseColorFactor.x);
 
-            ImGui::ColorEdit3(
-                "Shade Color",
-                &parameters.shadeColor.x);
+                drawTextureStatus(
+                    "Base Texture:",
+                    materialInstance->baseColorTexture,
+                    assets,
+                    "White");
 
-            ImGui::SliderFloat(
-                "Shading Shift",
-                &parameters.shadingShift,
-                -1.0F,
-                1.0F,
-                "%.3f");
+                ImGui::ColorEdit3(
+                    "Shade Color",
+                    &parameters.shadeColor.x);
 
-            ImGui::SliderFloat(
-                "Shift Texture Scale",
-                &parameters.shadingShiftTextureScale,
-                -2.0F,
-                2.0F,
-                "%.3f");
+                drawTextureStatus(
+                    "Shade Texture:",
+                    parameters.textures.shadeTexture,
+                    assets,
+                    "White");
 
-            ImGui::SliderFloat(
-                "Shading Toony",
-                &parameters.shadingToony,
-                0.0F,
-                1.0F,
-                "%.3f");
+                ImGui::SliderFloat(
+                    "Shading Shift",
+                    &parameters.shadingShift,
+                    -1.0F,
+                    1.0F,
+                    "%.3f");
+
+                ImGui::SliderFloat(
+                    "Shift Texture Scale",
+                    &parameters.shadingShiftTextureScale,
+                    -2.0F,
+                    2.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Shift Texture:",
+                    parameters.textures.shadingShiftTexture,
+                    assets,
+                    "Black");
+
+                ImGui::SliderFloat(
+                    "Shading Toony",
+                    &parameters.shadingToony,
+                    0.0F,
+                    1.0F,
+                    "%.3f");
+            }
+
+            if (ImGui::CollapsingHeader("Normal"))
+            {
+                ImGui::SliderFloat(
+                    "Normal Scale",
+                    &parameters.normalScale,
+                    0.0F,
+                    2.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Normal Texture:",
+                    parameters.textures.normalTexture,
+                    assets,
+                    "Neutral Normal");
+            }
+
+            if (ImGui::CollapsingHeader("GI"))
+            {
+                ImGui::SliderFloat(
+                    "GI Equalization",
+                    &parameters.giEqualization,
+                    0.0F,
+                    1.0F,
+                    "%.3f");
+            }
+
+            if (ImGui::CollapsingHeader("MatCap"))
+            {
+                ImGui::ColorEdit3(
+                    "MatCap Color",
+                    &parameters.matcapColor.x);
+
+                ImGui::SliderFloat(
+                    "MatCap Strength",
+                    &parameters.matcapStrength,
+                    0.0F,
+                    4.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "MatCap Texture:",
+                    parameters.textures.matcapTexture,
+                    assets,
+                    "Black");
+            }
+
+            if (ImGui::CollapsingHeader("Rim"))
+            {
+                ImGui::ColorEdit3(
+                    "Rim Color",
+                    &parameters.rimColor.x);
+
+                ImGui::SliderFloat(
+                    "Rim Fresnel Power",
+                    &parameters.rimFresnelPower,
+                    0.1F,
+                    16.0F,
+                    "%.3f");
+
+                ImGui::SliderFloat(
+                    "Rim Lift",
+                    &parameters.rimLift,
+                    -1.0F,
+                    1.0F,
+                    "%.3f");
+
+                ImGui::SliderFloat(
+                    "Rim Lighting Mix",
+                    &parameters.rimLightingMix,
+                    0.0F,
+                    1.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Rim Mask Texture:",
+                    parameters.textures.rimMaskTexture,
+                    assets,
+                    "White");
+            }
+
+            if (ImGui::CollapsingHeader("Emission"))
+            {
+                ImGui::ColorEdit3(
+                    "Emission Color",
+                    &parameters.emissionColor.x,
+                    ImGuiColorEditFlags_HDR |
+                        ImGuiColorEditFlags_Float);
+
+                ImGui::SliderFloat(
+                    "Emission Strength",
+                    &parameters.emissionStrength,
+                    0.0F,
+                    10.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Emission Texture:",
+                    parameters.textures.emissionTexture,
+                    assets,
+                    "Black");
+            }
         }
     }
 
