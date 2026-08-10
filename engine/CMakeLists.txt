@@ -94,6 +94,7 @@ target_link_libraries(stylized_engine
     PRIVATE
         assimp::assimp
         glfw
+        nlohmann_json::nlohmann_json
         stylized_glad
         stylized_stb
 )
