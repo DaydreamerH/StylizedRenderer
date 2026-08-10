@@ -130,7 +130,7 @@ void ViewerPanels::draw(
     const std::filesystem::path& modelPath,
     const stylized::asset::AssetRegistry& assets,
     const stylized::asset::SceneAsset* scene,
-    const stylized::render::RenderWorld& renderWorld,
+    stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
     const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
@@ -217,6 +217,35 @@ void ViewerPanels::draw(
             materialKind =
                 stylized::material::MaterialKind::MToon;
             break;
+        }
+    }
+
+    if (materialKind ==
+        stylized::material::MaterialKind::MToon)
+    {
+        int debugView = static_cast<int>(
+            renderWorld.mainView.mtoonDebugView);
+
+        constexpr const char* debugViews[] = {
+            "Final",
+            "Base",
+            "Shade",
+            "Lighting",
+            "Rim",
+            "MatCap",
+            "Emission"
+        };
+
+        if (ImGui::Combo(
+                "MToon Debug View",
+                &debugView,
+                debugViews,
+                IM_ARRAYSIZE(debugViews)))
+        {
+            renderWorld.mainView.mtoonDebugView =
+                static_cast<
+                    stylized::render::MToonDebugView>(
+                        debugView);
         }
     }
 

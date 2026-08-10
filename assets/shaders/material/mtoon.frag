@@ -53,6 +53,8 @@ uniform sampler2D uEmissionTexture;
 uniform vec3 uEmissionColor;
 uniform float uEmissionStrength;
 
+uniform int uMToonDebugView;
+
 vec3 calculateSurfaceNormal()
 {
     const float faceSign =
@@ -367,7 +369,44 @@ void main()
             uEmissionStrength,
             0.0);
 
-    const vec3 finalColor = directColor + indirectColor + matcapContribution + rimContribution + emissionContribution;
+    const vec3 finalColor =
+        directColor +
+        indirectColor +
+        matcapContribution +
+        rimContribution +
+        emissionContribution;
 
-    outColor = vec4(finalColor, baseColor.a);
+    vec3 outputColor = finalColor;
+
+    switch (uMToonDebugView)
+    {
+    case 1:
+        outputColor = baseColor.rgb;
+        break;
+
+    case 2:
+        outputColor = shadeSurfaceColor;
+        break;
+
+    case 3:
+        outputColor = vec3(visibleShadingFactor);
+        break;
+
+    case 4:
+        outputColor = rimContribution;
+        break;
+
+    case 5:
+        outputColor = matcapContribution;
+        break;
+
+    case 6:
+        outputColor = emissionContribution;
+        break;
+
+    default:
+        break;
+    }
+
+    outColor = vec4(outputColor, baseColor.a);
 }

@@ -36,7 +36,7 @@ public:
         const std::filesystem::path& modelPath,
         const stylized::asset::AssetRegistry& assets,
         const stylized::asset::SceneAsset* scene,
-        const stylized::render::RenderWorld& renderWorld,
+        stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
         const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,

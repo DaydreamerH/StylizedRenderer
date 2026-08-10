@@ -26,6 +26,17 @@ namespace stylized::render
 class RuntimeMeshPrimitive;
 class RuntimeMaterial;
 
+enum class MToonDebugView : std::uint8_t
+{
+    Final = 0,
+    Base,
+    Shade,
+    Lighting,
+    Rim,
+    MatCap,
+    Emission
+};
+
 enum class RenderMaterialClass : std::uint8_t
 {
     Opaque,
@@ -122,6 +133,9 @@ struct RenderView
     DirectionalLightData mainLight;
 
     EnvironmentLightData environmentLight;
+
+    MToonDebugView mtoonDebugView =
+        MToonDebugView::Final;
 
     math::Frustum frustum;
 };

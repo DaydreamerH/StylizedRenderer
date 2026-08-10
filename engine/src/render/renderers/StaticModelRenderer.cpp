@@ -147,6 +147,14 @@ bool StaticModelRenderer::render(
                     return false;
                 }
 
+                if (!shader->setInt(
+                        "uMToonDebugView",
+                        static_cast<int>(
+                            view.mtoonDebugView)))
+                {
+                    return false;
+                }
+
                 const EnvironmentLightData& environment =
                     view.environmentLight;
 
