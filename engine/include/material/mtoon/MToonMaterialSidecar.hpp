@@ -81,4 +81,11 @@ struct MToonMaterialSidecar
     MToonSidecarError& error
 );
 
+[[nodiscard]] bool applyMToonSidecarMaterial(
+    const MToonSidecarMaterial& source,
+    const std::filesystem::path& sidecarDirectory,
+    asset::AssetRegistry& assets,
+    MaterialInstance& destination,
+    MToonSidecarError& error);
+
 } // namespace stylized::material
