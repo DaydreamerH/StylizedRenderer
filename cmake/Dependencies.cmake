@@ -15,6 +15,9 @@ set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 
+set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
+set(JSON_Install OFF CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -37,6 +40,13 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
     GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
@@ -53,6 +63,7 @@ FetchContent_MakeAvailable(
     glfw
     glm
     assimp
+    nlohmann_json
     stb
 )
 
@@ -73,6 +84,7 @@ set_target_properties(
     glfw
     glm
     assimp
+    nlohmann_json
     stylized_stb
     PROPERTIES
         FOLDER "Dependencies"

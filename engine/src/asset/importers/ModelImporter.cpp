@@ -7,6 +7,8 @@
 #include <asset/TextureAsset.hpp>
 #include <asset/importers/detail/AssimpImportInternal.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -24,6 +26,56 @@ namespace stylized::asset::importers
 
 namespace
 {
+
+[[nodiscard]] bool isGltfModelPath(
+    const std::filesystem::path& path)
+{
+    std::string extension =
+        path.extension().string();
+
+    std::transform(
+        extension.begin(),
+        extension.end(),
+        extension.begin(),
+        [](const unsigned char character)
+        {
+            return static_cast<char>(
+                std::tolower(character));
+        });
+
+    return extension == ".gltf" ||
+        extension == ".glb";
+}
+
+void alignGltfTangentsWithAssimpUvs(
+    const aiScene& importedScene) noexcept
+{
+    for (unsigned int meshIndex = 0;
+         meshIndex < importedScene.mNumMeshes;
+         ++meshIndex)
+    {
+        aiMesh* mesh =
+            importedScene.mMeshes[meshIndex];
+
+        if (mesh == nullptr ||
+            !mesh->HasTangentsAndBitangents())
+        {
+            continue;
+        }
+
+        for (unsigned int vertexIndex = 0;
+             vertexIndex < mesh->mNumVertices;
+             ++vertexIndex)
+        {
+            aiVector3D& bitangent =
+                mesh->mBitangents[vertexIndex];
+
+            bitangent.x = -bitangent.x;
+            bitangent.y = -bitangent.y;
+            bitangent.z = -bitangent.z;
+        }
+    }
+}
 
 [[nodiscard]] std::string pathToUtf8(
     const std::filesystem::path& path)
@@ -97,7 +149,7 @@ AssetHandle<SceneAsset> ModelImporter::import(
 
     const aiScene* importedScene = importer.ReadFile(
         modelPath,
-        importFlags);
+        0);
 
     if (importedScene == nullptr)
     {
@@ -116,6 +168,38 @@ AssetHandle<SceneAsset> ModelImporter::import(
     {
         std::cerr
             << "Assimp returned an incomplete scene: "
+            << path
+            << '\n';
+        return {};
+    }
+
+    if (isGltfModelPath(path))
+    {
+        alignGltfTangentsWithAssimpUvs(
+            *importedScene);
+    }
+
+    importedScene =
+        importer.ApplyPostProcessing(importFlags);
+
+    if (importedScene == nullptr)
+    {
+        std::cerr
+            << "Assimp failed to process model: "
+            << path
+            << "\nReason: "
+            << importer.GetErrorString()
+            << '\n';
+        return {};
+    }
+
+    if ((importedScene->mFlags &
+         AI_SCENE_FLAGS_INCOMPLETE) != 0 ||
+        importedScene->mRootNode == nullptr)
+    {
+        std::cerr
+            << "Assimp returned an incomplete "
+            << "processed scene: "
             << path
             << '\n';
         return {};
@@ -205,9 +289,12 @@ AssetHandle<SceneAsset> ModelImporter::import(
         for (detail::StagedMaterial& material :
              stagedMaterials)
         {
-            if (material.textureIndex.has_value())
+            if (material.baseColorTextureIndex.has_value())
             {
-                if (*material.textureIndex >=
+                const std::size_t textureIndex =
+                    *material.baseColorTextureIndex;
+
+                if (textureIndex >=
                     textureHandles.size())
                 {
                     rollback();
@@ -215,7 +302,23 @@ AssetHandle<SceneAsset> ModelImporter::import(
                 }
 
                 material.asset.baseColorTexture =
-                    textureHandles[*material.textureIndex];
+                    textureHandles[textureIndex];
+            }
+
+            if (material.normalTextureIndex.has_value())
+            {
+                const std::size_t textureIndex =
+                    *material.normalTextureIndex;
+
+                if (textureIndex >=
+                    textureHandles.size())
+                {
+                    rollback();
+                    return {};
+                }
+
+                material.asset.normalTexture =
+                    textureHandles[textureIndex];
             }
 
             const AssetHandle<MaterialAsset> handle =

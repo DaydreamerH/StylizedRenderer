@@ -10,7 +10,8 @@ enum class MaterialKind : std::uint8_t
 {
     Unlit,
     DebugNormal,
-    BasicPbr
+    BasicPbr,
+    MToon
 };
 
 struct MaterialTemplate

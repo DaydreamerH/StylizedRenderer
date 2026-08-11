@@ -27,14 +27,25 @@ RuntimeResourceCache::~RuntimeResourceCache()
 
 bool RuntimeResourceCache::initialize()
 {
-    if (initialized_) return whiteTexture_.isValid() && errorTexture_.isValid();
+    if (initialized_)
+    {
+        return whiteTexture_.isValid() &&
+            blackTexture_.isValid() &&
+            neutralNormalTexture_.isValid() &&
+            errorTexture_.isValid();
+    }
 
     whiteTexture_ = createWhiteTexture();
+    blackTexture_ = createBlackTexture();
+    neutralNormalTexture_ = createNeutralNormalTexture();
     errorTexture_ = createErrorTexture();
 
     initialized_ = true;
 
-    return whiteTexture_.isValid() && errorTexture_.isValid();
+    return whiteTexture_.isValid() &&
+        blackTexture_.isValid() &&
+        neutralNormalTexture_.isValid() &&
+        errorTexture_.isValid();
 }
 
 const RuntimeMesh*
@@ -115,6 +126,19 @@ RuntimeResourceCache::whiteTexture() const noexcept
 }
 
 const graphics::Texture2D&
+RuntimeResourceCache::blackTexture() const noexcept
+{
+    return blackTexture_;
+}
+
+const graphics::Texture2D&
+RuntimeResourceCache::neutralNormalTexture()
+    const noexcept
+{
+    return neutralNormalTexture_;
+}
+
+const graphics::Texture2D&
 RuntimeResourceCache::errorTexture() const noexcept
 {
     return errorTexture_;
@@ -126,6 +150,8 @@ void RuntimeResourceCache::clear() noexcept
     meshes_.clear();
 
     whiteTexture_ = {};
+    blackTexture_ = {};
+    neutralNormalTexture_ = {};
     errorTexture_ = {};
 
     materialInstances_.clear();
@@ -189,6 +215,39 @@ RuntimeResourceCache::createWhiteTexture()
 }
 
 graphics::Texture2D
+RuntimeResourceCache::createBlackTexture()
+{
+    constexpr std::array<std::uint8_t, 4> pixels{
+        0,
+        0,
+        0,
+        255
+    };
+
+    graphics::Texture2DDesc desc;
+    desc.width = 1;
+    desc.height = 1;
+    desc.format =
+        graphics::TextureFormat::RGBA8;
+    desc.wrapU =
+        graphics::TextureWrap::Repeat;
+    desc.wrapV =
+        graphics::TextureWrap::Repeat;
+    desc.minFilter =
+        graphics::TextureFilter::Linear;
+    desc.magFilter =
+        graphics::TextureFilter::Linear;
+    desc.debugName =
+        "Runtime Black Texture";
+
+    return graphicsDevice_.createTexture2D(
+        desc,
+        std::span<const std::uint8_t>{
+            pixels
+        });
+}
+
+graphics::Texture2D
 RuntimeResourceCache::createErrorTexture()
 {
     constexpr std::array<std::uint8_t, 16> pixels{
@@ -207,6 +266,39 @@ RuntimeResourceCache::createErrorTexture()
     desc.minFilter = graphics::TextureFilter::Nearest;
     desc.magFilter = graphics::TextureFilter::Nearest;
     desc.debugName = "Runtime Error Texture";
+
+    return graphicsDevice_.createTexture2D(
+        desc,
+        std::span<const std::uint8_t>{
+            pixels
+        });
+}
+
+graphics::Texture2D
+RuntimeResourceCache::createNeutralNormalTexture()
+{
+    constexpr std::array<std::uint8_t, 4> pixels{
+        128,
+        128,
+        255,
+        255
+    };
+
+    graphics::Texture2DDesc desc;
+    desc.width = 1;
+    desc.height = 1;
+    desc.format =
+        graphics::TextureFormat::RGBA8;
+    desc.wrapU =
+        graphics::TextureWrap::Repeat;
+    desc.wrapV =
+        graphics::TextureWrap::Repeat;
+    desc.minFilter =
+        graphics::TextureFilter::Linear;
+    desc.magFilter =
+        graphics::TextureFilter::Linear;
+    desc.debugName =
+        "Runtime Neutral Normal Texture";
 
     return graphicsDevice_.createTexture2D(
         desc,
@@ -267,7 +359,7 @@ RuntimeMaterial* RuntimeResourceCache::getOrCreateRuntimeMaterial(
     return &iterator->second;
 }
 
-const material::MaterialInstance*
+material::MaterialInstance*
 RuntimeResourceCache::getOrCreateMaterialInstance(
     const asset::AssetHandle<asset::MaterialAsset> materialHandle,
     const asset::AssetHandle<material::MaterialTemplate> templateHandle,
@@ -291,17 +383,27 @@ RuntimeResourceCache::getOrCreateMaterialInstance(
     if (existing != materialInstances_.end())
         return &existing->second;
 
-    material::MaterialInstance instance;
-    instance.templateHandle = templateHandle;
+    const asset::MaterialAsset* source = nullptr;
 
     if (!materialHandle.isNull())
     {
-        const asset::MaterialAsset* source = assets.get(materialHandle);
+        source = assets.get(materialHandle);
 
-        if (source != nullptr)
+        if (source == nullptr)
         {
-            instance = material::makeMaterialInstance(templateHandle, *source);
+            return nullptr;
         }
+    }
+
+    material::MaterialInstance instance =
+        material::makeMaterialInstance(
+            templateHandle,
+            materialTemplate->kind,
+            source);
+
+    if (!instance.isValid())
+    {
+        return nullptr;
     }
 
     const auto [iterator, inserted] =
@@ -310,6 +412,67 @@ RuntimeResourceCache::getOrCreateMaterialInstance(
             std::move(instance));
 
     return &iterator->second;
+}
+
+bool RuntimeResourceCache::resetMaterialInstance(
+    const asset::AssetHandle<asset::MaterialAsset> materialHandle,
+    const asset::AssetHandle<material::MaterialTemplate> templateHandle,
+    const asset::AssetRegistry& assets)
+{
+    if (templateHandle.isNull())
+    {
+        return false;
+    }
+
+    const material::MaterialTemplate* materialTemplate =
+        assets.get(templateHandle);
+
+    if (materialTemplate == nullptr ||
+        !materialTemplate->isValid())
+    {
+        return false;
+    }
+
+    const asset::MaterialAsset* source = nullptr;
+
+    if (!materialHandle.isNull())
+    {
+        source = assets.get(materialHandle);
+
+        if (source == nullptr)
+        {
+            return false;
+        }
+    }
+
+    material::MaterialInstance replacement =
+        material::makeMaterialInstance(
+            templateHandle,
+            materialTemplate->kind,
+            source);
+
+    if (!replacement.isValid())
+    {
+        return false;
+    }
+
+    const MaterialInstanceKey key{
+        .materialId = materialHandle.id().value,
+        .templateId = templateHandle.id().value
+    };
+
+    const auto existing =
+        materialInstances_.find(key);
+
+    if (existing != materialInstances_.end())
+    {
+        existing->second = std::move(replacement);
+        return true;
+    }
+
+    return materialInstances_.emplace(
+        key,
+        std::move(replacement)).second;
 }
 
 } // namespace stylized::render

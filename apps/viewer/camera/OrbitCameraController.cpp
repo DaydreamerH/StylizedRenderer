@@ -29,7 +29,9 @@ OrbitCameraController::OrbitCameraController(stylized::scene::Camera& camera) no
     updateCamera();
 }
 
-void OrbitCameraController::update(stylized::platform::Window& window)
+void OrbitCameraController::update(
+    stylized::platform::Window& window,
+    const bool inputEnabled)
 {
     double cursorX = 0.0;
     double cursorY = 0.0;
@@ -51,7 +53,9 @@ void OrbitCameraController::update(stylized::platform::Window& window)
 
     bool changed = false;
 
-    if (window.isMouseButtonPressed(stylized::platform::MouseButton::Left))
+    if (inputEnabled &&
+        window.isMouseButtonPressed(
+            stylized::platform::MouseButton::Left))
     {
         yaw_ -= deltaX * orbitSensitivity;
         pitch_ -= deltaY * orbitSensitivity;
@@ -61,7 +65,9 @@ void OrbitCameraController::update(stylized::platform::Window& window)
         changed = true;
     }
 
-    if (window.isMouseButtonPressed(stylized::platform::MouseButton::Middle))
+    if (inputEnabled &&
+        window.isMouseButtonPressed(
+            stylized::platform::MouseButton::Middle))
     {
         const glm::vec3 forward = glm::normalize(target_ - camera_.position());
         const glm::vec3 right = glm::normalize(glm::cross(forward, camera_.up()));
@@ -76,7 +82,8 @@ void OrbitCameraController::update(stylized::platform::Window& window)
 
     const double scrollDelta = window.consumeScrollDelta();
 
-    if (scrollDelta != 0.0)
+    if (inputEnabled &&
+        scrollDelta != 0.0)
     {
         distance_ *= std::exp(-static_cast<float>(scrollDelta) * zoomSensitivity);
         distance_ = std::clamp(distance_, minimumDistance, maximumDistance);

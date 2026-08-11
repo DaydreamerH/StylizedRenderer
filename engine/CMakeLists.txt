@@ -6,6 +6,7 @@ add_library(stylized_engine STATIC
     include/asset/SceneAsset.hpp
     include/asset/TextureAsset.hpp
     include/asset/importers/ModelImporter.hpp
+    include/asset/importers/TextureImporter.hpp
     include/asset/importers/detail/AssimpImportInternal.hpp
     include/core/Application.hpp
     include/core/NonCopyable.hpp
@@ -23,6 +24,9 @@ add_library(stylized_engine STATIC
     include/graphics/resources/VertexArray.hpp
     include/material/MaterialInstance.hpp
     include/material/MaterialTemplate.hpp
+    include/material/mtoon/MToonMaterialParameters.hpp
+    include/material/mtoon/MToonMaterialSidecar.hpp
+    include/material/mtoon/MToonMaterialSidecarSerializer.hpp
     include/math/Bounds.hpp
     include/math/Frustum.hpp
     include/platform/Window.hpp
@@ -46,6 +50,7 @@ add_library(stylized_engine STATIC
     src/asset/SceneAsset.cpp
     src/asset/TextureAsset.cpp
     src/asset/importers/ModelImporter.cpp
+    src/asset/importers/TextureImporter.cpp
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp
@@ -63,6 +68,8 @@ add_library(stylized_engine STATIC
     src/graphics/opengl/resources/Texture2D.cpp
     src/graphics/opengl/resources/VertexArray.cpp
     src/material/MaterialInstance.cpp
+    src/material/mtoon/MToonMaterialSidecar.cpp
+    src/material/mtoon/MToonMaterialSidecarSerializer.cpp
     src/math/Bounds.cpp
     src/math/Frustum.cpp
     src/platform/Window.cpp
@@ -91,6 +98,7 @@ target_link_libraries(stylized_engine
     PRIVATE
         assimp::assimp
         glfw
+        nlohmann_json::nlohmann_json
         stylized_glad
         stylized_stb
 )

@@ -55,6 +55,42 @@ RuntimeMaterial::RuntimeMaterial(
         break;
     case material::MaterialKind::DebugNormal:
         break;
+    case material::MaterialKind::MToon:
+        if (!shader_.setInt(
+                "uBaseColorTexture",
+                0) ||
+            !shader_.setInt(
+                "uShadowMap",
+                1
+            ) ||
+            !shader_.setInt(
+                "uNormalTexture",
+                2
+            ) ||
+            !shader_.setInt(
+                "uShadeTexture",
+                3
+            ) ||
+            !shader_.setInt(
+                "uShadingShiftTexture",
+                4
+            ) ||
+            !shader_.setInt(
+                "uMatcapTexture",
+                5
+            ) ||
+            !shader_.setInt(
+                "uRimMaskTexture",
+                6
+            ) ||
+            !shader_.setInt(
+                "uEmissionTexture",
+                7
+            ))
+        {
+            shader_ = {};
+        }
+        break;
     }
 }
 
@@ -169,6 +205,211 @@ bool RuntimeMaterial::bind(
         }
 
         baseColorTexture.bind(0);
+        return true;
+    }
+
+    case material::MaterialKind::MToon:
+    {
+        if (!instance.mtoonParameters.has_value())
+        {
+            return false;
+        }
+
+        const graphics::Texture2D& baseColorTexture =
+            resourceCache.getOrCreateTexture(
+                instance.baseColorTexture,
+                assetRegistry);
+
+        if (!baseColorTexture.isValid())
+        {
+            return false;
+        }
+
+        const material::MToonMaterialParameters&
+            parameters =
+                instance.mtoonParameters.value();
+
+        const graphics::Texture2D& shadeTexture =
+            parameters.textures.shadeTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.shadeTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& shadingShiftTexture =
+            parameters.textures.shadingShiftTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.shadingShiftTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& normalTexture =
+            parameters.textures.normalTexture.isNull()
+            ? resourceCache.neutralNormalTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.normalTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& matcapTexture =
+            parameters.textures.matcapTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.matcapTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& rimMaskTexture =
+            parameters.textures.rimMaskTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.rimMaskTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& emissionTexture =
+            parameters.textures.emissionTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.emissionTexture,
+                assetRegistry
+            );
+
+        if (!shadeTexture.isValid() ||
+            !shadingShiftTexture.isValid() ||
+            !normalTexture.isValid() ||
+            !matcapTexture.isValid() ||
+            !rimMaskTexture.isValid() ||
+            !emissionTexture.isValid())
+        {
+            return false;
+        }
+
+        if (!shader_.setVec4(
+                "uBaseColorFactor",
+                instance.baseColorFactor))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+                "uShadeColor",
+                parameters.shadeColor.x,
+                parameters.shadeColor.y,
+                parameters.shadeColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadingShift",
+                parameters.shadingShift))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadingToony",
+                parameters.shadingToony))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadingShiftTextureScale",
+                parameters.shadingShiftTextureScale))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uNormalScale",
+            parameters.normalScale
+        ))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uGiEqualization",
+            parameters.giEqualization
+        ))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+            "uMatcapColor",
+            parameters.matcapColor.x,
+            parameters.matcapColor.y,
+            parameters.matcapColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uMatcapStrength",
+            parameters.matcapStrength))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+            "uRimColor",
+            parameters.rimColor.x,
+            parameters.rimColor.y,
+            parameters.rimColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimFresnelPower",
+            parameters.rimFresnelPower))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimLift",
+            parameters.rimLift))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uRimLightingMix",
+            parameters.rimLightingMix))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+            "uEmissionColor",
+            parameters.emissionColor.x,
+            parameters.emissionColor.y,
+            parameters.emissionColor.z))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+            "uEmissionStrength",
+            parameters.emissionStrength))
+        {
+            return false;
+        }
+
+        baseColorTexture.bind(0);
+        normalTexture.bind(2);
+        shadeTexture.bind(3);
+        shadingShiftTexture.bind(4);
+        matcapTexture.bind(5);
+        rimMaskTexture.bind(6);
+        emissionTexture.bind(7);
+
         return true;
     }
     }

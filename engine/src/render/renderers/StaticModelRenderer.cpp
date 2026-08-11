@@ -88,22 +88,19 @@ bool StaticModelRenderer::render(
             return false;
         }
 
-        if (runtimeMaterial.kind() == material::MaterialKind::BasicPbr)
+        const material::MaterialKind materialKind =
+            runtimeMaterial.kind();
+
+        if (materialKind ==
+                material::MaterialKind::BasicPbr ||
+            materialKind ==
+                material::MaterialKind::MToon)
         {
             const RenderView& view =
                 renderWorld.mainView;
 
             const DirectionalLightData& light =
                 view.mainLight;
-
-            if (!shader->setVec3(
-                    "uCameraPosition",
-                    view.cameraPosition.x,
-                    view.cameraPosition.y,
-                    view.cameraPosition.z))
-            {
-                return false;
-            }
 
             if (!shader->setVec3(
                     "uLightDirection",
@@ -128,6 +125,64 @@ bool StaticModelRenderer::render(
                     light.intensity))
             {
                 return false;
+            }
+
+            if (!shader->setVec3(
+                    "uCameraPosition",
+                    view.cameraPosition.x,
+                    view.cameraPosition.y,
+                    view.cameraPosition.z))
+            {
+                return false;
+            }
+
+            if (materialKind ==
+                material::MaterialKind::MToon)
+            {
+                if (!shader->setMat4(
+                    "uView",
+                    view.view
+                ))
+                {
+                    return false;
+                }
+
+                if (!shader->setInt(
+                        "uMToonDebugView",
+                        static_cast<int>(
+                            view.mtoonDebugView)))
+                {
+                    return false;
+                }
+
+                const EnvironmentLightData& environment =
+                    view.environmentLight;
+
+                if (!shader->setVec3(
+                    "uEnvironmentSkyColor",
+                    environment.skyColor.r,
+                    environment.skyColor.g,
+                    environment.skyColor.b
+                ))
+                {
+                    return false;
+                }
+
+                if (!shader->setVec3(
+                    "uEnvironmentGroundColor",
+                    environment.groundColor.r,
+                    environment.groundColor.g,
+                    environment.groundColor.b))
+                {
+                    return false;
+                }
+
+                if (!shader->setFloat(
+                    "uEnvironmentIntensity",
+                    environment.intensity))
+                {
+                    return false;
+                }
             }
 
             const bool shadowEnabled =

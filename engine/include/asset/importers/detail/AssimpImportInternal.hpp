@@ -22,7 +22,12 @@ namespace stylized::asset::importers::detail
 struct StagedMaterial
 {
     MaterialAsset asset;
-    std::optional<std::size_t> textureIndex;
+
+    std::optional<std::size_t>
+        baseColorTextureIndex;
+
+    std::optional<std::size_t>
+        normalTextureIndex;
 };
 
 struct StagedMesh

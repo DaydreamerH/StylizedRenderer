@@ -2,6 +2,9 @@
 
 #include <asset/AssetHandle.hpp>
 #include <material/MaterialTemplate.hpp>
+#include <material/mtoon/MToonMaterialParameters.hpp>
+
+#include <optional>
 
 #include <glm/vec4.hpp>
 
@@ -25,6 +28,8 @@ struct MaterialInstance
 
     asset::AssetHandle<asset::TextureAsset> baseColorTexture;
 
+    std::optional<MToonMaterialParameters> mtoonParameters;
+
     [[nodiscard]] bool isValid() const noexcept
     {
         return !templateHandle.isNull();
@@ -33,6 +38,7 @@ struct MaterialInstance
 
 [[nodiscard]] MaterialInstance makeMaterialInstance(
     asset::AssetHandle<MaterialTemplate> templateHandle,
-    const asset::MaterialAsset& source);
+    MaterialKind kind,
+    const asset::MaterialAsset* source);
 
 } // namespace stylized::material

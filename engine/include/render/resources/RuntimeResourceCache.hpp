@@ -47,6 +47,11 @@ public:
     
     [[nodiscard]] const graphics::Texture2D& whiteTexture() const noexcept;
 
+    [[nodiscard]] const graphics::Texture2D& blackTexture() const noexcept;
+
+    [[nodiscard]] const graphics::Texture2D&
+        neutralNormalTexture() const noexcept;
+
     [[nodiscard]] const graphics::Texture2D& errorTexture() const noexcept;
 
     [[nodiscard]] RuntimeMaterial* getOrCreateRuntimeMaterial(
@@ -55,11 +60,16 @@ public:
         const asset::AssetRegistry& assets
     );
 
-    [[nodiscard]] const material::MaterialInstance* getOrCreateMaterialInstance(
+    [[nodiscard]] material::MaterialInstance* getOrCreateMaterialInstance(
         asset::AssetHandle<asset::MaterialAsset> materialHandle,
         asset::AssetHandle<material::MaterialTemplate> templateHandle,
         const asset::AssetRegistry& assets
     );
+
+    [[nodiscard]] bool resetMaterialInstance(
+        asset::AssetHandle<asset::MaterialAsset> materialHandle,
+        asset::AssetHandle<material::MaterialTemplate> templateHandle,
+        const asset::AssetRegistry& assets);
 
     void clear() noexcept;
     
@@ -97,9 +107,14 @@ private:
 
     [[nodiscard]] graphics::Texture2D createWhiteTexture();
 
+    [[nodiscard]] graphics::Texture2D createBlackTexture();
+
+    [[nodiscard]] graphics::Texture2D createNeutralNormalTexture();
+
     [[nodiscard]] graphics::Texture2D createErrorTexture();
 
-    [[nodiscard]] graphics::Texture2D uploadTexture(const asset::TextureAsset& textureAsset);
+    [[nodiscard]] graphics::Texture2D uploadTexture(
+        const asset::TextureAsset& textureAsset);
 
     graphics::GraphicsDevice& graphicsDevice_;
 
@@ -108,6 +123,8 @@ private:
     std::unordered_map<std::uint64_t, RuntimeMaterial> runtimeMaterials_;
 
     graphics::Texture2D whiteTexture_;
+    graphics::Texture2D blackTexture_;
+    graphics::Texture2D neutralNormalTexture_;
     graphics::Texture2D errorTexture_;
 
     std::unordered_map<
