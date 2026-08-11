@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <string>
 
 struct GLFWwindow;
 
@@ -39,7 +40,7 @@ public:
 
     void draw(
         const std::filesystem::path& modelPath,
-        const stylized::asset::AssetRegistry& assets,
+        stylized::asset::AssetRegistry& assets,
         stylized::render::RuntimeResourceCache& resourceCache,
         stylized::asset::AssetHandle<
             stylized::material::MaterialTemplate>
@@ -63,6 +64,9 @@ private:
     stylized::asset::AssetHandle<
         stylized::asset::MaterialAsset>
         selectedMaterial_;
+
+    std::string materialSidecarStatus_;
+    bool materialSidecarFailed_ = false;
 
     bool initialized_ = false;
 };

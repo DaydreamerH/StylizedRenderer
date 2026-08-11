@@ -13,6 +13,8 @@
 #include <render/resources/RuntimeResourceCache.hpp>
 
 #include <material/MaterialInstance.hpp>
+#include <material/mtoon/MToonMaterialSidecar.hpp>
+#include <material/mtoon/MToonMaterialSidecarSerializer.hpp>
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -20,6 +22,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -137,6 +140,240 @@ collectMaterialHandles(
     return handles;
 }
 
+std::filesystem::path makeMaterialSidecarPath(
+    const std::filesystem::path& modelPath)
+{
+    std::filesystem::path sidecarPath =
+        modelPath;
+
+    sidecarPath.replace_extension(
+        ".mtoon.json");
+
+    return sidecarPath;
+}
+
+void setSidecarError(
+    stylized::material::MToonSidecarError& error,
+    const std::string& material,
+    const std::string& field,
+    const std::string& message)
+{
+    error.material = material;
+    error.field = field;
+    error.message = message;
+}
+
+std::string formatSidecarError(
+    const stylized::material::MToonSidecarError& error)
+{
+    std::string message = "Failed";
+
+    if (!error.material.empty())
+    {
+        message += ": material=" +
+            error.material;
+    }
+
+    if (!error.field.empty())
+    {
+        message += ", field=" +
+            error.field;
+    }
+
+    if (!error.message.empty())
+    {
+        message += ", reason=" +
+            error.message;
+    }
+
+    return message;
+}
+
+bool saveMaterialSidecar(
+    const std::filesystem::path& modelPath,
+    const std::vector<
+        stylized::asset::AssetHandle<
+            stylized::asset::MaterialAsset>>& materialHandles,
+    const stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate> materialTemplate,
+    stylized::asset::AssetRegistry& assets,
+    stylized::render::RuntimeResourceCache& resourceCache,
+    stylized::material::MToonSidecarError& error)
+{
+    const std::filesystem::path sidecarPath =
+        makeMaterialSidecarPath(modelPath);
+
+    const std::filesystem::path sidecarDirectory =
+        sidecarPath.parent_path();
+
+    stylized::material::MToonMaterialSidecar sidecar;
+
+    for (const auto handle : materialHandles)
+    {
+        const stylized::asset::MaterialAsset* material =
+            assets.get(handle);
+
+        if (material == nullptr)
+        {
+            setSidecarError(
+                error,
+                {},
+                "material",
+                "Material asset is unavailable.");
+
+            return false;
+        }
+
+        stylized::material::MaterialInstance* instance =
+            resourceCache.getOrCreateMaterialInstance(
+                handle,
+                materialTemplate,
+                assets);
+
+        if (instance == nullptr)
+        {
+            setSidecarError(
+                error,
+                material->name,
+                "materialInstance",
+                "Material instance is unavailable.");
+
+            return false;
+        }
+
+        stylized::material::MToonSidecarMaterial captured;
+
+        if (!stylized::material::captureMToonSidecarMaterial(
+                material->name,
+                *instance,
+                assets,
+                sidecarDirectory,
+                captured,
+                error))
+        {
+            return false;
+        }
+
+        sidecar.materials.push_back(
+            std::move(captured));
+    }
+
+    return stylized::material::saveMToonSidecarFile(
+        sidecarPath,
+        sidecar,
+        error);
+}
+
+bool loadMaterialSidecar(
+    const std::filesystem::path& modelPath,
+    const std::vector<
+        stylized::asset::AssetHandle<
+            stylized::asset::MaterialAsset>>& materialHandles,
+    const stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate> materialTemplate,
+    stylized::asset::AssetRegistry& assets,
+    stylized::render::RuntimeResourceCache& resourceCache,
+    stylized::material::MToonSidecarError& error)
+{
+    const std::filesystem::path sidecarPath =
+        makeMaterialSidecarPath(modelPath);
+
+    stylized::material::MToonMaterialSidecar sidecar;
+
+    if (!stylized::material::loadMToonSidecarFile(
+            sidecarPath,
+            sidecar,
+            error))
+    {
+        return false;
+    }
+
+    struct PendingMaterial
+    {
+        stylized::material::MaterialInstance* destination = nullptr;
+        stylized::material::MaterialInstance value;
+    };
+
+    std::vector<PendingMaterial> pendingMaterials;
+    pendingMaterials.reserve(
+        sidecar.materials.size());
+
+    for (const stylized::material::MToonSidecarMaterial& record :
+         sidecar.materials)
+    {
+        stylized::asset::AssetHandle<
+            stylized::asset::MaterialAsset>
+            matchingHandle;
+
+        for (const auto handle : materialHandles)
+        {
+            const stylized::asset::MaterialAsset* material =
+                assets.get(handle);
+
+            if (material != nullptr &&
+                material->name == record.name)
+            {
+                matchingHandle = handle;
+                break;
+            }
+        }
+
+        if (matchingHandle.isNull())
+        {
+            setSidecarError(
+                error,
+                record.name,
+                "name",
+                "Material does not exist in the current model.");
+
+            return false;
+        }
+
+        stylized::material::MaterialInstance* destination =
+            resourceCache.getOrCreateMaterialInstance(
+                matchingHandle,
+                materialTemplate,
+                assets);
+
+        if (destination == nullptr)
+        {
+            setSidecarError(
+                error,
+                record.name,
+                "materialInstance",
+                "Material instance is unavailable.");
+
+            return false;
+        }
+
+        stylized::material::MaterialInstance applied =
+            *destination;
+
+        if (!stylized::material::applyMToonSidecarMaterial(
+                record,
+                sidecarPath.parent_path(),
+                assets,
+                applied,
+                error))
+        {
+            return false;
+        }
+
+        pendingMaterials.push_back({
+            .destination = destination,
+            .value = std::move(applied)
+        });
+    }
+
+    for (PendingMaterial& pending : pendingMaterials)
+    {
+        *pending.destination =
+            std::move(pending.value);
+    }
+
+    return true;
+}
+
 void drawTextureStatus(
     const char* label,
     const stylized::asset::AssetHandle<
@@ -244,7 +481,7 @@ void ViewerPanels::beginFrame() noexcept
 
 void ViewerPanels::draw(
     const std::filesystem::path& modelPath,
-    const stylized::asset::AssetRegistry& assets,
+    stylized::asset::AssetRegistry& assets,
     stylized::render::RuntimeResourceCache& resourceCache,
     const stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
@@ -443,6 +680,68 @@ void ViewerPanels::draw(
         }
 
         ImGui::EndCombo();
+    }
+
+    if (materialKind ==
+        stylized::material::MaterialKind::MToon)
+    {
+        const std::filesystem::path sidecarPath =
+            makeMaterialSidecarPath(modelPath);
+
+        ImGui::TextWrapped(
+            "Sidecar: %s",
+            sidecarPath.string().c_str());
+
+        stylized::material::MToonSidecarError sidecarError;
+
+        if (ImGui::Button("Save Materials"))
+        {
+            materialSidecarFailed_ =
+                !saveMaterialSidecar(
+                    modelPath,
+                    materialHandles,
+                    materialTemplate,
+                    assets,
+                    resourceCache,
+                    sidecarError);
+
+            materialSidecarStatus_ =
+                materialSidecarFailed_
+                ? formatSidecarError(sidecarError)
+                : "Saved: " + sidecarPath.string();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Load Materials"))
+        {
+            materialSidecarFailed_ =
+                !loadMaterialSidecar(
+                    modelPath,
+                    materialHandles,
+                    materialTemplate,
+                    assets,
+                    resourceCache,
+                    sidecarError);
+
+            materialSidecarStatus_ =
+                materialSidecarFailed_
+                ? formatSidecarError(sidecarError)
+                : "Loaded: " + sidecarPath.string();
+        }
+
+        if (!materialSidecarStatus_.empty())
+        {
+            const ImVec4 statusColor =
+                materialSidecarFailed_
+                ? ImVec4{1.0F, 0.3F, 0.3F, 1.0F}
+                : ImVec4{0.3F, 1.0F, 0.3F, 1.0F};
+
+            ImGui::TextColored(
+                statusColor,
+                "%s",
+                materialSidecarStatus_.c_str());
+        }
     }
 
     if (materialKind ==
