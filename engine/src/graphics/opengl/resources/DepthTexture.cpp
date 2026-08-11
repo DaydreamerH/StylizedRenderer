@@ -79,15 +79,20 @@ DepthTexture::DepthTexture(
         static_cast<GLsizei>(desc.extent.width),
         static_cast<GLsizei>(desc.extent.height));
 
+    const GLint textureFilter =
+        desc.comparisonSampling
+            ? GL_LINEAR
+            : GL_NEAREST;
+
     glTextureParameteri(
         id_,
         GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST);
+        textureFilter);
 
     glTextureParameteri(
         id_,
         GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST);
+        textureFilter);
 
     glTextureParameteri(
         id_,
@@ -102,7 +107,17 @@ DepthTexture::DepthTexture(
     glTextureParameteri(
         id_,
         GL_TEXTURE_COMPARE_MODE,
-        GL_NONE);
+        desc.comparisonSampling
+            ? GL_COMPARE_REF_TO_TEXTURE
+            : GL_NONE);
+
+    if (desc.comparisonSampling)
+    {
+        glTextureParameteri(
+            id_,
+            GL_TEXTURE_COMPARE_FUNC,
+            GL_LEQUAL);
+    }
 
 #ifndef NDEBUG
     if (!desc.debugName.empty() &&

@@ -18,7 +18,7 @@ uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
 uniform float uLightIntensity;
 
-uniform sampler2D uShadowMap;
+uniform sampler2DShadow uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
 
@@ -115,24 +115,42 @@ float calculateShadowVisibility(
     
     float visibility = 0.0;
 
-    for (int offsetY = -1; offsetY <= 1; ++offsetY)
+    const float weights[3] =
+        float[](
+            1.0,
+            2.0,
+            1.0);
+
+    for (int offsetY = -1;
+        offsetY <= 1;
+        ++offsetY)
     {
-        for (int offsetX = -1; offsetX <= 1; ++offsetX)
+        for (int offsetX = -1;
+            offsetX <= 1;
+            ++offsetX)
         {
             const vec2 sampleCoordinate =
-                shadowCoordinate.xy + vec2(float(offsetX), float(offsetY)) * texelSize;
-            
-            const float storedDepth =
-                texture(uShadowMap, sampleCoordinate).r;
+                shadowCoordinate.xy +
+                vec2(
+                    float(offsetX),
+                    float(offsetY)) *
+                texelSize;
+
+            const float sampleWeight =
+                weights[offsetX + 1] *
+                weights[offsetY + 1];
 
             visibility +=
-                currentDepth <= storedDepth
-                ? 1.0
-                : 0.0;
+                texture(
+                    uShadowMap,
+                    vec3(
+                        sampleCoordinate,
+                        currentDepth)) *
+                sampleWeight;
         }
     }
-    
-    return visibility / 9.0;
+
+    return visibility / 16.0;
 }
 
 void main()

@@ -133,6 +133,8 @@ struct DepthTextureDesc
 
     DepthTextureFormat format = DepthTextureFormat::Depth24Stencil8;
 
+    bool comparisonSampling = false;
+
     std::string debugName;
 };
 

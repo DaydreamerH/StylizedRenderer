@@ -28,7 +28,7 @@ uniform float uEnvironmentIntensity;
 
 uniform float uGiEqualization;
 
-uniform sampler2D uShadowMap;
+uniform sampler2DShadow uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
 
@@ -55,16 +55,17 @@ uniform float uEmissionStrength;
 
 uniform int uMToonDebugView;
 
-vec3 calculateSurfaceNormal()
+vec3 calculateGeometricNormal()
 {
-    const float faceSign =
-        gl_FrontFacing
-            ? 1.0
-            : -1.0;
+    const float faceSign = gl_FrontFacing
+        ? 1.0
+        : -1.0;
 
-    const vec3 geometricNormal =
-        normalize(vertexNormal) * faceSign;
+    return normalize(vertexNormal) * faceSign;
+}
 
+vec3 calculateSurfaceNormal(const vec3 geometricNormal)
+{
     const vec3 orthogonalTangent =
         vertexWorldTangent.xyz -
         geometricNormal *
@@ -141,7 +142,7 @@ vec3 calculateSurfaceNormal()
 
 float calculateShadowVisibility(
     const vec3 worldPosition,
-    const vec3 normal,
+    const vec3 geometricNormal,
     const vec3 lightDirection
 )
 {
@@ -171,7 +172,7 @@ float calculateShadowVisibility(
 
     const float normalDotLight =
         max(
-            dot(normal, lightDirection),
+            dot(geometricNormal, lightDirection),
             0.0);
 
     const float bias =
@@ -191,34 +192,35 @@ float calculateShadowVisibility(
 
     float visibility = 0.0;
 
-    for (int offsetY = -1;
-         offsetY <= 1;
-         ++offsetY)
+    const float weights[3] =
+        float[](
+            1.0,
+            2.0,
+            1.0
+        );
+
+    for (int offsetY = -1; offsetY <= 1; offsetY++)
     {
-        for (int offsetX = -1;
-             offsetX <= 1;
-             ++offsetX)
+        for (int offsetX = -1; offsetX <= 1; offsetX++)
         {
             const vec2 sampleCoordinate =
                 shadowCoordinate.xy +
-                vec2(
-                    float(offsetX),
-                    float(offsetY)) *
+                vec2(float(offsetX), float(offsetY)) *
                 texelSize;
 
-            const float storedDepth =
-                texture(
-                    uShadowMap,
-                    sampleCoordinate).r;
+            const float sampleWeight =
+                weights[offsetX + 1] *
+                weights[offsetY + 1];
 
             visibility +=
-                currentDepth <= storedDepth
-                    ? 1.0
-                    : 0.0;
+                texture(uShadowMap,
+                    vec3(
+                        sampleCoordinate, currentDepth
+                    )) * sampleWeight;
         }
     }
 
-    return visibility / 9.0;
+    return visibility / 16.0;
 }
 
 void main()
@@ -229,8 +231,12 @@ void main()
     const vec4 baseColor =
         uBaseColorFactor * sampledBaseColor;
 
+    const vec3 geometricNormal =
+        calculateGeometricNormal();
+
     const vec3 normal =
-        calculateSurfaceNormal();
+        calculateSurfaceNormal(
+            geometricNormal);
 
     const vec3 lightDirection =
         normalize(-uLightDirection);
@@ -278,7 +284,7 @@ void main()
     const float shadowVisibility =
         calculateShadowVisibility(
             vertexWorldPosition,
-            normal,
+            geometricNormal,
             lightDirection);
 
     const float visibleShadingFactor =

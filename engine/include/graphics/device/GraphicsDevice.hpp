@@ -70,6 +70,12 @@ public:
         Extent2D destinationExtent
     );
 
+    void setPolygonOffset(
+        bool enabled,
+        float factor = 0.0F,
+        float units = 0.0F
+    );
+
     void clearDepth(float value = 1.0F);
 
     void drawIndexed(const DrawIndexedCommand& command);

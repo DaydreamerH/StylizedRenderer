@@ -75,6 +75,8 @@ bool ShadowPass::ensureResources(
     depthDesc.format =
         graphics::DepthTextureFormat::Depth32Float;
 
+    depthDesc.comparisonSampling = true;
+
     depthDesc.debugName =
         "Directional Shadow Depth";
 
@@ -165,6 +167,11 @@ bool ShadowPass::execute(
 
     graphicsDevice_.clearDepth();
 
+    graphicsDevice_.setPolygonOffset(
+        true,
+        2.0F,
+        4.0F);
+
     for (const ShadowRenderItem& item :
          renderWorld.shadowItems)
     {
@@ -178,6 +185,8 @@ bool ShadowPass::execute(
                 "uModel",
                 item.world))
         {
+            graphicsDevice_.setPolygonOffset(false);
+
             graphicsDevice_.bindFramebuffer(
                 nullptr);
 
@@ -211,6 +220,8 @@ bool ShadowPass::execute(
 
         ++lastDrawCallCount_;
     }
+
+    graphicsDevice_.setPolygonOffset(false);
 
     frame.shadowMap =
         &depth_;

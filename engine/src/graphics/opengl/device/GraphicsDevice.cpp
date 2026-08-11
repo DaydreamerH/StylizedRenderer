@@ -119,6 +119,22 @@ ShaderProgram GraphicsDevice::createShaderProgram(const ShaderProgramDesc &desc)
     return ShaderProgram{desc};
 }
 
+void GraphicsDevice::setPolygonOffset(
+    const bool enabled,
+    const float factor,
+    const float units)
+{
+    if (!enabled)
+    {
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        return;
+    }
+
+    glEnable(GL_POLYGON_OFFSET_FILL);
+
+    glPolygonOffset(factor, units);
+}
+
 void GraphicsDevice::clearDepth(const float value)
 {
     if (!initialized_) return;
