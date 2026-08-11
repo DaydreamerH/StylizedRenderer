@@ -93,13 +93,26 @@ vec3 calculateSurfaceNormal()
             tangent) *
         vertexWorldTangent.w;
 
-    vec3 tangentSpaceNormal =
-        texture(uNormalTexture, vertexTexCoord0).xyz * 2.0 - 1.0;
+    vec2 tangentSpaceNormalXY =
+        texture(uNormalTexture, vertexTexCoord0).xy * 2.0 - 1.0;
 
-    tangentSpaceNormal.xy *=
+    tangentSpaceNormalXY *=
         max(
             uNormalScale,
             0.0);
+
+    const float tangentSpaceNormalZ =
+        sqrt(
+            max(
+                1.0 - dot(
+                    tangentSpaceNormalXY,
+                    tangentSpaceNormalXY),
+                0.0));
+
+    vec3 tangentSpaceNormal =
+        vec3(
+            tangentSpaceNormalXY,
+            tangentSpaceNormalZ);
 
     const float sampledLengthSquared =
         dot(
