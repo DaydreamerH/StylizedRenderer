@@ -4,12 +4,23 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <string_view>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+namespace stylized::asset
+{
+
+class AssetRegistry;
+
+} // namespace stylized::asset
+
 namespace stylized::material
 {
+
+struct MaterialInstance;
+struct MToonSidecarError;
 
 struct MToonSidecarTexturePaths
 {
@@ -60,5 +71,14 @@ struct MToonMaterialSidecar
 
     std::vector<MToonSidecarMaterial> materials;
 };
+
+[[nodiscard]] bool captureMToonSidecarMaterial(
+    std::string_view materialName,
+    const MaterialInstance& instance,
+    const asset::AssetRegistry& assets,
+    const std::filesystem::path& sidecarDirectory,
+    MToonSidecarMaterial& destination,
+    MToonSidecarError& error
+);
 
 } // namespace stylized::material
