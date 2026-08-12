@@ -931,6 +931,69 @@ void ViewerPanels::draw(
                     assets,
                     "Black");
             }
+
+            if (ImGui::CollapsingHeader("Outline"))
+            {
+                ImGui::Checkbox(
+                    "Outline Enabled",
+                    &parameters.outline.enabled);
+
+                int widthMode =
+                    parameters.outline.widthMode ==
+                            stylized::material::OutlineWidthMode::World
+                        ? 0
+                        : 1;
+
+                constexpr const char* widthModes[] = {
+                    "World",
+                    "Screen"
+                };
+
+                if (ImGui::Combo(
+                        "Outline Width Mode",
+                        &widthMode,
+                        widthModes,
+                        IM_ARRAYSIZE(widthModes)))
+                {
+                    parameters.outline.widthMode =
+                        widthMode == 0
+                            ? stylized::material::
+                                OutlineWidthMode::World
+                            : stylized::material::
+                                OutlineWidthMode::Screen;
+                }
+
+                const float widthSpeed =
+                    parameters.outline.widthMode ==
+                            stylized::material::OutlineWidthMode::World
+                        ? 0.001F
+                        : 0.1F;
+
+                ImGui::DragFloat(
+                    "Outline Width",
+                    &parameters.outline.width,
+                    widthSpeed,
+                    0.0F,
+                    100.0F,
+                    "%.3f");
+
+                ImGui::ColorEdit3(
+                    "Outline Color",
+                    &parameters.outline.color.x);
+
+                ImGui::SliderFloat(
+                    "Outline Lighting Mix",
+                    &parameters.outline.lightingMix,
+                    0.0F,
+                    1.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Outline Width Mask:",
+                    parameters.textures.outlineWidthMaskTexture,
+                    assets,
+                    "White");
+            }
         }
     }
 
