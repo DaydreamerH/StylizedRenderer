@@ -5,6 +5,8 @@
 #include <iostream>
 #include <limits>
 #include <utility>
+#include <vector>
+#include <algorithm>
 
 namespace stylized::graphics
 {
@@ -30,75 +32,176 @@ GLenum depthAttachment(const DepthTextureFormat format) noexcept
 
 Framebuffer::Framebuffer(const FramebufferDesc& desc)
 {
-    if (desc.colorTexture == nullptr &&
+    if (desc.colorTextures.empty() &&
         desc.depthTexture == nullptr)
     {
-        std::cerr << "Framebuffer requires at least one attachment.\n";
+        std::cerr
+            << "Framebuffer requires at least one attachment.\n";
+
         return;
     }
 
-    if (desc.colorTexture != nullptr)
+    GLint maximumColorAttachments = 0;
+    GLint maximumDrawBuffers = 0;
+
+    glGetIntegerv(
+        GL_MAX_COLOR_ATTACHMENTS,
+        &maximumColorAttachments
+    );
+
+    glGetIntegerv(
+        GL_MAX_DRAW_BUFFERS,
+        &maximumDrawBuffers
+    );
+
+    const std::size_t maximumColorCount =
+        static_cast<std::size_t>(
+            std::min(
+                maximumColorAttachments,
+                maximumDrawBuffers
+            )
+        );
+
+    if (desc.colorTextures.size() > maximumColorCount)
     {
-        if (!desc.colorTexture->isValid())
+        std::cerr
+            << "Framebuffer color attachment count "
+            << "exceeds the OpenGL limit.\n";
+
+        return;
+    }
+
+    for (const RenderTexture* colorTexture :
+        desc.colorTextures)
+    {
+        if (colorTexture == nullptr ||
+            !colorTexture->isValid())
         {
-            std::cerr << "Cannot attach an invalid color texture.\n";
+            std::cerr
+                << "Cannot attach an invalid color texture.\n";
+
+            extent_ = {};
             return;
         }
-        extent_ = desc.colorTexture->extent();
+
+        const Extent2D colorExtent =
+            colorTexture->extent();
+
+        if (extent_.width == 0)
+        {
+            extent_ = colorExtent;
+        }
+        else if (extent_.width != colorExtent.width ||
+                 extent_.height != colorExtent.height)
+        {
+            std::cerr
+                << "Framebuffer attachment extents "
+                << "do not match.\n";
+
+            extent_ = {};
+            return;
+        }
     }
 
     if (desc.depthTexture != nullptr)
     {
         if (!desc.depthTexture->isValid())
         {
-            std::cerr << "Cannot attach an invalid depth texture.\n";
+            std::cerr
+                << "Cannot attach an invalid depth texture.\n";
+
             extent_ = {};
             return;
         }
+
+        const Extent2D depthExtent =
+            desc.depthTexture->extent();
+
         if (extent_.width == 0)
         {
-            extent_ = desc.depthTexture->extent();
+            extent_ = depthExtent;
         }
-        else if (extent_.width != desc.depthTexture->extent().width ||
-                 extent_.height != desc.depthTexture->extent().height)
+        else if (extent_.width != depthExtent.width ||
+                 extent_.height != depthExtent.height)
         {
-            std::cerr << "Framebuffer attachment extents do not match.\n";
+            std::cerr
+                << "Framebuffer attachment extents "
+                << "do not match.\n";
+
             extent_ = {};
             return;
         }
     }
 
-    glCreateFramebuffers(1, &id_);
+    glCreateFramebuffers(
+        1,
+        &id_);
 
     if (id_ == 0)
     {
-        std::cerr << "OpenGL failed to create Framebuffer.\n";
+        std::cerr
+            << "OpenGL failed to create Framebuffer.\n";
 
         extent_ = {};
         return;
     }
 
-    if (desc.colorTexture != nullptr)
+    if (!desc.colorTextures.empty())
     {
-        glNamedFramebufferTexture(id_, GL_COLOR_ATTACHMENT0, desc.colorTexture->id_, 0);
+        std::vector<GLenum> drawBuffers;
+        drawBuffers.reserve(
+            desc.colorTextures.size());
 
-        const GLenum drawBuffer = GL_COLOR_ATTACHMENT0;
+        for (std::size_t index = 0;
+            index < desc.colorTextures.size();
+            ++index)
+        {
+            const GLenum attachment =
+                GL_COLOR_ATTACHMENT0 +
+                static_cast<GLenum>(index);
 
-        glNamedFramebufferDrawBuffers(id_, 1, &drawBuffer);
+            glNamedFramebufferTexture(
+                id_,
+                attachment,
+                desc.colorTextures[index]->id_,
+                0
+            );
+
+            drawBuffers.push_back(attachment);
+        }
+
+        glNamedFramebufferDrawBuffers(
+            id_,
+            static_cast<GLsizei>(
+                drawBuffers.size()),
+            drawBuffers.data());
     }
     else
     {
-        glNamedFramebufferDrawBuffer(id_, GL_NONE);
-        glNamedFramebufferReadBuffer(id_, GL_NONE);
+        glNamedFramebufferDrawBuffer(
+            id_,
+            GL_NONE);
+
+        glNamedFramebufferReadBuffer(
+            id_,
+            GL_NONE);
     }
 
     if (desc.depthTexture != nullptr)
     {
-        glNamedFramebufferTexture(id_, depthAttachment(desc.depthTexture->format()), desc.depthTexture->id_, 0);
+        glNamedFramebufferTexture(
+            id_,
+            depthAttachment(
+                desc.depthTexture->format()),
+            desc.depthTexture->id_,
+            0);
     }
 
-    const GLenum status = glCheckNamedFramebufferStatus(id_, GL_FRAMEBUFFER);
-    
+    const GLenum status =
+        glCheckNamedFramebufferStatus(
+            id_,
+            GL_FRAMEBUFFER);
+
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr
@@ -107,7 +210,7 @@ Framebuffer::Framebuffer(const FramebufferDesc& desc)
             << status
             << std::dec
             << '\n';
-        
+
         release();
         extent_ = {};
         return;

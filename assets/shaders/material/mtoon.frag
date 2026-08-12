@@ -6,6 +6,7 @@ layout(location = 2) in vec3 vertexWorldPosition;
 layout(location = 3) in vec4 vertexWorldTangent;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outNormal;
 
 uniform sampler2D uBaseColorTexture;
 uniform vec4 uBaseColorFactor;
@@ -428,4 +429,5 @@ void main()
     }
 
     outColor = vec4(outputColor, baseColor.a);
+    outNormal = vec4(normal * 0.5 + 0.5, 1.0);
 }

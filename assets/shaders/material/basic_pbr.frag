@@ -5,6 +5,7 @@ layout(location = 1) in vec2 vertexTexCoord0;
 layout(location = 2) in vec3 vertexWorldPosition;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outNormal;
 
 uniform sampler2D uBaseColorTexture;
 
@@ -256,4 +257,6 @@ void main()
     const float alpha = sampledBaseColor.a * uBaseColorFactor.a;
 
     outColor = vec4(finalColor, alpha);
+
+    outNormal = vec4(normal * 0.5 + 0.5, 1.0);
 }

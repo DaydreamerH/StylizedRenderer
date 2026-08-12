@@ -56,6 +56,20 @@ std::size_t indexTypeSize(
     return 0;
 }
 
+GLenum toOpenGLCullFace(const CullMode mode) noexcept
+{
+    switch (mode)
+    {
+    case CullMode::Front:
+        return GL_FRONT;
+    case CullMode::Back:
+        return GL_BACK;
+    case CullMode::None:
+        break;
+    }
+    return GL_BACK;
+}
+
 } // namespace
 
 GraphicsDevice::GraphicsDevice(const OpenGLContext& context)
@@ -84,6 +98,30 @@ void GraphicsDevice::setViewport(const Extent2D& extent)
         static_cast<GLsizei>(extent.height));
 }
 
+
+void GraphicsDevice::setCullMode(const CullMode mode)
+{
+    if (!initialized_)
+        return;
+
+    if (mode == CullMode::None)
+    {
+        glDisable(GL_CULL_FACE);
+        return;
+    }
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(toOpenGLCullFace(mode));
+}
+
+void GraphicsDevice::setDepthWrite(const bool enabled)
+{
+    if (!initialized_)
+        return;
+
+    glDepthMask(enabled ? GL_TRUE : GL_FALSE);
+}
+
 void GraphicsDevice::clear(const ClearValue& value)
 {
     if (!initialized_)
@@ -94,6 +132,30 @@ void GraphicsDevice::clear(const ClearValue& value)
     glClearColor(value.r, value.g, value.b, value.a);
     glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void GraphicsDevice::clearColorAttachment(
+    const std::uint32_t attachmentIndex,
+    const ClearValue& value
+)
+{
+    if (!initialized_ ||
+        attachmentIndex > static_cast<std::uint32_t>(
+            std::numeric_limits<GLint>::max()
+        ))
+    {
+        return;
+    }
+
+    const GLfloat color [] =
+    {
+        value.r,
+        value.g,
+        value.b,
+        value.a
+    };
+
+    glClearBufferfv(GL_COLOR, static_cast<GLint>(attachmentIndex), color);
 }
 
 Buffer GraphicsDevice::createBuffer(const BufferDesc &desc, std::span<const std::byte> initialData)
