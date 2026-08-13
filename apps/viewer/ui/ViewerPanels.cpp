@@ -9,6 +9,7 @@
 #include <render/passes/ForwardOpaquePass.hpp>
 #include <render/passes/OutlineMaskPass.hpp>
 #include <render/passes/PostProcessPass.hpp>
+#include <render/passes/ScreenSpaceOutlinePass.hpp>
 #include <render/world/RenderWorld.hpp>
 #include <render/passes/ShadowPass.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
@@ -494,6 +495,8 @@ void ViewerPanels::draw(
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
     const stylized::render::OutlineMaskPass* outlineMaskPass,
+    const stylized::render::ScreenSpaceOutlinePass*
+        screenSpaceOutlinePass,
     const stylized::render::PostProcessPass* postProcessPass,
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
@@ -1096,20 +1099,40 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
+        "ScreenSpaceOutlinePass",
+        screenSpaceOutlinePass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline
+                        ->passLastExecutionSucceeded(3)
+                ? "Failed"
+                : "Active",
+        screenSpaceOutlinePass != nullptr
+            ? screenSpaceOutlinePass
+                ->lastDrawCallCount()
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(3),
+        framePipeline != nullptr
+            ? framePipeline
+                ->passGpuTimeMilliseconds(3)
+            : 0.0);
+
+    drawPassStatus(
         "PostProcessPass",
         postProcessPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(3)
+                    !framePipeline->passLastExecutionSucceeded(4)
                 ? "Failed"
                 : "Active",
         postProcessPass != nullptr
             ? postProcessPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(3),
+            framePipeline->passHasGpuTime(4),
         framePipeline != nullptr
-            ? framePipeline->passGpuTimeMilliseconds(3)
+            ? framePipeline->passGpuTimeMilliseconds(4)
             : 0.0);
 
     if (framePipeline != nullptr &&

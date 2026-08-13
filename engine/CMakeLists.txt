@@ -33,6 +33,7 @@ add_library(stylized_engine STATIC
     include/render/passes/ForwardOpaquePass.hpp
     include/render/passes/OutlineMaskPass.hpp
     include/render/passes/PostProcessPass.hpp
+    include/render/passes/ScreenSpaceOutlinePass.hpp
     include/render/passes/ShadowPass.hpp
     include/render/pipeline/FrameContext.hpp
     include/render/pipeline/FramePipeline.hpp
@@ -77,6 +78,7 @@ add_library(stylized_engine STATIC
     src/render/passes/ForwardOpaquePass.cpp
     src/render/passes/OutlineMaskPass.cpp
     src/render/passes/PostProcessPass.cpp
+    src/render/passes/ScreenSpaceOutlinePass.cpp
     src/render/passes/ShadowPass.cpp
     src/render/pipeline/FramePipeline.cpp
     src/render/renderers/StaticModelRenderer.cpp
