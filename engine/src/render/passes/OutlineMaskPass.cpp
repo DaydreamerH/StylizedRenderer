@@ -151,9 +151,12 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         *frame.renderWorld;
 
     if (!shader_.setMat4(
-        "uViewProjection",
-        renderWorld.mainView.viewProjection
-    ))
+            "uViewProjection",
+            renderWorld.mainView.viewProjection) ||
+        !shader_.setVec2(
+            "uViewportSize",
+            static_cast<float>(extent_.width),
+            static_cast<float>(extent_.height)))
     {
         return false;
     }
@@ -216,9 +219,7 @@ bool OutlineMaskPass::execute(FrameContext& frame)
                     ->outline;
 
         if (!outline.enabled ||
-            outline.width <= 0.0F ||
-            outline.widthMode !=
-                material::OutlineWidthMode::World)
+            outline.width <= 0.0F)
         {
             continue;
         }
@@ -229,6 +230,10 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             !shader_.setMat3(
                 "uNormalMatrix",
                 item.normalMatrix) ||
+            !shader_.setInt(
+                "uOutlineWidthMode",
+                static_cast<int>(
+                outline.widthMode)) ||
             !shader_.setFloat(
                 "uOutlineWidth",
                 outline.width) ||
