@@ -78,6 +78,8 @@ private:
     graphics::DepthTexture depth_;
     graphics::Framebuffer framebuffer_;
 
+    graphics::DepthTexture fallbackShadowMap_;
+
     graphics::Extent2D extent_{};
 };
 

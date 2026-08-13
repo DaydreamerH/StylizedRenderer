@@ -25,7 +25,8 @@ StaticModelRenderer::StaticModelRenderer(
 
 bool StaticModelRenderer::render(
     const RenderWorld& renderWorld,
-    const graphics::DepthTexture* shadowMap)
+    const graphics::DepthTexture& shadowMap,
+    const bool shadowMapAvailable)
 {
     lastDrawCallCount_ = 0;
 
@@ -186,8 +187,7 @@ bool StaticModelRenderer::render(
             }
 
             const bool shadowEnabled =
-                shadowMap != nullptr &&
-                shadowMap->isValid() &&
+                shadowMapAvailable &&
                 hasFlag(
                     item.flags,
                     RenderItemFlags::ReceiveShadow);
@@ -206,10 +206,7 @@ bool StaticModelRenderer::render(
                 return false;
             }
 
-            if (shadowEnabled)
-            {
-                shadowMap->bind(1);
-            }
+            shadowMap.bind(1);
         }
 
         graphics::DrawIndexedCommand command;

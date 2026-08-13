@@ -24,7 +24,30 @@ ForwardOpaquePass::ForwardOpaquePass(
 
 bool ForwardOpaquePass::initialize()
 {
-    if (initialized_) return true;
+    if (initialized_)
+    {
+        return true;
+    }
+
+    graphics::DepthTextureDesc depthDesc;
+
+    depthDesc.extent = {1, 1};
+
+    depthDesc.format =
+        graphics::DepthTextureFormat::Depth32Float;
+
+    depthDesc.comparisonSampling = true;
+
+    depthDesc.debugName =
+        "Fallback Shadow Depth";
+
+    fallbackShadowMap_ =
+        graphicsDevice_.createDepthTexture(depthDesc);
+
+    if (!fallbackShadowMap_.isValid())
+    {
+        return false;
+    }
 
     initialized_ = true;
     return true;
@@ -65,9 +88,20 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
             0.5F, 0.5F, 1.0F, 0.0F
         });
 
+    const bool shadowMapAvailable =
+        frame.shadowsEnabled &&
+        frame.shadowMap != nullptr &&
+        frame.shadowMap->isValid();
+
+    const graphics::DepthTexture& sampledShadowMap =
+        shadowMapAvailable
+            ? *frame.shadowMap
+            : fallbackShadowMap_;
+
     if (!renderer_.render(
-        *frame.renderWorld,
-        frame.shadowMap))
+            *frame.renderWorld,
+            sampledShadowMap,
+            shadowMapAvailable))
     {
         return false;
     }
