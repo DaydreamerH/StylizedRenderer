@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
+layout(location = 3) in vec2 inTexCoord0;
 
 uniform mat4 uModel;
 uniform mat4 uViewProjection;
@@ -10,6 +11,8 @@ uniform mat3 uNormalMatrix;
 uniform int uOutlineWidthMode;
 uniform float uOutlineWidth;
 uniform vec2 uViewportSize;
+
+uniform sampler2D uOutlineWidthMask;
 
 const int OUTLINE_WIDTH_MODE_WORLD = 0;
 const float EPSILON = 1.0e-8;
@@ -22,8 +25,19 @@ void main()
     const vec3 worldNormal =
         normalize(uNormalMatrix * inNormal);
 
+    const float widthMask =
+        clamp(
+            textureLod(
+                uOutlineWidthMask,
+                inTexCoord0,
+                0.0
+            ).r,
+            0.0,
+            1.0
+        );
+
     const float outlineWidth =
-        max(uOutlineWidth, 0.0);
+        max(uOutlineWidth, 0.0) * widthMask;
 
     if (uOutlineWidthMode == OUTLINE_WIDTH_MODE_WORLD)
     {

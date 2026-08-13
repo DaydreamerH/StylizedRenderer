@@ -11,6 +11,13 @@
 #include <cstddef>
 #include <string_view>
 
+namespace stylized::asset
+{
+
+class AssetRegistry;
+
+} // namespace stylized::asset
+
 namespace stylized::graphics
 {
 
@@ -22,12 +29,18 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
+class RuntimeResourceCache;
+
 class OutlineMaskPass final
     : public IRenderPass,
       public core::NonCopyable
 {
 public:
-    explicit OutlineMaskPass(graphics::GraphicsDevice& graphicsDevice) noexcept;
+    explicit OutlineMaskPass(
+        graphics::GraphicsDevice& graphicsDevice,
+        const asset::AssetRegistry& assetRegistry,
+        RuntimeResourceCache& resourceCache
+    ) noexcept;
 
     ~OutlineMaskPass() override = default;
 
@@ -53,6 +66,9 @@ private:
     graphics::Framebuffer framebuffer_;
 
     graphics::Extent2D extent_{};
+
+    const asset::AssetRegistry& assetRegistry_;
+    RuntimeResourceCache& resourceCache_;
 
     std::size_t lastDrawCallCount_ = 0;
 

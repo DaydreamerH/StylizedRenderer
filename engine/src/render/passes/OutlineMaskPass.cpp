@@ -3,10 +3,14 @@
 #include <graphics/device/GraphicsCommands.hpp>
 #include <graphics/device/GraphicsDevice.hpp>
 #include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/Texture2D.hpp>
+
+#include <asset/AssetRegistry.hpp>
 
 #include <material/MaterialInstance.hpp>
 
 #include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 #include <render/world/RenderWorld.hpp>
 
 #include <array>
@@ -16,8 +20,12 @@ namespace stylized::render
 {
 
 OutlineMaskPass::OutlineMaskPass(
-    graphics::GraphicsDevice& graphicsDevice) noexcept
-    : graphicsDevice_(graphicsDevice)
+    graphics::GraphicsDevice& graphicsDevice,
+    const asset::AssetRegistry& assetRegistry,
+    RuntimeResourceCache& resourceCache) noexcept
+    : graphicsDevice_(graphicsDevice),
+      assetRegistry_(assetRegistry),
+      resourceCache_(resourceCache)
 {
 }
 
@@ -156,11 +164,14 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         !shader_.setVec2(
             "uViewportSize",
             static_cast<float>(extent_.width),
-            static_cast<float>(extent_.height)))
+            static_cast<float>(extent_.height)) ||
+        !shader_.setInt(
+            "uOutlineWidthMask",
+            0))
     {
         return false;
     }
-    
+
     graphicsDevice_.bindFramebuffer(&framebuffer_);
 
     graphicsDevice_.setViewport(extent_);
@@ -224,6 +235,25 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             continue;
         }
 
+        const asset::AssetHandle<asset::TextureAsset>
+            widthMaskHandle =
+                materialInstance
+                    .mtoonParameters
+                    ->textures.outlineWidthMaskTexture;
+
+        const graphics::Texture2D& widthMaskTexture =
+            widthMaskHandle.isNull()
+            ? resourceCache_.whiteTexture()
+            : resourceCache_.getOrCreateTexture(
+                widthMaskHandle,
+                assetRegistry_);
+
+        if (!widthMaskTexture.isValid())
+        {
+            restoreState();
+            return false;
+        }
+
         if (!shader_.setMat4(
                 "uModel",
                 item.world) ||
@@ -246,6 +276,8 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             restoreState();
             return false;
         }
+
+        widthMaskTexture.bind(0);
 
         graphics::DrawIndexedCommand command;
 

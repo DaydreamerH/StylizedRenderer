@@ -348,7 +348,9 @@ private:
         auto outlineMaskPass =
             std::make_unique<
                 stylized::render::OutlineMaskPass>(
-                    graphicsDevice());
+                    graphicsDevice(),
+                    assetRegistry_,
+                    *resourceCache_);
 
         if (!outlineMaskPass->initialize())
         {
