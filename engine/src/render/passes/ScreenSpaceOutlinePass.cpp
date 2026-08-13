@@ -2,6 +2,8 @@
 
 #include <graphics/device/GraphicsCommands.hpp>
 #include <graphics/device/GraphicsDevice.hpp>
+#include <graphics/resources/DepthTexture.hpp>
+#include <render/world/RenderWorld.hpp>
 
 #include <array>
 #include <cstddef>
@@ -260,10 +262,13 @@ bool ScreenSpaceOutlinePass::execute(
     lastDrawCallCount_ = 0;
 
     if (!initialized_ ||
+        frame.renderWorld == nullptr ||
         frame.hdrColor == nullptr ||
         frame.outlineMask == nullptr ||
+        frame.depth == nullptr ||
         !frame.hdrColor->isValid() ||
         !frame.outlineMask->isValid() ||
+        !frame.depth->isValid() ||
         !outlinedHdrColor_.isValid() ||
         !framebuffer_.isValid())
     {
@@ -272,13 +277,40 @@ bool ScreenSpaceOutlinePass::execute(
 
     frame.hdrColor->bind(0);
     frame.outlineMask->bind(1);
+    frame.depth->bind(2);
+
+    const RenderView& view =
+        frame.renderWorld->mainView;
 
     if (!shader_.setInt(
             "uHdrColor",
             0) ||
         !shader_.setInt(
             "uOutlineMask",
-            1))
+            1) ||
+        !shader_.setInt(
+            "uDepth",
+            2) ||
+        !shader_.setInt(
+            "uScreenOutlineEnabled",
+            settings_.enabled ? 1 : 0) ||
+        !shader_.setVec3(
+            "uScreenOutlineColor",
+            settings_.color.r,
+            settings_.color.g,
+            settings_.color.b) ||
+        !shader_.setFloat(
+            "uScreenOutlineWidth",
+            settings_.width) ||
+        !shader_.setFloat(
+            "uDepthThreshold",
+            settings_.depthThreshold) ||
+        !shader_.setFloat(
+            "uNearPlane",
+            view.nearPlane) ||
+        !shader_.setFloat(
+            "uFarPlane",
+            view.farPlane))
     {
         return false;
     }
@@ -330,6 +362,18 @@ ScreenSpaceOutlinePass::lastDrawCallCount()
     const noexcept
 {
     return lastDrawCallCount_;
+}
+
+void ScreenSpaceOutlinePass::setSettings(
+    const ScreenSpaceOutlineSettings& settings) noexcept
+{
+    settings_ = settings;
+}
+
+const ScreenSpaceOutlineSettings&
+ScreenSpaceOutlinePass::settings() const noexcept
+{
+    return settings_;
 }
 
 } // namespace stylized::render

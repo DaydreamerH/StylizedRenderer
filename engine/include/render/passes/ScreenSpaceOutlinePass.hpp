@@ -10,6 +10,8 @@
 
 #include <render/pipeline/IRenderPass.hpp>
 
+#include <glm/vec3.hpp>
+
 #include <cstddef>
 #include <string_view>
 
@@ -22,6 +24,18 @@ class GraphicsDevice;
 
 namespace stylized::render
 {
+
+struct ScreenSpaceOutlineSettings
+{
+    bool enabled = false;
+
+    glm::vec3 color{0.0F};
+
+    float width = 1.0F;
+    float depthThreshold = 0.01F;
+    float normalThreshold = 0.2F;
+};
+
 
 class ScreenSpaceOutlinePass final
     : public IRenderPass,
@@ -47,6 +61,12 @@ public:
     [[nodiscard]] std::size_t
         lastDrawCallCount() const noexcept;
 
+    void setSettings(
+        const ScreenSpaceOutlineSettings& settings) noexcept;
+
+    [[nodiscard]] const ScreenSpaceOutlineSettings&
+        settings() const noexcept;
+
 private:
     graphics::GraphicsDevice& graphicsDevice_;
 
@@ -60,6 +80,8 @@ private:
     graphics::Framebuffer framebuffer_;
 
     graphics::Extent2D extent_{};
+
+    ScreenSpaceOutlineSettings settings_;
 
     std::size_t lastDrawCallCount_ = 0;
 

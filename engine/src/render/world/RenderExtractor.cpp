@@ -135,6 +135,10 @@ bool RenderExtractor::extract(
 
     renderWorld.mainView.cameraPosition = camera.position();
 
+    renderWorld.mainView.nearPlane = camera.nearPlane();
+
+    renderWorld.mainView.farPlane = camera.farPlane();
+
     renderWorld.mainView.frustum = 
         math::Frustum::fromViewProjection(renderWorld.mainView.viewProjection);
     if (!renderWorld.mainView.frustum.isValid()) return false;
