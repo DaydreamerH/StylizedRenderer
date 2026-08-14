@@ -13,6 +13,8 @@
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/world/RenderWorld.hpp>
 
+#include <glm/matrix.hpp>
+
 #include <array>
 #include <utility>
 
@@ -195,9 +197,7 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             0.0F,
             0.0F
         });
-    
-    graphicsDevice_.setCullMode(graphics::CullMode::Front);
-    
+
     graphicsDevice_.setDepthWrite(false);
 
     const auto restoreState =
@@ -264,6 +264,15 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             restoreState();
             return false;
         }
+
+        const bool windingFlipped =
+            glm::determinant(
+                glm::mat3(item.world)) < 0.0F;
+
+        graphicsDevice_.setCullMode(
+            windingFlipped
+                ? graphics::CullMode::Back
+                : graphics::CullMode::Front);
 
         if (!shader_.setMat4(
                 "uModel",
