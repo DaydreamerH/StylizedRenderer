@@ -16,6 +16,9 @@ uniform float uDepthThreshold;
 uniform float uNearPlane;
 uniform float uFarPlane;
 
+uniform sampler2D uNormal;
+uniform float uNormalThreshold;
+
 float linearizeDepth(const float depth)
 {
     const float ndcDepth =
@@ -96,6 +99,80 @@ float calculateDepthEdge(const vec2 textureCoordinate)
     return smoothstep(threshold, threshold * 2.0, maximumDifference);
 }
 
+float calculateNormalEdge(const vec2 textureCoordinate)
+{
+    if (uScreenOutlineEnabled == 0)
+    {
+        return 0.0;
+    }
+
+    const vec4 centerSample =
+        texture(uNormal, textureCoordinate);
+
+    if (centerSample.a <= 1.0e-4)
+    {
+        return 0.0;
+    }
+
+    const vec3 centerNormal =
+        normalize(centerSample.rgb * 2.0 - 1.0);
+
+    const vec2 texelSize =
+        1.0 /
+        vec2(textureSize(uNormal, 0));
+
+    const float sampleWidth =
+        max(uScreenOutlineWidth, 1.0);
+
+    float maximumDifference = 0.0;
+
+    for (int offsetY = -1; offsetY <= 1; ++offsetY)
+    {
+        for (int offsetX = -1; offsetX <= 1; ++offsetX)
+        {
+            if (offsetX == 0 && offsetY == 0)
+            {
+                continue;
+            }
+
+            const vec2 sampleCoordinate =
+                textureCoordinate +
+                vec2(float(offsetX), float(offsetY)) *
+                texelSize *
+                sampleWidth;
+
+            const vec4 neighborSample =
+                texture(uNormal, sampleCoordinate);
+
+            if (neighborSample.a <= 1.0e-4)
+            {
+                continue;
+            }
+
+            const vec3 neighborNormal =
+                normalize(neighborSample.rgb * 2.0 - 1.0);
+
+            const float difference =
+                1.0 -
+                clamp(
+                    dot(centerNormal, neighborNormal),
+                    -1.0,
+                    1.0);
+
+            maximumDifference =
+                max(maximumDifference, difference);
+        }
+    }
+
+    const float threshold =
+        max(uNormalThreshold, 1.0e-6);
+
+    return smoothstep(
+        threshold,
+        threshold * 2.0,
+        maximumDifference);
+}
+
 void main()
 {
     const vec4 hdrColor =
@@ -110,8 +187,14 @@ void main()
     const float depthEdge =
         calculateDepthEdge(vertexTextureCoordinate);
 
+    const float normalEdge =
+        calculateNormalEdge(vertexTextureCoordinate);
+
+    const float screenCoverage =
+        max(depthEdge, normalEdge);
+
     const float combinedCoverage =
-        max(shellCoverage, depthEdge);
+        max(shellCoverage, screenCoverage);
 
     const vec3 outlineColor =
         shellCoverage > 1.0e-4

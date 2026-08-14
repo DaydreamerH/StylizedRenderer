@@ -266,7 +266,9 @@ bool ScreenSpaceOutlinePass::execute(
         frame.hdrColor == nullptr ||
         frame.outlineMask == nullptr ||
         frame.depth == nullptr ||
+        frame.normal == nullptr ||
         !frame.hdrColor->isValid() ||
+        !frame.normal->isValid() ||
         !frame.outlineMask->isValid() ||
         !frame.depth->isValid() ||
         !outlinedHdrColor_.isValid() ||
@@ -278,6 +280,7 @@ bool ScreenSpaceOutlinePass::execute(
     frame.hdrColor->bind(0);
     frame.outlineMask->bind(1);
     frame.depth->bind(2);
+    frame.normal->bind(3);
 
     const RenderView& view =
         frame.renderWorld->mainView;
@@ -291,6 +294,9 @@ bool ScreenSpaceOutlinePass::execute(
         !shader_.setInt(
             "uDepth",
             2) ||
+        !shader_.setInt(
+            "uNormal",
+            3) ||
         !shader_.setInt(
             "uScreenOutlineEnabled",
             settings_.enabled ? 1 : 0) ||
@@ -310,7 +316,10 @@ bool ScreenSpaceOutlinePass::execute(
             view.nearPlane) ||
         !shader_.setFloat(
             "uFarPlane",
-            view.farPlane))
+            view.farPlane) ||
+        !shader_.setFloat(
+            "uNormalThreshold",
+            settings_.normalThreshold))
     {
         return false;
     }
