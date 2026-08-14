@@ -158,6 +158,9 @@ bool OutlineMaskPass::execute(FrameContext& frame)
     const RenderWorld& renderWorld =
         *frame.renderWorld;
 
+    const DirectionalLightData& mainLight =
+        renderWorld.mainView.mainLight;
+
     if (!shader_.setMat4(
             "uViewProjection",
             renderWorld.mainView.viewProjection) ||
@@ -167,7 +170,15 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             static_cast<float>(extent_.height)) ||
         !shader_.setInt(
             "uOutlineWidthMask",
-            0))
+            0) ||
+        !shader_.setVec3(
+            "uLightColor",
+            mainLight.color.r,
+            mainLight.color.g,
+            mainLight.color.b) ||
+        !shader_.setFloat(
+            "uLightIntensity",
+            mainLight.intensity))
     {
         return false;
     }
@@ -271,7 +282,10 @@ bool OutlineMaskPass::execute(FrameContext& frame)
                 "uOutlineColor",
                 outline.color.r,
                 outline.color.g,
-                outline.color.b))
+                outline.color.b) ||
+            !shader_.setFloat(
+                "uOutlineLightingMix",
+                outline.lightingMix))
         {
             restoreState();
             return false;
