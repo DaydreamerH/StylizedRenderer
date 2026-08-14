@@ -495,7 +495,7 @@ void ViewerPanels::draw(
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
     const stylized::render::OutlineMaskPass* outlineMaskPass,
-    const stylized::render::ScreenSpaceOutlinePass*
+    stylized::render::ScreenSpaceOutlinePass*
         screenSpaceOutlinePass,
     const stylized::render::PostProcessPass* postProcessPass,
     stylized::material::MaterialKind& materialKind,
@@ -1000,6 +1000,55 @@ void ViewerPanels::draw(
                     "White");
             }
         }
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Screen Space Outline");
+
+    if (screenSpaceOutlinePass != nullptr)
+    {
+        stylized::render::ScreenSpaceOutlineSettings settings =
+            screenSpaceOutlinePass->settings();
+
+        bool changed = false;
+
+        changed |= ImGui::Checkbox(
+            "Screen Outline Enabled",
+            &settings.enabled);
+
+        changed |= ImGui::ColorEdit3(
+            "Screen Outline Color",
+            &settings.color.x);
+
+        changed |= ImGui::SliderFloat(
+            "Screen Outline Width",
+            &settings.width,
+            1.0F,
+            8.0F,
+            "%.1f");
+
+        changed |= ImGui::SliderFloat(
+            "Depth Threshold",
+            &settings.depthThreshold,
+            0.001F,
+            0.1F,
+            "%.4f");
+
+        changed |= ImGui::SliderFloat(
+            "Normal Threshold",
+            &settings.normalThreshold,
+            0.01F,
+            1.0F,
+            "%.3f");
+
+        if (changed)
+        {
+            screenSpaceOutlinePass->setSettings(settings);
+        }
+    }
+    else
+    {
+        ImGui::TextUnformatted("Unavailable");
     }
 
     ImGui::Separator();
