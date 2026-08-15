@@ -37,6 +37,7 @@ struct StagedMesh
 {
     MeshAsset asset;
     std::vector<unsigned int> materialIndices;
+    std::vector<unsigned int> sourceMeshIndices;
 };
 
 enum class SceneNodeLookupResult : std::uint8_t
@@ -84,6 +85,11 @@ struct StagedScene
 [[nodiscard]] bool stageAnimations(
     const aiScene& importedScene,
     StagedScene& scene);
+
+[[nodiscard]] bool stageSkins(
+    const aiScene& importedScene,
+    std::vector<StagedMesh>& meshes,
+    const StagedScene& scene);
 
 [[nodiscard]] bool stageScene(
     const aiScene& importedScene,

@@ -78,6 +78,8 @@ namespace
         sourceNode.mNumMeshes);
     staged.materialIndices.reserve(
         sourceNode.mNumMeshes);
+    staged.sourceMeshIndices.reserve(
+        sourceNode.mNumMeshes);
 
     for (const unsigned int sourceMeshIndex : meshKey)
     {
@@ -109,6 +111,16 @@ namespace
             std::move(primitive));
         staged.materialIndices.push_back(
             sourceMesh->mMaterialIndex);
+        staged.sourceMeshIndices.push_back(
+            sourceMeshIndex);
+    }
+
+    if (staged.materialIndices.size() !=
+            staged.asset.primitives.size() ||
+        staged.sourceMeshIndices.size() !=
+            staged.asset.primitives.size())
+    {
+        return false;
     }
 
     staged.asset.rebuildBounds();

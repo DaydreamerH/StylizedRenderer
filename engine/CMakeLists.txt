@@ -59,6 +59,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp
+    src/asset/importers/detail/AssimpSkinImporter.cpp
     src/asset/importers/detail/AssimpTextureImporter.cpp
     src/asset/importers/detail/StbImage.cpp
     src/core/Application.cpp

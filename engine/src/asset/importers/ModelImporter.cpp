@@ -235,6 +235,18 @@ AssetHandle<SceneAsset> ModelImporter::import(
         return {};
     }
 
+    if (!detail::stageSkins(
+            *importedScene,
+            stagedMeshes,
+            stagedScene))
+    {
+        std::cerr
+            << "Failed to convert model skins: "
+            << path
+            << '\n';
+        return {};
+    }
+
     if (!detail::stageAnimations(
             *importedScene,
             stagedScene))
@@ -348,7 +360,9 @@ AssetHandle<SceneAsset> ModelImporter::import(
         for (detail::StagedMesh& mesh : stagedMeshes)
         {
             if (mesh.materialIndices.size() !=
-                mesh.asset.primitives.size())
+                    mesh.asset.primitives.size() ||
+                mesh.sourceMeshIndices.size() !=
+                    mesh.asset.primitives.size())
             {
                 rollback();
                 return {};
