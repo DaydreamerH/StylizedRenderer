@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asset/AssetHandle.hpp>
+#include <asset/AnimationAsset.hpp>
 #include <scene/Transform.hpp>
 
 #include <cstdint>
@@ -14,13 +15,13 @@ struct MeshAsset;
 
 struct SceneNodeAsset
 {
-    static constexpr std::uint32_t invalidNodeIndex = 
+    static constexpr std::uint32_t invalidNodeIndex =
         std::numeric_limits<std::uint32_t>::max();
 
     std::string name;
-    
+
     scene::Transform localTransform;
-    
+
     AssetHandle<MeshAsset> mesh;
 
     std::uint32_t parentIndex = invalidNodeIndex;
@@ -35,6 +36,8 @@ struct SceneAsset
 {
     std::string name;
     std::vector<SceneNodeAsset> nodes;
+    std::vector<AnimationClipAsset> animations;
+
     [[nodiscard]] bool isValid() const noexcept;
 };
 

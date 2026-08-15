@@ -1,4 +1,5 @@
 add_library(stylized_engine STATIC
+    include/asset/AnimationAsset.hpp
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
     include/asset/MaterialAsset.hpp
@@ -48,6 +49,7 @@ add_library(stylized_engine STATIC
     include/scene/Entity.hpp
     include/scene/Scene.hpp
     include/scene/Transform.hpp
+    src/asset/AnimationAsset.cpp
     src/asset/MeshAsset.cpp
     src/asset/SceneAsset.cpp
     src/asset/TextureAsset.cpp
