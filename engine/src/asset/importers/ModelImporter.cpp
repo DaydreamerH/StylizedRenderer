@@ -235,6 +235,17 @@ AssetHandle<SceneAsset> ModelImporter::import(
         return {};
     }
 
+    if (!detail::stageAnimations(
+            *importedScene,
+            stagedScene))
+    {
+        std::cerr
+            << "Failed to convert model animations: "
+            << path
+            << '\n';
+        return {};
+    }
+
     std::vector<AssetHandle<TextureAsset>>
         textureHandles;
     std::vector<AssetHandle<MaterialAsset>>
