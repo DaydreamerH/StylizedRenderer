@@ -61,6 +61,17 @@ public:
     [[nodiscard]] std::size_t
         lastDrawCallCount() const noexcept;
 
+    [[nodiscard]] bool hasRenderTarget() const noexcept;
+
+    [[nodiscard]] graphics::Extent2D
+        renderTargetExtent() const noexcept;
+
+    [[nodiscard]] graphics::RenderTextureFormat
+        renderTargetFormat() const noexcept;
+
+    [[nodiscard]] std::size_t
+        renderTargetRebuildCount() const noexcept;
+
     void setSettings(
         const ScreenSpaceOutlineSettings& settings) noexcept;
 
@@ -84,6 +95,7 @@ private:
     ScreenSpaceOutlineSettings settings_;
 
     std::size_t lastDrawCallCount_ = 0;
+    std::size_t renderTargetRebuildCount_ = 0;
 
     bool initialized_ = false;
 };

@@ -252,6 +252,7 @@ bool ScreenSpaceOutlinePass::resize(
         std::move(newFramebuffer);
 
     extent_ = extent;
+    ++renderTargetRebuildCount_;
 
     return true;
 }
@@ -371,6 +372,31 @@ ScreenSpaceOutlinePass::lastDrawCallCount()
     const noexcept
 {
     return lastDrawCallCount_;
+}
+
+bool ScreenSpaceOutlinePass::hasRenderTarget() const noexcept
+{
+    return outlinedHdrColor_.isValid() &&
+        framebuffer_.isValid();
+}
+
+graphics::Extent2D
+ScreenSpaceOutlinePass::renderTargetExtent() const noexcept
+{
+    return extent_;
+}
+
+graphics::RenderTextureFormat
+ScreenSpaceOutlinePass::renderTargetFormat() const noexcept
+{
+    return outlinedHdrColor_.format();
+}
+
+std::size_t
+ScreenSpaceOutlinePass::renderTargetRebuildCount()
+    const noexcept
+{
+    return renderTargetRebuildCount_;
 }
 
 void ScreenSpaceOutlinePass::setSettings(

@@ -1244,11 +1244,59 @@ void ViewerPanels::draw(
             depthTextureFormatName(
                 forwardPass->depthFormat()),
             rebuildCount);
+
+        ImGui::Text(
+            "Forward Normal: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                forwardPass->normalFormat()),
+            rebuildCount);
     }
     else
     {
         ImGui::TextUnformatted(
             "Forward targets: not created");
+    }
+
+    if (outlineMaskPass != nullptr &&
+        outlineMaskPass->hasRenderTarget())
+    {
+        const stylized::graphics::Extent2D extent =
+            outlineMaskPass->renderTargetExtent();
+
+        ImGui::Text(
+            "Outline Mask: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                outlineMaskPass->renderTargetFormat()),
+            outlineMaskPass->renderTargetRebuildCount());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Outline Mask: not created");
+    }
+
+    if (screenSpaceOutlinePass != nullptr &&
+        screenSpaceOutlinePass->hasRenderTarget())
+    {
+        const stylized::graphics::Extent2D extent =
+            screenSpaceOutlinePass->renderTargetExtent();
+
+        ImGui::Text(
+            "Outlined HDR: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                screenSpaceOutlinePass->renderTargetFormat()),
+            screenSpaceOutlinePass->renderTargetRebuildCount());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Outlined HDR: not created");
     }
 
     ImGui::Separator();

@@ -97,6 +97,7 @@ bool OutlineMaskPass::resize(
 
     framebuffer_ = {};
     extent_ = extent;
+    ++renderTargetRebuildCount_;
 
     return true;
 }
@@ -340,6 +341,29 @@ std::size_t OutlineMaskPass::lastDrawCallCount()
     const noexcept
 {
     return lastDrawCallCount_;
+}
+
+bool OutlineMaskPass::hasRenderTarget() const noexcept
+{
+    return outlineMask_.isValid();
+}
+
+graphics::Extent2D OutlineMaskPass::renderTargetExtent()
+    const noexcept
+{
+    return extent_;
+}
+
+graphics::RenderTextureFormat
+OutlineMaskPass::renderTargetFormat() const noexcept
+{
+    return outlineMask_.format();
+}
+
+std::size_t OutlineMaskPass::renderTargetRebuildCount()
+    const noexcept
+{
+    return renderTargetRebuildCount_;
 }
 
 

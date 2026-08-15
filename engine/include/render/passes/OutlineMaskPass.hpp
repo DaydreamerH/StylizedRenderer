@@ -54,6 +54,16 @@ public:
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
 
+    [[nodiscard]] bool hasRenderTarget() const noexcept;
+
+    [[nodiscard]] graphics::Extent2D renderTargetExtent() const noexcept;
+
+    [[nodiscard]] graphics::RenderTextureFormat
+        renderTargetFormat() const noexcept;
+
+    [[nodiscard]] std::size_t
+        renderTargetRebuildCount() const noexcept;
+
 private:
     [[nodiscard]] bool ensureFramebuffer(
         const graphics::DepthTexture& depth
@@ -71,6 +81,7 @@ private:
     RuntimeResourceCache& resourceCache_;
 
     std::size_t lastDrawCallCount_ = 0;
+    std::size_t renderTargetRebuildCount_ = 0;
 
     bool initialized_ = false;
 };
