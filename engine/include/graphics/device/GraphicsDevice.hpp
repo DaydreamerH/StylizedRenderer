@@ -28,8 +28,13 @@ public:
     ~GraphicsDevice();
 
     [[nodiscard]] bool isValid() const;
+
     void setViewport(const Extent2D& extent);
+    void setCullMode(CullMode mode);
+    void setDepthWrite(bool enabled);
+
     void clear(const ClearValue& value);
+    void clearColorAttachment(std::uint32_t attachmentIndex, const ClearValue& value);
 
     [[nodiscard]] Buffer createBuffer(const BufferDesc& desc, std::span<const std::byte> initialData = {});
     template<typename T>

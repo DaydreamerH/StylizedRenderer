@@ -6,6 +6,8 @@
 #include <vector>
 #include <string_view>
 
+#include <material/mtoon/MToonMaterialParameters.hpp>
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -31,6 +33,7 @@ struct MToonSidecarTexturePaths
     std::filesystem::path matcap;
     std::filesystem::path rimMask;
     std::filesystem::path emission;
+    std::filesystem::path outlineWidthMask;
 };
 
 struct MToonSidecarMaterial
@@ -60,12 +63,27 @@ struct MToonSidecarMaterial
     glm::vec3 emissionColor{0.0F};
     float emissionStrength = 1.0F;
 
+    bool outlineEnabled = false;
+
+    OutlineWidthMode outlineWidthMode =
+        OutlineWidthMode::Screen;
+
+    float outlineWidth = 1.0F;
+
+    glm::vec3 outlineColor{0.0F};
+
+    float outlineLightingMix = 0.0F;
+
     MToonSidecarTexturePaths textures;
 };
 
 struct MToonMaterialSidecar
 {
-    static constexpr std::uint32_t currentVersion = 1;
+    static constexpr std::uint32_t
+        minimumSupportedVersion = 1;
+
+    static constexpr std::uint32_t
+        currentVersion = 2;
 
     std::uint32_t version = currentVersion;
 

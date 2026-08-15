@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <span>
 
 namespace stylized::graphics
 {
@@ -14,7 +15,8 @@ class GraphicsDevice;
 
 struct FramebufferDesc
 {
-    const RenderTexture* colorTexture = nullptr;
+    std::span<const RenderTexture* const>
+        colorTextures;
     const DepthTexture* depthTexture = nullptr;
     std::string debugName;
 };

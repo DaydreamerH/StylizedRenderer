@@ -138,6 +138,9 @@ struct RenderView
         MToonDebugView::Final;
 
     math::Frustum frustum;
+
+    float nearPlane = 0.1F;
+    float farPlane = 2000.0F;
 };
 
 struct RenderItem

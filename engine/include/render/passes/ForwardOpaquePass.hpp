@@ -52,6 +52,7 @@ public:
     [[nodiscard]] graphics::Extent2D renderTargetExtent() const noexcept;
     [[nodiscard]] graphics::RenderTextureFormat colorFormat() const noexcept;
     [[nodiscard]] graphics::DepthTextureFormat depthFormat() const noexcept;
+    [[nodiscard]] graphics::RenderTextureFormat normalFormat() const noexcept;
     [[nodiscard]] std::size_t renderTargetRebuildCount() const noexcept;
 
     void setClearValue(const graphics::ClearValue& value) noexcept;
@@ -73,8 +74,11 @@ private:
     bool initialized_ = false;
 
     graphics::RenderTexture hdrColor_;
+    graphics::RenderTexture normal_;
     graphics::DepthTexture depth_;
     graphics::Framebuffer framebuffer_;
+
+    graphics::DepthTexture fallbackShadowMap_;
 
     graphics::Extent2D extent_{};
 };

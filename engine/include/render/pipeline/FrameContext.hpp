@@ -23,6 +23,8 @@ struct FrameContext
     RenderWorld* renderWorld = nullptr;
 
     graphics::RenderTexture* hdrColor = nullptr;
+    graphics::RenderTexture* normal = nullptr;
+    graphics::RenderTexture* outlineMask = nullptr;
     graphics::DepthTexture* depth = nullptr;
     graphics::Framebuffer* framebuffer = nullptr;
 

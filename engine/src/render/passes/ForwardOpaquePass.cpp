@@ -5,6 +5,7 @@
 #include <render/resources/RuntimeResourceCache.hpp>
 
 #include <utility>
+#include <array>
 
 namespace stylized::render
 {
@@ -23,7 +24,30 @@ ForwardOpaquePass::ForwardOpaquePass(
 
 bool ForwardOpaquePass::initialize()
 {
-    if (initialized_) return true;
+    if (initialized_)
+    {
+        return true;
+    }
+
+    graphics::DepthTextureDesc depthDesc;
+
+    depthDesc.extent = {1, 1};
+
+    depthDesc.format =
+        graphics::DepthTextureFormat::Depth32Float;
+
+    depthDesc.comparisonSampling = true;
+
+    depthDesc.debugName =
+        "Fallback Shadow Depth";
+
+    fallbackShadowMap_ =
+        graphicsDevice_.createDepthTexture(depthDesc);
+
+    if (!fallbackShadowMap_.isValid())
+    {
+        return false;
+    }
 
     initialized_ = true;
     return true;
@@ -37,7 +61,8 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
         frame.renderWorld == nullptr ||
         !framebuffer_.isValid() ||
         !hdrColor_.isValid() ||
-        !depth_.isValid())
+        !depth_.isValid() ||
+        !normal_.isValid())
     {
         return false;
     }
@@ -50,15 +75,33 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
 
     frame.hdrColor = &hdrColor_;
     frame.depth = &depth_;
+    frame.normal = &normal_;
     frame.framebuffer = &framebuffer_;
 
     graphicsDevice_.bindFramebuffer(&framebuffer_);
     graphicsDevice_.setViewport(extent_);
     graphicsDevice_.clear(clearValue_);
 
+    graphicsDevice_.clearColorAttachment(
+        1,
+        graphics::ClearValue{
+            0.5F, 0.5F, 1.0F, 0.0F
+        });
+
+    const bool shadowMapAvailable =
+        frame.shadowsEnabled &&
+        frame.shadowMap != nullptr &&
+        frame.shadowMap->isValid();
+
+    const graphics::DepthTexture& sampledShadowMap =
+        shadowMapAvailable
+            ? *frame.shadowMap
+            : fallbackShadowMap_;
+
     if (!renderer_.render(
-        *frame.renderWorld,
-        frame.shadowMap))
+            *frame.renderWorld,
+            sampledShadowMap,
+            shadowMapAvailable))
     {
         return false;
     }
@@ -90,6 +133,22 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
 
     graphics::RenderTexture newHdrColor = graphicsDevice_.createRenderTexture(colorDesc);
 
+    graphics::RenderTextureDesc normalDesc;
+    normalDesc.extent = extent;
+    normalDesc.format = graphics::RenderTextureFormat::RGBA8;
+    normalDesc.sampled = true;
+    normalDesc.debugName =
+        "Forward Opaque Normal";
+
+    graphics::RenderTexture newNormal =
+        graphicsDevice_.createRenderTexture(
+            normalDesc);
+
+    if (!newNormal.isValid())
+    {
+        return false;
+    }
+
     if (!newHdrColor.isValid()) return false;
 
     graphics::DepthTextureDesc depthDesc;
@@ -102,7 +161,11 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
     if (!newDepth.isValid()) return false;
 
     graphics::FramebufferDesc framebufferDesc;
-    framebufferDesc.colorTexture = &newHdrColor;
+
+    const std::array<const graphics::RenderTexture*, 2>
+        colorTextures{&newHdrColor, &newNormal};
+
+    framebufferDesc.colorTextures = colorTextures;
     framebufferDesc.depthTexture = &newDepth;
     framebufferDesc.debugName = "Forward Opaque Framebuffer";
 
@@ -112,6 +175,7 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
     if (!newFramebuffer.isValid()) return false;
 
     hdrColor_ = std::move(newHdrColor);
+    normal_ = std::move(newNormal);
     depth_ = std::move(newDepth);
     framebuffer_ = std::move(newFramebuffer);
     extent_ = extent;
@@ -137,6 +201,7 @@ std::size_t ForwardOpaquePass::lastDrawCallCount() const noexcept
 bool ForwardOpaquePass::hasRenderTargets() const noexcept
 {
     return hdrColor_.isValid() &&
+        normal_.isValid() &&
         depth_.isValid() &&
         framebuffer_.isValid();
 }
@@ -145,6 +210,12 @@ graphics::Extent2D ForwardOpaquePass::renderTargetExtent()
     const noexcept
 {
     return extent_;
+}
+
+graphics::RenderTextureFormat
+ForwardOpaquePass::normalFormat() const noexcept
+{
+    return normal_.format();
 }
 
 graphics::RenderTextureFormat ForwardOpaquePass::colorFormat()

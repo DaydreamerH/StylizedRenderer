@@ -4,6 +4,8 @@
 
 #include <glm/vec3.hpp>
 
+#include <cstdint>
+
 namespace stylized::asset
 {
 
@@ -13,6 +15,26 @@ struct TextureAsset;
 
 namespace stylized::material
 {
+
+enum class OutlineWidthMode : std::uint8_t
+{
+    World,
+    Screen
+};
+
+struct MToonOutlineParameters
+{
+    bool enabled = false;
+
+    OutlineWidthMode widthMode =
+        OutlineWidthMode::Screen;
+
+    float width = 1.0F;
+
+    glm::vec3 color{0.0F};
+
+    float lightingMix = 0.0F;
+};
 
 struct MToonTextureBindings
 {
@@ -33,6 +55,9 @@ struct MToonTextureBindings
 
     asset::AssetHandle<asset::TextureAsset>
         emissionTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        outlineWidthMaskTexture;
 };
 
 struct MToonMaterialParameters
@@ -56,6 +81,8 @@ struct MToonMaterialParameters
 
     glm::vec3 emissionColor{0.0F};
     float emissionStrength = 1.0F;
+
+    MToonOutlineParameters outline;
 
     MToonTextureBindings textures;
 };

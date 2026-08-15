@@ -308,6 +308,21 @@ bool captureMToonSidecarMaterial(
     captured.emissionStrength =
         parameters.emissionStrength;
 
+    captured.outlineEnabled =
+        parameters.outline.enabled;
+
+    captured.outlineWidthMode =
+        parameters.outline.widthMode;
+
+    captured.outlineWidth =
+        parameters.outline.width;
+
+    captured.outlineColor =
+        parameters.outline.color;
+
+    captured.outlineLightingMix =
+        parameters.outline.lightingMix;
+
     if (!resolveTexturePath(
             instance.baseColorTexture,
             assets,
@@ -363,6 +378,14 @@ bool captureMToonSidecarMaterial(
             captured.textures.emission,
             materialName,
             "textures.emission",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.outlineWidthMaskTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.outlineWidthMask,
+            materialName,
+            "textures.outlineWidthMask",
             error))
     {
         return false;
@@ -456,6 +479,21 @@ bool applyMToonSidecarMaterial(
     parameters.emissionStrength =
         source.emissionStrength;
 
+    parameters.outline.enabled =
+        source.outlineEnabled;
+
+    parameters.outline.widthMode =
+        source.outlineWidthMode;
+
+    parameters.outline.width =
+        source.outlineWidth;
+
+    parameters.outline.color =
+        source.outlineColor;
+
+    parameters.outline.lightingMix =
+        source.outlineLightingMix;
+
     asset::importers::TextureImporter importer{
         assets
     };
@@ -536,6 +574,17 @@ bool applyMToonSidecarMaterial(
             parameters.textures.emissionTexture,
             source.name,
             "textures.emission",
+            error) ||
+        !restoreTexture(
+            source.textures.outlineWidthMask,
+            asset::ColorSpace::Linear,
+            parameters.textures.outlineWidthMaskTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.outlineWidthMaskTexture,
+            source.name,
+            "textures.outlineWidthMask",
             error))
     {
         return false;

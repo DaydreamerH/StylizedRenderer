@@ -86,6 +86,13 @@ enum class PrimitiveTopology : uint8_t
     Triangles
 };
 
+enum class CullMode : std::uint8_t
+{
+    None,
+    Front,
+    Back
+};
+
 enum class IndexType : uint8_t
 {
     Uint16,

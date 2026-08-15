@@ -99,6 +99,38 @@ bool readFloat(
     return true;
 }
 
+bool readBool(
+    const Json& source,
+    const char* field,
+    bool& destination,
+    const std::string& materialName,
+    MToonSidecarError& error)
+{
+    const auto iterator =
+        source.find(field);
+
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_boolean())
+    {
+        setError(
+            error,
+            materialName,
+            field,
+            "Expected a boolean.");
+
+        return false;
+    }
+
+    destination =
+        iterator->get<bool>();
+
+    return true;
+}
+
 template<std::size_t ComponentCount>
 bool readVector(
     const Json& source,
@@ -213,6 +245,75 @@ bool readTexturePath(
     return true;
 }
 
+const char* outlineWidthModeToString(
+    const OutlineWidthMode mode) noexcept
+{
+    switch (mode)
+    {
+    case OutlineWidthMode::World:
+        return "world";
+
+    case OutlineWidthMode::Screen:
+        return "screen";
+    }
+
+    return "screen";
+}
+
+bool readOutlineWidthMode(
+    const Json& source,
+    const char* field,
+    OutlineWidthMode& destination,
+    const std::string& materialName,
+    MToonSidecarError& error)
+{
+    const auto iterator =
+        source.find(field);
+
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_string())
+    {
+        setError(
+            error,
+            materialName,
+            field,
+            "Expected an outline width mode string.");
+
+        return false;
+    }
+
+    const std::string& value =
+        iterator->get_ref<const std::string&>();
+
+    if (value == "world")
+    {
+        destination =
+            OutlineWidthMode::World;
+
+        return true;
+    }
+
+    if (value == "screen")
+    {
+        destination =
+            OutlineWidthMode::Screen;
+
+        return true;
+    }
+
+    setError(
+        error,
+        materialName,
+        field,
+        "Outline width mode must be world or screen.");
+
+    return false;
+}
+
 Json texturePathsToJson(
     const MToonSidecarTexturePaths& textures)
 {
@@ -223,7 +324,27 @@ Json texturePathsToJson(
         {"shadingShift", textures.shadingShift.generic_string()},
         {"matcap", textures.matcap.generic_string()},
         {"rimMask", textures.rimMask.generic_string()},
-        {"emission", textures.emission.generic_string()}
+        {"emission", textures.emission.generic_string()},
+        {
+            "outlineWidthMask",
+            textures.outlineWidthMask.generic_string()
+        }
+    };
+}
+
+Json outlineToJson(
+    const MToonSidecarMaterial& material)
+{
+    return Json{
+        {"enabled", material.outlineEnabled},
+        {
+            "widthMode",
+            outlineWidthModeToString(
+                material.outlineWidthMode)
+        },
+        {"width", material.outlineWidth},
+        {"color", toJson(material.outlineColor)},
+        {"lightingMix", material.outlineLightingMix}
     };
 }
 
@@ -250,6 +371,7 @@ Json materialToJson(
         {"rimLightingMix", material.rimLightingMix},
         {"emissionColor", toJson(material.emissionColor)},
         {"emissionStrength", material.emissionStrength},
+        {"outline", outlineToJson(material)},
         {"textures", texturePathsToJson(material.textures)}
     };
 }
@@ -319,6 +441,75 @@ bool parseTexturePaths(
             *iterator,
             "emission",
             material.textures.emission,
+            material.name,
+            error) &&
+        readTexturePath(
+            *iterator,
+            "outlineWidthMask",
+            material.textures.outlineWidthMask,
+            material.name,
+            error);
+}
+
+bool parseOutline(
+    const Json& source,
+    MToonSidecarMaterial& material,
+    MToonSidecarError& error)
+{
+    const auto iterator =
+        source.find("outline");
+
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_object())
+    {
+        setError(
+            error,
+            material.name,
+            "outline",
+            "Expected an object.");
+
+        return false;
+    }
+
+    return
+        readBool(
+            *iterator,
+            "enabled",
+            material.outlineEnabled,
+            material.name,
+            error) &&
+        readOutlineWidthMode(
+            *iterator,
+            "widthMode",
+            material.outlineWidthMode,
+            material.name,
+            error) &&
+        readFloat(
+            *iterator,
+            "width",
+            material.outlineWidth,
+            0.0F,
+            100.0F,
+            material.name,
+            error) &&
+        readVector<3>(
+            *iterator,
+            "color",
+            &material.outlineColor.x,
+            0.0F,
+            1.0F,
+            material.name,
+            error) &&
+        readFloat(
+            *iterator,
+            "lightingMix",
+            material.outlineLightingMix,
+            0.0F,
+            1.0F,
             material.name,
             error);
 }
@@ -480,6 +671,10 @@ bool parseMaterial(
             10.0F,
             material.name,
             error) &&
+        parseOutline(
+            source,
+            material,
+            error) &&
         parseTexturePaths(
             source,
             material,
@@ -525,15 +720,30 @@ bool parseSidecarJson(
         root.find("version");
 
     if (versionIterator == root.end() ||
-        !versionIterator->is_number_unsigned() ||
-        versionIterator->get<std::uint32_t>() !=
+        !versionIterator->is_number_unsigned())
+    {
+        setError(
+            error,
+            {},
+            "version",
+            "Missing or invalid sidecar version.");
+
+        return false;
+    }
+
+    const std::uint32_t sourceVersion =
+        versionIterator->get<std::uint32_t>();
+
+    if (sourceVersion <
+            MToonMaterialSidecar::minimumSupportedVersion ||
+        sourceVersion >
             MToonMaterialSidecar::currentVersion)
     {
         setError(
             error,
             {},
             "version",
-            "Unsupported or missing sidecar version.");
+            "Unsupported sidecar version.");
 
         return false;
     }
@@ -554,6 +764,9 @@ bool parseSidecarJson(
     }
 
     MToonMaterialSidecar parsed;
+
+    parsed.version =
+        MToonMaterialSidecar::currentVersion;
 
     std::unordered_set<std::string>
         materialNames;

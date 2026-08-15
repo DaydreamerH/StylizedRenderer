@@ -17,6 +17,8 @@
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ShadowPass.hpp>
 #include <render/passes/PostProcessPass.hpp>
+#include <render/passes/OutlineMaskPass.hpp>
+#include <render/passes/ScreenSpaceOutlinePass.hpp>
 
 #include <scene/Camera.hpp>
 
@@ -229,6 +231,8 @@ protected:
             framePipeline_.get(),
             shadowPass_,
             forwardOpaquePass_,
+            outlineMaskPass_,
+            screenSpaceOutlinePass_,
             postProcessPass_,
             activeMaterialKind_,
             shadowsEnabled_,
@@ -273,6 +277,8 @@ protected:
         framePipeline_.reset();
         shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
+        outlineMaskPass_ = nullptr;
+        screenSpaceOutlinePass_ = nullptr;
         postProcessPass_ = nullptr;
         extractor_.reset();
         resourceCache_.reset();
@@ -341,6 +347,54 @@ private:
 
         if (!framePipeline_->addPass(std::move(forwardPass)))
             return false;
+
+        auto outlineMaskPass =
+            std::make_unique<
+                stylized::render::OutlineMaskPass>(
+                    graphicsDevice(),
+                    assetRegistry_,
+                    *resourceCache_);
+
+        if (!outlineMaskPass->initialize())
+        {
+            std::cerr
+                << "Failed to initialize "
+                << "OutlineMaskPass.\n";
+
+            return false;
+        }
+
+        outlineMaskPass_ =
+            outlineMaskPass.get();
+
+        if (!framePipeline_->addPass(
+                std::move(outlineMaskPass)))
+        {
+            return false;
+        }
+
+        auto screenSpaceOutlinePass =
+            std::make_unique<
+                stylized::render::ScreenSpaceOutlinePass>(
+                    graphicsDevice());
+
+        if (!screenSpaceOutlinePass->initialize())
+        {
+            std::cerr
+                << "Failed to initialize "
+                << "ScreenSpaceOutlinePass.\n";
+
+            return false;
+        }
+
+        screenSpaceOutlinePass_ =
+            screenSpaceOutlinePass.get();
+
+        if (!framePipeline_->addPass(
+                std::move(screenSpaceOutlinePass)))
+        {
+            return false;
+        }
 
         auto postProcessPass =
             std::make_unique<
@@ -591,6 +645,8 @@ private:
 
     stylized::render::ShadowPass* shadowPass_ = nullptr;
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
+    stylized::render::OutlineMaskPass* outlineMaskPass_ = nullptr;
+    stylized::render::ScreenSpaceOutlinePass* screenSpaceOutlinePass_ = nullptr;
     stylized::render::PostProcessPass* postProcessPass_ = nullptr;
 
     stylized::graphics::Extent2D pipelineExtent_{};

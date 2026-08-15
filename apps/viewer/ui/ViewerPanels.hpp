@@ -21,8 +21,10 @@ namespace stylized::render
 {
 class ForwardOpaquePass;
 class FramePipeline;
+class OutlineMaskPass;
 class PostProcessPass;
 class RuntimeResourceCache;
+class ScreenSpaceOutlinePass;
 class ShadowPass;
 struct RenderWorld;
 }
@@ -51,6 +53,9 @@ public:
         const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,
         const stylized::render::ForwardOpaquePass* forwardPass,
+        const stylized::render::OutlineMaskPass* outlineMaskPass,
+        stylized::render::ScreenSpaceOutlinePass*
+            screenSpaceOutlinePass,
         const stylized::render::PostProcessPass* postProcessPass,
         stylized::material::MaterialKind& materialKind,
         bool& shadowsEnabled,

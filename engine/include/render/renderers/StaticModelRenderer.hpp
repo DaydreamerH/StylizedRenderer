@@ -45,7 +45,8 @@ public:
 
     [[nodiscard]] bool render(
         const RenderWorld& renderWorld,
-        const graphics::DepthTexture* shadowMap);
+        const graphics::DepthTexture& shadowMap,
+        bool shadowMapAvailable);
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
 };

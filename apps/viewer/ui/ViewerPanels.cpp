@@ -7,7 +7,9 @@
 #include <asset/TextureAsset.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
+#include <render/passes/OutlineMaskPass.hpp>
 #include <render/passes/PostProcessPass.hpp>
+#include <render/passes/ScreenSpaceOutlinePass.hpp>
 #include <render/world/RenderWorld.hpp>
 #include <render/passes/ShadowPass.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
@@ -492,6 +494,9 @@ void ViewerPanels::draw(
     const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
+    const stylized::render::OutlineMaskPass* outlineMaskPass,
+    stylized::render::ScreenSpaceOutlinePass*
+        screenSpaceOutlinePass,
     const stylized::render::PostProcessPass* postProcessPass,
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
@@ -931,7 +936,145 @@ void ViewerPanels::draw(
                     assets,
                     "Black");
             }
+
+            if (ImGui::CollapsingHeader("Outline"))
+            {
+                ImGui::Checkbox(
+                    "Outline Enabled",
+                    &parameters.outline.enabled);
+
+                int widthMode =
+                    parameters.outline.widthMode ==
+                            stylized::material::OutlineWidthMode::World
+                        ? 0
+                        : 1;
+
+                constexpr const char* widthModes[] = {
+                    "World",
+                    "Screen"
+                };
+
+                if (ImGui::Combo(
+                        "Outline Width Mode",
+                        &widthMode,
+                        widthModes,
+                        IM_ARRAYSIZE(widthModes)))
+                {
+                    parameters.outline.widthMode =
+                        widthMode == 0
+                            ? stylized::material::
+                                OutlineWidthMode::World
+                            : stylized::material::
+                                OutlineWidthMode::Screen;
+                }
+
+                const float widthSpeed =
+                    parameters.outline.widthMode ==
+                            stylized::material::OutlineWidthMode::World
+                        ? 0.001F
+                        : 0.1F;
+
+                ImGui::DragFloat(
+                    "Outline Width",
+                    &parameters.outline.width,
+                    widthSpeed,
+                    0.0F,
+                    100.0F,
+                    "%.3f");
+
+                ImGui::ColorEdit3(
+                    "Outline Color",
+                    &parameters.outline.color.x);
+
+                ImGui::SliderFloat(
+                    "Outline Lighting Mix",
+                    &parameters.outline.lightingMix,
+                    0.0F,
+                    1.0F,
+                    "%.3f");
+
+                drawTextureStatus(
+                    "Outline Width Mask:",
+                    parameters.textures.outlineWidthMaskTexture,
+                    assets,
+                    "White");
+            }
         }
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Screen Space Outline");
+
+    if (screenSpaceOutlinePass != nullptr)
+    {
+        stylized::render::ScreenSpaceOutlineSettings settings =
+            screenSpaceOutlinePass->settings();
+
+        bool changed = false;
+
+        int debugView =
+            static_cast<int>(settings.debugView);
+
+        constexpr const char* debugViews[] = {
+            "Final",
+            "Surface Normal",
+            "Linear Depth",
+            "Shell Outline Mask",
+            "Screen Edge",
+            "Combined Outline"
+        };
+
+        if (ImGui::Combo(
+                "Outline Debug View",
+                &debugView,
+                debugViews,
+                IM_ARRAYSIZE(debugViews)))
+        {
+            settings.debugView =
+                static_cast<
+                    stylized::render::OutlineDebugView>(
+                        debugView);
+
+            changed = true;
+        }
+
+        changed |= ImGui::Checkbox(
+            "Screen Outline Enabled",
+            &settings.enabled);
+
+        changed |= ImGui::ColorEdit3(
+            "Screen Outline Color",
+            &settings.color.x);
+
+        changed |= ImGui::SliderFloat(
+            "Screen Outline Width",
+            &settings.width,
+            1.0F,
+            8.0F,
+            "%.1f");
+
+        changed |= ImGui::SliderFloat(
+            "Depth Threshold",
+            &settings.depthThreshold,
+            0.001F,
+            0.1F,
+            "%.4f");
+
+        changed |= ImGui::SliderFloat(
+            "Normal Threshold",
+            &settings.normalThreshold,
+            0.01F,
+            1.0F,
+            "%.3f");
+
+        if (changed)
+        {
+            screenSpaceOutlinePass->setSettings(settings);
+        }
+    }
+    else
+    {
+        ImGui::TextUnformatted("Unavailable");
     }
 
     ImGui::Separator();
@@ -1014,20 +1157,64 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
+        "OutlineMaskPass",
+        outlineMaskPass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline->passLastExecutionSucceeded(2)
+                ? "Failed"
+                : outlineMaskPass->lastDrawCallCount() == 0
+                    ? "Idle"
+                    : "Active",
+        outlineMaskPass != nullptr
+            ? outlineMaskPass->lastDrawCallCount()
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(2),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(2)
+            : 0.0);
+
+    drawPassStatus(
+        "ScreenSpaceOutlinePass",
+        screenSpaceOutlinePass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline
+                        ->passLastExecutionSucceeded(3)
+                ? "Failed"
+                : screenSpaceOutlinePass->settings().debugView !=
+                        stylized::render::OutlineDebugView::Final
+                    ? "Debug View"
+                    : screenSpaceOutlinePass->settings().enabled
+                        ? "Active"
+                        : "Composite Only",
+        screenSpaceOutlinePass != nullptr
+            ? screenSpaceOutlinePass
+                ->lastDrawCallCount()
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(3),
+        framePipeline != nullptr
+            ? framePipeline
+                ->passGpuTimeMilliseconds(3)
+            : 0.0);
+
+    drawPassStatus(
         "PostProcessPass",
         postProcessPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(2)
+                    !framePipeline->passLastExecutionSucceeded(4)
                 ? "Failed"
                 : "Active",
         postProcessPass != nullptr
             ? postProcessPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(2),
+            framePipeline->passHasGpuTime(4),
         framePipeline != nullptr
-            ? framePipeline->passGpuTimeMilliseconds(2)
+            ? framePipeline->passGpuTimeMilliseconds(4)
             : 0.0);
 
     if (framePipeline != nullptr &&
@@ -1090,11 +1277,59 @@ void ViewerPanels::draw(
             depthTextureFormatName(
                 forwardPass->depthFormat()),
             rebuildCount);
+
+        ImGui::Text(
+            "Forward Normal: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                forwardPass->normalFormat()),
+            rebuildCount);
     }
     else
     {
         ImGui::TextUnformatted(
             "Forward targets: not created");
+    }
+
+    if (outlineMaskPass != nullptr &&
+        outlineMaskPass->hasRenderTarget())
+    {
+        const stylized::graphics::Extent2D extent =
+            outlineMaskPass->renderTargetExtent();
+
+        ImGui::Text(
+            "Outline Mask: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                outlineMaskPass->renderTargetFormat()),
+            outlineMaskPass->renderTargetRebuildCount());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Outline Mask: not created");
+    }
+
+    if (screenSpaceOutlinePass != nullptr &&
+        screenSpaceOutlinePass->hasRenderTarget())
+    {
+        const stylized::graphics::Extent2D extent =
+            screenSpaceOutlinePass->renderTargetExtent();
+
+        ImGui::Text(
+            "Outlined HDR: %u x %u, %s, Rebuilds: %zu",
+            extent.width,
+            extent.height,
+            renderTextureFormatName(
+                screenSpaceOutlinePass->renderTargetFormat()),
+            screenSpaceOutlinePass->renderTargetRebuildCount());
+    }
+    else
+    {
+        ImGui::TextUnformatted(
+            "Outlined HDR: not created");
     }
 
     ImGui::Separator();
