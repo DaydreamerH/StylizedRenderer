@@ -74,6 +74,9 @@ bool OutlineMaskPass::resize(
         return true;
     }
 
+    const bool rebuilding =
+        outlineMask_.isValid();
+
     graphics::RenderTextureDesc textureDesc;
 
     textureDesc.extent = extent;
@@ -97,7 +100,11 @@ bool OutlineMaskPass::resize(
 
     framebuffer_ = {};
     extent_ = extent;
-    ++renderTargetRebuildCount_;
+
+    if (rebuilding)
+    {
+        ++renderTargetRebuildCount_;
+    }
 
     return true;
 }

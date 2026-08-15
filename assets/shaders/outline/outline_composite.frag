@@ -7,6 +7,7 @@ layout(location = 0) out vec4 outColor;
 uniform sampler2D uHdrColor;
 uniform sampler2D uOutlineMask;
 uniform sampler2D uDepth;
+uniform int uDebugView;
 
 uniform int uScreenOutlineEnabled;
 uniform vec3 uScreenOutlineColor;
@@ -18,6 +19,13 @@ uniform float uFarPlane;
 
 uniform sampler2D uNormal;
 uniform float uNormalThreshold;
+
+const int DEBUG_VIEW_FINAL = 0;
+const int DEBUG_VIEW_SURFACE_NORMAL = 1;
+const int DEBUG_VIEW_LINEAR_DEPTH = 2;
+const int DEBUG_VIEW_SHELL_OUTLINE_MASK = 3;
+const int DEBUG_VIEW_SCREEN_EDGE = 4;
+const int DEBUG_VIEW_COMBINED_OUTLINE = 5;
 
 float linearizeDepth(const float depth)
 {
@@ -195,6 +203,67 @@ void main()
 
     const float combinedCoverage =
         max(shellCoverage, screenCoverage);
+
+    if (uDebugView == DEBUG_VIEW_SURFACE_NORMAL)
+    {
+        const vec4 normalSample =
+            texture(uNormal, vertexTextureCoordinate);
+
+        outColor = vec4(
+            normalSample.a > 1.0e-4
+                ? normalSample.rgb
+                : vec3(0.0),
+            1.0);
+
+        return;
+    }
+
+    if (uDebugView == DEBUG_VIEW_LINEAR_DEPTH)
+    {
+        const float depthSample =
+            texture(uDepth, vertexTextureCoordinate).r;
+
+        const float linearDepth =
+            depthSample >= 1.0 - 1.0e-6
+                ? uFarPlane
+                : linearizeDepth(depthSample);
+
+        const float normalizedDepth =
+            clamp(
+                (linearDepth - uNearPlane) /
+                    max(uFarPlane - uNearPlane, 1.0e-6),
+                0.0,
+                1.0);
+
+        outColor =
+            vec4(vec3(normalizedDepth), 1.0);
+
+        return;
+    }
+
+    if (uDebugView == DEBUG_VIEW_SHELL_OUTLINE_MASK)
+    {
+        outColor =
+            vec4(vec3(shellCoverage), 1.0);
+
+        return;
+    }
+
+    if (uDebugView == DEBUG_VIEW_SCREEN_EDGE)
+    {
+        outColor =
+            vec4(vec3(screenCoverage), 1.0);
+
+        return;
+    }
+
+    if (uDebugView == DEBUG_VIEW_COMBINED_OUTLINE)
+    {
+        outColor =
+            vec4(vec3(combinedCoverage), 1.0);
+
+        return;
+    }
 
     const vec3 outlineColor =
         shellCoverage > 1.0e-4

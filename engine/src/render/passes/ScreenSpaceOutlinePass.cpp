@@ -208,6 +208,9 @@ bool ScreenSpaceOutlinePass::resize(
         return true;
     }
 
+    const bool rebuilding =
+        framebuffer_.isValid();
+
     graphics::RenderTextureDesc textureDesc;
     textureDesc.extent = extent;
     textureDesc.format =
@@ -252,7 +255,11 @@ bool ScreenSpaceOutlinePass::resize(
         std::move(newFramebuffer);
 
     extent_ = extent;
-    ++renderTargetRebuildCount_;
+
+    if (rebuilding)
+    {
+        ++renderTargetRebuildCount_;
+    }
 
     return true;
 }
@@ -298,6 +305,9 @@ bool ScreenSpaceOutlinePass::execute(
         !shader_.setInt(
             "uNormal",
             3) ||
+        !shader_.setInt(
+            "uDebugView",
+            static_cast<int>(settings_.debugView)) ||
         !shader_.setInt(
             "uScreenOutlineEnabled",
             settings_.enabled ? 1 : 0) ||

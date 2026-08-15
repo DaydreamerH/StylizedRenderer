@@ -13,6 +13,7 @@
 #include <glm/vec3.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 
 namespace stylized::graphics
@@ -25,6 +26,16 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
+enum class OutlineDebugView : std::uint8_t
+{
+    Final = 0,
+    SurfaceNormal,
+    LinearDepth,
+    ShellOutlineMask,
+    ScreenEdge,
+    CombinedOutline
+};
+
 struct ScreenSpaceOutlineSettings
 {
     bool enabled = false;
@@ -34,6 +45,9 @@ struct ScreenSpaceOutlineSettings
     float width = 1.0F;
     float depthThreshold = 0.01F;
     float normalThreshold = 0.2F;
+
+    OutlineDebugView debugView =
+        OutlineDebugView::Final;
 };
 
 

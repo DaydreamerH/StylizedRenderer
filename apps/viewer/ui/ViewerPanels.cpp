@@ -1012,6 +1012,32 @@ void ViewerPanels::draw(
 
         bool changed = false;
 
+        int debugView =
+            static_cast<int>(settings.debugView);
+
+        constexpr const char* debugViews[] = {
+            "Final",
+            "Surface Normal",
+            "Linear Depth",
+            "Shell Outline Mask",
+            "Screen Edge",
+            "Combined Outline"
+        };
+
+        if (ImGui::Combo(
+                "Outline Debug View",
+                &debugView,
+                debugViews,
+                IM_ARRAYSIZE(debugViews)))
+        {
+            settings.debugView =
+                static_cast<
+                    stylized::render::OutlineDebugView>(
+                        debugView);
+
+            changed = true;
+        }
+
         changed |= ImGui::Checkbox(
             "Screen Outline Enabled",
             &settings.enabled);
@@ -1137,7 +1163,9 @@ void ViewerPanels::draw(
             : framePipeline != nullptr &&
                     !framePipeline->passLastExecutionSucceeded(2)
                 ? "Failed"
-                : "Active",
+                : outlineMaskPass->lastDrawCallCount() == 0
+                    ? "Idle"
+                    : "Active",
         outlineMaskPass != nullptr
             ? outlineMaskPass->lastDrawCallCount()
             : 0,
@@ -1155,7 +1183,12 @@ void ViewerPanels::draw(
                     !framePipeline
                         ->passLastExecutionSucceeded(3)
                 ? "Failed"
-                : "Active",
+                : screenSpaceOutlinePass->settings().debugView !=
+                        stylized::render::OutlineDebugView::Final
+                    ? "Debug View"
+                    : screenSpaceOutlinePass->settings().enabled
+                        ? "Active"
+                        : "Composite Only",
         screenSpaceOutlinePass != nullptr
             ? screenSpaceOutlinePass
                 ->lastDrawCallCount()
