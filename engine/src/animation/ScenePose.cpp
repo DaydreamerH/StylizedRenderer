@@ -49,6 +49,12 @@ bool ScenePose::initialize(
     return true;
 }
 
+bool ScenePose::isForScene(
+    const asset::SceneAsset& sceneAsset) const noexcept
+{
+    return sceneAsset_ == &sceneAsset;
+}
+
 void ScenePose::clear() noexcept
 {
     sceneAsset_ = nullptr;

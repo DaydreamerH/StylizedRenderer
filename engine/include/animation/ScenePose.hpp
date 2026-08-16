@@ -44,6 +44,9 @@ public:
 
     [[nodiscard]] bool isInitialized() const noexcept;
 
+    [[nodiscard]] bool isForScene(
+        const asset::SceneAsset& sceneAsset) const noexcept;
+
     [[nodiscard]] bool worldMatricesDirty() const noexcept;
 
     [[nodiscard]] std::size_t nodeCount() const noexcept;
