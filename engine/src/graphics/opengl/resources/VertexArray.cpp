@@ -17,33 +17,65 @@ struct OpenGLAttributeFormat
     GLint componentCount = 0;
     GLenum componentType = GL_FLOAT;
     GLboolean normalized = GL_FALSE;
+
+    bool integer = false;
 };
 
-OpenGLAttributeFormat toOpenGLFormat(const VertexAttributeFormat format) noexcept
+OpenGLAttributeFormat toOpenGLFormat(
+    const VertexAttributeFormat format) noexcept
 {
     switch (format)
     {
     case VertexAttributeFormat::Float:
-        return {1, GL_FLOAT, GL_FALSE};
-    
+        return {
+            1,
+            GL_FLOAT,
+            GL_FALSE,
+            false
+        };
+
     case VertexAttributeFormat::Float2:
-        return {2, GL_FLOAT, GL_FALSE};
-    
+        return {
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            false
+        };
+
     case VertexAttributeFormat::Float3:
-        return {3, GL_FLOAT, GL_FALSE};
+        return {
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            false
+        };
 
     case VertexAttributeFormat::Float4:
-        return {4, GL_FLOAT, GL_FALSE};
-    
+        return {
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            false
+        };
+
+    case VertexAttributeFormat::Uint4:
+        return {
+            4,
+            GL_UNSIGNED_INT,
+            GL_FALSE,
+            true
+        };
+
     case VertexAttributeFormat::Uint8Normalized4:
-        return {4, GL_UNSIGNED_BYTE, GL_TRUE};
+        return {
+            4,
+            GL_UNSIGNED_BYTE,
+            GL_TRUE,
+            false
+        };
     }
 
-    return {
-        0,
-        GL_FLOAT,
-        GL_FALSE
-    };
+    return {};
 }
 
 bool fitsGLintptr(const std::size_t value) noexcept
@@ -163,7 +195,27 @@ VertexArray::VertexArray(const VertexArrayDesc& desc)
 
         glEnableVertexArrayAttrib(id_, attribute.location);
 
-        glVertexArrayAttribFormat(id_, attribute.location, format.componentCount, format.componentType, format.normalized, static_cast<GLuint>(attribute.offset));
+        if (format.integer)
+        {
+            glVertexArrayAttribIFormat(
+                id_,
+                attribute.location,
+                format.componentCount,
+                format.componentType,
+                static_cast<GLuint>(
+                    attribute.offset));
+        }
+        else
+        {
+            glVertexArrayAttribFormat(
+                id_,
+                attribute.location,
+                format.componentCount,
+                format.componentType,
+                format.normalized,
+                static_cast<GLuint>(
+                    attribute.offset));
+        }
 
         glVertexArrayAttribBinding(id_, attribute.location, attribute.binding);
     }
