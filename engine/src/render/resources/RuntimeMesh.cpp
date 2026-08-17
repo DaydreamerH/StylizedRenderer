@@ -9,6 +9,8 @@
 #include <limits>
 #include <span>
 #include <string>
+#include <type_traits>
+#include <vector>
 
 namespace stylized::render
 {
@@ -19,6 +21,58 @@ namespace
 bool fitsUint32(const std::size_t value) noexcept
 {
     return value <= static_cast<std::size_t> (std::numeric_limits<std::uint32_t>::max());
+}
+
+struct SkinnedMeshVertex
+{
+    glm::vec3 position{0.0F};
+    glm::vec3 normal{0.0F, 1.0F, 0.0F};
+    glm::vec4 tangent{1.0F, 0.0F, 0.0F, 1.0F};
+    glm::vec2 texCoord0{0.0F};
+
+    glm::uvec4 joints{0U};
+    glm::vec4 weights{0.0F};
+};
+
+static_assert(
+    std::is_standard_layout_v<
+        SkinnedMeshVertex>);
+
+static_assert(
+    std::is_trivially_copyable_v<
+        SkinnedMeshVertex>);
+
+[[nodiscard]]
+std::vector<SkinnedMeshVertex>
+buildSkinnedVertices(
+    const asset::MeshPrimitiveAsset& source)
+{
+    std::vector<SkinnedMeshVertex> vertices;
+
+    vertices.reserve(source.vertices.size());
+
+    for (std::size_t vertexIndex = 0;
+         vertexIndex < source.vertices.size();
+         ++vertexIndex)
+    {
+        const asset::StaticMeshVertex& geometry =
+            source.vertices[vertexIndex];
+
+        const asset::VertexSkinData& skin =
+            source.skinVertices[vertexIndex];
+
+        vertices.push_back(
+            SkinnedMeshVertex{
+                .position = geometry.position,
+                .normal = geometry.normal,
+                .tangent = geometry.tangent,
+                .texCoord0 = geometry.texCoord0,
+                .joints = skin.joints,
+                .weights = skin.weights
+            });
+    }
+
+    return vertices;
 }
 
 } // namespace
@@ -40,8 +94,30 @@ bool RuntimeMesh::uploadPrimitive(
     graphics::BufferDesc vertexBufferDesc;
     vertexBufferDesc.usage = graphics::BufferUsage::Static;
     vertexBufferDesc.debugName = primitiveName + " Vertex Buffer";
-    destination.vertexBuffer_ = graphicsDevice.createBuffer(vertexBufferDesc,
-        std::span<const asset::StaticMeshVertex>{source.vertices});
+
+    if (source.hasSkin())
+    {
+        const std::vector<SkinnedMeshVertex>
+            skinnedVertices =
+                buildSkinnedVertices(source);
+
+        destination.vertexBuffer_ =
+            graphicsDevice.createBuffer(
+                vertexBufferDesc,
+                std::span<
+                    const SkinnedMeshVertex>{
+                        skinnedVertices});
+    }
+    else
+    {
+        destination.vertexBuffer_ =
+            graphicsDevice.createBuffer(
+                vertexBufferDesc,
+                std::span<
+                    const asset::StaticMeshVertex>{
+                        source.vertices});
+    }
+
     if (!destination.vertexBuffer_.isValid())
     {
         std::cerr
@@ -69,7 +145,7 @@ bool RuntimeMesh::uploadPrimitive(
 
     constexpr std::uint32_t vertexBinding = 0;
 
-    const std::array<graphics::VertexAttributeDesc, 4> attributes{
+    const std::array<graphics::VertexAttributeDesc, 4> staticAttributes{
         graphics::VertexAttributeDesc{
             .location = 0,
             .binding = vertexBinding,
@@ -110,12 +186,96 @@ bool RuntimeMesh::uploadPrimitive(
         }
     };
 
+    const std::array<graphics::VertexAttributeDesc, 6>
+        skinnedAttributes{
+            graphics::VertexAttributeDesc{
+                .location = 0,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Float3,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        position)
+            },
+            graphics::VertexAttributeDesc{
+                .location = 1,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Float3,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        normal)
+            },
+            graphics::VertexAttributeDesc{
+                .location = 2,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Float4,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        tangent)
+            },
+            graphics::VertexAttributeDesc{
+                .location = 3,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Float2,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        texCoord0)
+            },
+            graphics::VertexAttributeDesc{
+                .location = 4,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Uint4,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        joints)
+            },
+            graphics::VertexAttributeDesc{
+                .location = 5,
+                .binding = vertexBinding,
+                .format =
+                    graphics::VertexAttributeFormat::Float4,
+                .offset =
+                    offsetof(
+                        SkinnedMeshVertex,
+                        weights)
+            }
+        };
+
     graphics::VertexArrayDesc vertexArrayDesc;
     vertexArrayDesc.vertexBuffer = &destination.vertexBuffer_;
     vertexArrayDesc.indexBuffer = &destination.indexBuffer_;
     vertexArrayDesc.vertexBinding.binding = vertexBinding;
-    vertexArrayDesc.vertexBinding.stride = sizeof(asset::StaticMeshVertex);
-    vertexArrayDesc.attributes = std::span<const graphics::VertexAttributeDesc>{attributes};
+
+    if (source.hasSkin())
+    {
+        vertexArrayDesc.vertexBinding.stride =
+            sizeof(SkinnedMeshVertex);
+
+        vertexArrayDesc.attributes =
+            std::span<
+                const graphics::VertexAttributeDesc>{
+                    skinnedAttributes};
+    }
+    else
+    {
+        vertexArrayDesc.vertexBinding.stride =
+            sizeof(asset::StaticMeshVertex);
+
+        vertexArrayDesc.attributes =
+            std::span<
+                const graphics::VertexAttributeDesc>{
+                    staticAttributes};
+    }
+
     vertexArrayDesc.vertexBufferOffset = 0;
     vertexArrayDesc.debugName = primitiveName + " Vertex Array";
 
@@ -226,7 +386,7 @@ const std::string& RuntimeMesh::name() const noexcept
     return name_;
 }
 
-const std::vector<RuntimeMeshPrimitive>& 
+const std::vector<RuntimeMeshPrimitive>&
 RuntimeMesh::primitives() const noexcept
 {
     return primitives_;
