@@ -24,6 +24,8 @@
 
 #include <material/MaterialTemplate.hpp>
 
+#include <animation/ScenePose.hpp>
+
 #include "camera/OrbitCameraController.hpp"
 #include "ui/ViewerPanels.hpp"
 
@@ -145,6 +147,7 @@ protected:
 
         if (!extractor_->extract(
                 *sceneAsset,
+                scenePose_,
                 assetRegistry_,
                 camera_,
                 mainLight_,
@@ -452,6 +455,14 @@ private:
             return false;
         }
 
+        if (!scenePose_.initialize(*sceneAsset))
+        {
+            std::cerr
+                << "Failed to initialize scene pose.\n";
+
+            return false;
+        }
+
         std::cout
             << "Scene loaded successfully: "
             << sceneAsset->name
@@ -675,6 +686,8 @@ private:
     };
 
     bool cameraFocused_ = false;
+
+    stylized::animation::ScenePose scenePose_;
 };
 
 } // namespace

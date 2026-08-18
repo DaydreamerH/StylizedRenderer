@@ -8,6 +8,8 @@
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 
+#include <animation/ScenePose.hpp>
+
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
 
@@ -17,8 +19,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <vector>
 #include <cmath>
 
 namespace stylized::render
@@ -115,6 +115,7 @@ RenderExtractor::RenderExtractor(RuntimeResourceCache& resourceCache) noexcept
 
 bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
+    const animation::ScenePose& scenePose,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
     const DirectionalLightData& mainLight,
@@ -123,7 +124,14 @@ bool RenderExtractor::extract(
         materialTemplate,
     RenderWorld& renderWorld) const
 {
-    if (!sceneAsset.isValid()) return false;
+    if (!sceneAsset.isValid() ||
+        !scenePose.isForScene(sceneAsset) ||
+        scenePose.worldMatricesDirty() ||
+        scenePose.nodeCount() !=
+            sceneAsset.nodes.size())
+    {
+        return false;
+    }
 
     renderWorld.clear();
 
@@ -145,51 +153,8 @@ bool RenderExtractor::extract(
 
     renderWorld.mainView.mainLight = mainLight;
 
-    const std::size_t nodeCount = sceneAsset.nodes.size();
-    
-    std::vector<glm::mat4> worldMatrices(nodeCount, glm::mat4{1.F});
-
-    std::vector<std::uint8_t> states(nodeCount, 0);
-
-    std::function<bool(std::size_t) > resolveWorldMatrix;
-
-    resolveWorldMatrix = [&](const std::size_t nodeIndex) -> bool
-    {
-        if (nodeIndex >= nodeCount) return false;
-
-        if (states[nodeIndex] == 2) return true;
-
-        if(states[nodeIndex] == 1) return false;
-
-        states[nodeIndex] = 1;
-
-        const asset::SceneNodeAsset& node = sceneAsset.nodes[nodeIndex];
-
-        const glm::mat4 localMatrix = node.localTransform.localMatrix();
-
-        if (!node.hasParent()) 
-            worldMatrices[nodeIndex] = localMatrix;
-        else 
-        {
-            const std::size_t parentIndex = static_cast<std::size_t>(node.parentIndex);
-
-            if (!resolveWorldMatrix(parentIndex))
-            {
-                return false;
-            }
-
-            worldMatrices[nodeIndex] = worldMatrices[parentIndex] * localMatrix;
-        }
-
-        states[nodeIndex] = 2;
-        return true;
-    };
-
-    for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
-    {
-        if (!resolveWorldMatrix(nodeIndex)) 
-            return false;
-    }
+    const std::size_t nodeCount =
+        sceneAsset.nodes.size();
 
     math::Bounds shadowCasterBounds;
 
@@ -203,8 +168,23 @@ bool RenderExtractor::extract(
 
         if (runtimeMesh == nullptr) continue;
 
-        const glm::mat4& worldMatrix = worldMatrices[nodeIndex];
-        const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3{worldMatrix}));
+        const glm::mat4* poseWorldMatrix =
+            scenePose.worldMatrix(
+                static_cast<std::uint32_t>(
+                    nodeIndex));
+
+        if (poseWorldMatrix == nullptr)
+        {
+            return false;
+        }
+
+        const glm::mat4& worldMatrix =
+            *poseWorldMatrix;
+
+        const glm::mat3 normalMatrix =
+            glm::transpose(
+                glm::inverse(
+                    glm::mat3{worldMatrix}));
 
         for (const RuntimeMeshPrimitive& primitive : runtimeMesh->primitives())
         {

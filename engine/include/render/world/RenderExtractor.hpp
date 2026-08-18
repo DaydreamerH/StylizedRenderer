@@ -22,6 +22,13 @@ struct MaterialTemplate;
 
 } // namespace stylized::material
 
+namespace stylized::animation
+{
+
+class ScenePose;
+
+} // namespace stylized::animation
+
 namespace stylized::render
 {
 
@@ -35,6 +42,7 @@ public:
 
     [[nodiscard]] bool extract(
         const asset::SceneAsset& sceneAsset,
+        const animation::ScenePose& scenePose,
         const asset::AssetRegistry& assetRegistry,
         const scene::Camera& camera,
         const DirectionalLightData& mainLight,
