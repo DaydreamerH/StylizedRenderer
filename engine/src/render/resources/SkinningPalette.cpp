@@ -2,9 +2,13 @@
 
 #include <animation/ScenePose.hpp>
 #include <asset/MeshAsset.hpp>
+#include <graphics/device/GraphicsDevice.hpp>
 
 #include <cmath>
 #include <cstddef>
+#include <limits>
+#include <span>
+#include <utility>
 
 #include <glm/matrix.hpp>
 
@@ -19,6 +23,64 @@ constexpr float minimumAbsoluteDeterminant =
 
 } // namespace
 
+bool SkinningPalette::initializeGpuBuffer(
+    graphics::GraphicsDevice& graphicsDevice,
+    const asset::SkinAsset& skin)
+{
+    clear();
+
+    if (!skin.isValid())
+    {
+        gpuBuffer_ = {};
+        jointCapacity_ = 0;
+
+        return false;
+    }
+
+    const std::size_t jointCount =
+        skin.jointNodeIndices.size();
+
+    if (gpuBuffer_.isValid() &&
+        jointCount == jointCapacity_)
+    {
+        return true;
+    }
+
+    gpuBuffer_ = {};
+    jointCapacity_ = 0;
+
+    if (jointCount >
+        std::numeric_limits<std::size_t>::max() /
+            sizeof(glm::mat4))
+    {
+        return false;
+    }
+
+    graphics::BufferDesc bufferDesc;
+
+    bufferDesc.size =
+        jointCount * sizeof(glm::mat4);
+
+    bufferDesc.usage =
+        graphics::BufferUsage::Dynamic;
+
+    bufferDesc.debugName =
+        "Skinning Palette Buffer";
+
+    graphics::Buffer buffer =
+        graphicsDevice.createBuffer(bufferDesc);
+
+    if (!buffer.isValid())
+    {
+        return false;
+    }
+
+    gpuBuffer_ = std::move(buffer);
+    jointCapacity_ = jointCount;
+
+    return true;
+}
+
 bool SkinningPalette::update(
     const asset::SkinAsset& skin,
     const std::uint32_t meshNodeIndex,
@@ -28,7 +90,10 @@ bool SkinningPalette::update(
 
     if (!skin.isValid() ||
         !pose.isInitialized() ||
-        pose.worldMatricesDirty())
+        pose.worldMatricesDirty() ||
+        !gpuBuffer_.isValid() ||
+        jointCapacity_ !=
+            skin.jointNodeIndices.size())
     {
         return false;
     }
@@ -83,9 +148,34 @@ bool SkinningPalette::update(
     return true;
 }
 
+bool SkinningPalette::upload()
+{
+    uploaded_ = false;
+
+    if (!gpuBuffer_.isValid() ||
+        matrices_.empty() ||
+        matrices_.size() != jointCapacity_)
+    {
+        return false;
+    }
+
+    if (!gpuBuffer_.update(
+            0,
+            std::span<const glm::mat4>{
+                matrices_}))
+    {
+        return false;
+    }
+
+    uploaded_ = true;
+
+    return true;
+}
+
 void SkinningPalette::clear() noexcept
 {
     matrices_.clear();
+    uploaded_ = false;
 }
 
 bool SkinningPalette::empty() const noexcept
@@ -96,6 +186,25 @@ bool SkinningPalette::empty() const noexcept
 std::size_t SkinningPalette::size() const noexcept
 {
     return matrices_.size();
+}
+
+void SkinningPalette::bind(
+    const std::uint32_t binding) const noexcept
+{
+    if (!isGpuReady())
+    {
+        return;
+    }
+
+    gpuBuffer_.bindShaderStorage(binding);
+}
+
+bool SkinningPalette::isGpuReady() const noexcept
+{
+    return
+        gpuBuffer_.isValid() &&
+        jointCapacity_ > 0 &&
+        uploaded_;
 }
 
 const std::vector<glm::mat4>&

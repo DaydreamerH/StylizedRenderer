@@ -38,8 +38,9 @@ public:
         return update(elementOffset * sizeof(T), std::as_bytes(data));
     }
 
-    void bindShaderStorage(std::uint32_t binding) const noexcept;
-    
+    void bindShaderStorage(
+        std::uint32_t binding) const noexcept;
+
 private:
     friend class GraphicsDevice;
     friend class VertexArray;
