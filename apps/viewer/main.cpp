@@ -24,6 +24,7 @@
 
 #include <material/MaterialTemplate.hpp>
 
+#include <animation/AnimationPlayer.hpp>
 #include <animation/ScenePose.hpp>
 
 #include "camera/OrbitCameraController.hpp"
@@ -103,8 +104,30 @@ protected:
         return true;
     }
 
-    void onUpdate(const float) override
+    void onUpdate(
+        const float deltaTime) override
     {
+        if (!smokeTest_ &&
+            animationPlayer_.clip() != nullptr)
+        {
+            const stylized::asset::SceneAsset*
+                sceneAsset =
+                    assetRegistry_.get(sceneHandle_);
+
+            if (sceneAsset == nullptr ||
+                !animationPlayer_.update(
+                    deltaTime,
+                    *sceneAsset,
+                    scenePose_))
+            {
+                std::cerr
+                    << "Failed to update animation.\n";
+
+                requestExit();
+                return;
+            }
+        }
+
         cameraController_.update(
             window(),
             !viewerPanels_.wantsMouseCapture());
@@ -463,6 +486,30 @@ private:
             return false;
         }
 
+        if (!sceneAsset->animations.empty())
+        {
+            const stylized::asset::AnimationClipAsset&
+                animationClip =
+                    sceneAsset->animations.front();
+
+            if (!animationPlayer_.setClip(
+                    &animationClip))
+            {
+                std::cerr
+                    << "Failed to select animation clip.\n";
+
+                return false;
+            }
+
+            animationPlayer_.setLooping(true);
+            animationPlayer_.play();
+
+            std::cout
+                << "Animation selected: "
+                << animationClip.name
+                << '\n';
+        }
+
         std::cout
             << "Scene loaded successfully: "
             << sceneAsset->name
@@ -686,6 +733,9 @@ private:
     };
 
     bool cameraFocused_ = false;
+
+    stylized::animation::AnimationPlayer
+        animationPlayer_;
 
     stylized::animation::ScenePose scenePose_;
 };
