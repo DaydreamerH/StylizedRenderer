@@ -8,11 +8,21 @@
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMaterial.hpp>
+#include <render/resources/SkinningPalette.hpp>
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
 
+#include <cstdint>
+
 namespace stylized::render
 {
+
+namespace
+{
+    constexpr std::uint32_t skinningPaletteBinding = 0;
+} // namespace
+
+
 StaticModelRenderer::StaticModelRenderer(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
@@ -87,6 +97,36 @@ bool StaticModelRenderer::render(
                 item.normalMatrix))
         {
             return false;
+        }
+
+        bool skinningEnabled = false;
+        if (item.skinning != nullptr)
+        {
+            const SkinningData& skinning = *item.skinning;
+
+            if (skinning.palette == nullptr ||
+                skinning.jointCount == 0 ||
+                !skinning.palette->isGpuReady() ||
+                skinning.palette->size() !=
+                    skinning.jointCount)
+            {
+                return false;
+            }
+
+            skinningEnabled = true;
+        }
+
+        if (!shader->setInt(
+                "uSkinningEnabled",
+                skinningEnabled ? 1 : 0))
+        {
+            return false;
+        }
+
+        if (skinningEnabled)
+        {
+            item.skinning->palette->bind(
+                skinningPaletteBinding);
         }
 
         const material::MaterialKind materialKind =
