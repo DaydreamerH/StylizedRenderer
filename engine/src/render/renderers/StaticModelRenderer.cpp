@@ -99,21 +99,13 @@ bool StaticModelRenderer::render(
             return false;
         }
 
-        bool skinningEnabled = false;
-        if (item.skinning != nullptr)
+        const bool skinningEnabled =
+            item.skinningPalette != nullptr;
+
+        if (skinningEnabled &&
+            !item.skinningPalette->isGpuReady())
         {
-            const SkinningData& skinning = *item.skinning;
-
-            if (skinning.palette == nullptr ||
-                skinning.jointCount == 0 ||
-                !skinning.palette->isGpuReady() ||
-                skinning.palette->size() !=
-                    skinning.jointCount)
-            {
-                return false;
-            }
-
-            skinningEnabled = true;
+            return false;
         }
 
         if (!shader->setInt(
@@ -125,7 +117,7 @@ bool StaticModelRenderer::render(
 
         if (skinningEnabled)
         {
-            item.skinning->palette->bind(
+            item.skinningPalette->bind(
                 skinningPaletteBinding);
         }
 

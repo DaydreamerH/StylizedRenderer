@@ -46,6 +46,7 @@ add_library(stylized_engine STATIC
     include/render/resources/RuntimeMesh.hpp
     include/render/resources/RuntimeResourceCache.hpp
     include/render/resources/SkinningPalette.hpp
+    include/render/resources/SkinningPaletteSet.hpp
     include/render/world/RenderExtractor.hpp
     include/render/world/RenderWorld.hpp
     include/scene/Camera.hpp
@@ -95,6 +96,7 @@ add_library(stylized_engine STATIC
     src/render/resources/RuntimeMesh.cpp
     src/render/resources/RuntimeResourceCache.cpp
     src/render/resources/SkinningPalette.cpp
+    src/render/resources/SkinningPaletteSet.cpp
     src/render/world/RenderExtractor.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp

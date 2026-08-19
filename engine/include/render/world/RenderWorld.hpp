@@ -112,18 +112,11 @@ struct ShadowView
     };
 };
 
-struct SkinningData
-{
-    const SkinningPalette* palette = nullptr;
-
-    std::uint32_t jointCount = 0;
-};
-
 struct ShadowRenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
-    const SkinningData* skinning = nullptr;
+    const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
 };
@@ -161,7 +154,7 @@ struct RenderItem
 
     RuntimeMaterial* runtimeMaterial = nullptr;
 
-    const SkinningData* skinning = nullptr;
+    const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};
