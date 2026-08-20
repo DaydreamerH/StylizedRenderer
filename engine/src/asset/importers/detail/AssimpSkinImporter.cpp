@@ -159,9 +159,17 @@ void addInfluence(
         const aiBone* sourceBone =
             sourceMesh.mBones[boneIndex];
 
-        if (sourceBone == nullptr ||
-            sourceBone->mNumWeights == 0 ||
-            sourceBone->mWeights == nullptr)
+        if (sourceBone == nullptr)
+        {
+            return false;
+        }
+
+        if (sourceBone->mNumWeights == 0)
+        {
+            continue;
+        }
+
+        if (sourceBone->mWeights == nullptr)
         {
             return false;
         }
