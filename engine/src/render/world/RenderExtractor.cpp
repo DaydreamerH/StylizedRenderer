@@ -1,12 +1,14 @@
 #include <render/world/RenderExtractor.hpp>
 
 #include <asset/AssetRegistry.hpp>
+#include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Camera.hpp>
 #include <asset/MaterialAsset.hpp>
 
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/SkinningPaletteSet.hpp>
 
 #include <animation/ScenePose.hpp>
 
@@ -20,6 +22,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
+#include <vector>
 
 namespace stylized::render
 {
@@ -116,6 +119,7 @@ RenderExtractor::RenderExtractor(RuntimeResourceCache& resourceCache) noexcept
 bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
     const animation::ScenePose& scenePose,
+    const SkinningPaletteSet& skinningPalettes,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
     const DirectionalLightData& mainLight,
@@ -164,9 +168,33 @@ bool RenderExtractor::extract(
 
         if (node.mesh.isNull()) continue;
 
-        const RuntimeMesh* runtimeMesh = resourceCache_.getOrCreateMesh(node.mesh, assetRegistry);
+        const asset::MeshAsset* sourceMesh =
+            assetRegistry.get(node.mesh);
 
-        if (runtimeMesh == nullptr) continue;
+        if (sourceMesh == nullptr)
+        {
+            return false;
+        }
+
+        const RuntimeMesh* runtimeMesh =
+            resourceCache_.getOrCreateMesh(
+                node.mesh,
+                assetRegistry);
+
+        if (runtimeMesh == nullptr)
+        {
+            return false;
+        }
+
+        const std::vector<RuntimeMeshPrimitive>&
+            runtimePrimitives =
+                runtimeMesh->primitives();
+
+        if (runtimePrimitives.size() !=
+            sourceMesh->primitives.size())
+        {
+            return false;
+        }
 
         const glm::mat4* poseWorldMatrix =
             scenePose.worldMatrix(
@@ -186,13 +214,39 @@ bool RenderExtractor::extract(
                 glm::inverse(
                     glm::mat3{worldMatrix}));
 
-        for (const RuntimeMeshPrimitive& primitive : runtimeMesh->primitives())
+        for (std::size_t primitiveIndex = 0;
+             primitiveIndex <
+                 runtimePrimitives.size();
+             ++primitiveIndex)
         {
+            const RuntimeMeshPrimitive& primitive =
+                runtimePrimitives[primitiveIndex];
+
+            const asset::MeshPrimitiveAsset&
+                sourcePrimitive =
+                    sourceMesh->primitives[
+                        primitiveIndex];
+
             if (!primitive.isValid()) continue;
+
+            const SkinningPalette* skinningPalette =
+                skinningPalettes.find(
+                    static_cast<std::uint32_t>(
+                        nodeIndex),
+                    primitiveIndex);
+
+            if (sourcePrimitive.hasSkin() !=
+                (skinningPalette != nullptr))
+            {
+                return false;
+            }
 
             ++renderWorld.renderStats.totalItems;
             
             RenderItem item;
+
+            item.skinningPalette =
+                skinningPalette;
 
             item.worldBounds =
                 primitive.localBounds().transformed(worldMatrix);
@@ -203,6 +257,8 @@ bool RenderExtractor::extract(
 
                 ShadowRenderItem shadowItem;
                 shadowItem.primitive = &primitive;
+                shadowItem.skinningPalette =
+                    skinningPalette;
                 shadowItem.world = worldMatrix;
                 renderWorld.shadowItems.push_back(shadowItem);
             }

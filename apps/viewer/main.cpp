@@ -11,6 +11,7 @@
 #include <render/world/RenderExtractor.hpp>
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/SkinningPaletteSet.hpp>
 #include <render/renderers/StaticModelRenderer.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
 #include <render/pipeline/FrameContext.hpp>
@@ -114,14 +115,35 @@ protected:
                 sceneAsset =
                     assetRegistry_.get(sceneHandle_);
 
-            if (sceneAsset == nullptr ||
-                !animationPlayer_.update(
+            if (sceneAsset == nullptr)
+            {
+                std::cerr
+                    << "SceneAsset is no longer available.\n";
+
+                requestExit();
+                return;
+            }
+
+            if (!animationPlayer_.update(
                     deltaTime,
                     *sceneAsset,
                     scenePose_))
             {
                 std::cerr
                     << "Failed to update animation.\n";
+
+                requestExit();
+                return;
+            }
+
+            if (!skinningPalettes_.update(
+                    *sceneAsset,
+                    assetRegistry_,
+                    scenePose_))
+            {
+                std::cerr
+                    << "Failed to update "
+                    << "skinning palettes.\n";
 
                 requestExit();
                 return;
@@ -171,6 +193,7 @@ protected:
         if (!extractor_->extract(
                 *sceneAsset,
                 scenePose_,
+                skinningPalettes_,
                 assetRegistry_,
                 camera_,
                 mainLight_,
@@ -486,6 +509,35 @@ private:
             return false;
         }
 
+        if (!skinningPalettes_.initialize(
+                graphicsDevice(),
+                *sceneAsset,
+                assetRegistry_))
+        {
+            std::cerr
+                << "Failed to initialize "
+                << "skinning palettes.\n";
+
+            return false;
+        }
+
+        if (!skinningPalettes_.update(
+                *sceneAsset,
+                assetRegistry_,
+                scenePose_))
+        {
+            std::cerr
+                << "Failed to upload bind-pose "
+                << "skinning palettes.\n";
+
+            return false;
+        }
+
+        std::cout
+            << "Skinning palette count: "
+            << skinningPalettes_.paletteCount()
+            << '\n';
+
         if (!sceneAsset->animations.empty())
         {
             const stylized::asset::AnimationClipAsset&
@@ -738,6 +790,9 @@ private:
         animationPlayer_;
 
     stylized::animation::ScenePose scenePose_;
+
+    stylized::render::SkinningPaletteSet
+        skinningPalettes_;
 };
 
 } // namespace

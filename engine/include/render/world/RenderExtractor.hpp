@@ -33,6 +33,7 @@ namespace stylized::render
 {
 
 class RuntimeResourceCache;
+class SkinningPaletteSet;
 
 class RenderExtractor final : public core::NonCopyable
 {
@@ -43,6 +44,7 @@ public:
     [[nodiscard]] bool extract(
         const asset::SceneAsset& sceneAsset,
         const animation::ScenePose& scenePose,
+        const SkinningPaletteSet& skinningPalettes,
         const asset::AssetRegistry& assetRegistry,
         const scene::Camera& camera,
         const DirectionalLightData& mainLight,
