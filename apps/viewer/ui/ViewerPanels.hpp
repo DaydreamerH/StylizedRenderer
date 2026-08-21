@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <span>
 #include <string>
 
 struct GLFWwindow;
@@ -24,6 +25,7 @@ class FramePipeline;
 class OutlineMaskPass;
 class PostProcessPass;
 class RuntimeResourceCache;
+class RuntimeMeshInstance;
 class ScreenSpaceOutlinePass;
 class ShadowPass;
 struct RenderWorld;
@@ -48,6 +50,8 @@ public:
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
+        std::span<stylized::render::RuntimeMeshInstance>
+            morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
         const stylized::render::FramePipeline* framePipeline,

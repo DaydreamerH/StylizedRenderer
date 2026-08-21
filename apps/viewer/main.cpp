@@ -1,4 +1,5 @@
 #include <asset/AssetRegistry.hpp>
+#include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <asset/importers/ModelImporter.hpp>
 
@@ -11,6 +12,7 @@
 #include <render/world/RenderExtractor.hpp>
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
 #include <render/renderers/StaticModelRenderer.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
@@ -37,6 +39,7 @@
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -94,7 +97,7 @@ protected:
             return false;
         }
 
-        if (!smokeTest_)
+        if (!modelPath_.empty())
         {
             if (!loadScene())
             {
@@ -108,8 +111,7 @@ protected:
     void onUpdate(
         const float deltaTime) override
     {
-        if (!smokeTest_ &&
-            animationPlayer_.clip() != nullptr)
+        if (animationPlayer_.clip() != nullptr)
         {
             const stylized::asset::SceneAsset*
                 sceneAsset =
@@ -150,6 +152,24 @@ protected:
             }
         }
 
+        for (stylized::render::RuntimeMeshInstance& instance :
+             morphMeshInstances_)
+        {
+            if (instance.primitiveCount() == 0)
+            {
+                continue;
+            }
+
+            if (!instance.update())
+            {
+                std::cerr
+                    << "Failed to update Morph mesh instance.\n";
+
+                requestExit();
+                return;
+            }
+        }
+
         cameraController_.update(
             window(),
             !viewerPanels_.wantsMouseCapture());
@@ -170,7 +190,7 @@ protected:
 
         if (framebufferWidth == 0 || framebufferHeight == 0) return;
 
-        if (smokeTest_)
+        if (smokeTest_ && modelPath_.empty())
         {
             ++renderedFrameCount_;
 
@@ -194,6 +214,7 @@ protected:
                 *sceneAsset,
                 scenePose_,
                 skinningPalettes_,
+                morphMeshInstances_,
                 assetRegistry_,
                 camera_,
                 mainLight_,
@@ -275,6 +296,7 @@ protected:
             *resourceCache_,
             activeMaterialTemplateHandle_,
             sceneAsset,
+            morphMeshInstances_,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
             framePipeline_.get(),
@@ -318,11 +340,42 @@ protected:
                 << stats.drawCalls
                 << '\n';
         }
+
+        if (smokeTest_)
+        {
+            ++renderedFrameCount_;
+
+            if (renderedFrameCount_ >= 3)
+            {
+                std::size_t lastMorphUploads = 0;
+                std::size_t totalMorphUploads = 0;
+
+                for (const stylized::render::RuntimeMeshInstance& instance :
+                     morphMeshInstances_)
+                {
+                    lastMorphUploads +=
+                        instance.lastUploadCount();
+
+                    totalMorphUploads +=
+                        instance.totalUploadCount();
+                }
+
+                std::cout
+                    << "Morph uploads: last="
+                    << lastMorphUploads
+                    << ", total="
+                    << totalMorphUploads
+                    << '\n';
+
+                requestExit();
+            }
+        }
     }
 
     void onShutdown() override
     {
         viewerPanels_.shutdown();
+        morphMeshInstances_.clear();
         framePipeline_.reset();
         shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
@@ -531,6 +584,113 @@ private:
                 << "skinning palettes.\n";
 
             return false;
+        }
+
+        morphMeshInstances_.clear();
+        morphMeshInstances_.resize(
+            sceneAsset->nodes.size());
+
+        std::size_t morphPrimitiveCount = 0;
+
+        for (std::size_t nodeIndex = 0;
+             nodeIndex < sceneAsset->nodes.size();
+             ++nodeIndex)
+        {
+            const stylized::asset::SceneNodeAsset& node =
+                sceneAsset->nodes[nodeIndex];
+
+            if (node.mesh.isNull())
+            {
+                continue;
+            }
+
+            const stylized::asset::MeshAsset* meshAsset =
+                assetRegistry_.get(node.mesh);
+
+            if (meshAsset == nullptr)
+            {
+                return false;
+            }
+
+            bool hasMorphTargets = false;
+
+            for (const stylized::asset::MeshPrimitiveAsset& primitive :
+                 meshAsset->primitives)
+            {
+                hasMorphTargets |=
+                    primitive.hasMorphTargets();
+            }
+
+            if (!hasMorphTargets)
+            {
+                continue;
+            }
+
+            const stylized::render::RuntimeMesh* runtimeMesh =
+                resourceCache_->getOrCreateMesh(
+                    node.mesh,
+                    assetRegistry_);
+
+            if (runtimeMesh == nullptr ||
+                !morphMeshInstances_[nodeIndex].initialize(
+                    graphicsDevice(),
+                    *meshAsset,
+                    *runtimeMesh))
+            {
+                std::cerr
+                    << "Failed to initialize Morph mesh instance "
+                    << "for node "
+                    << node.name
+                    << ".\n";
+
+                return false;
+            }
+
+            morphPrimitiveCount +=
+                morphMeshInstances_[nodeIndex]
+                    .morphPrimitiveCount();
+        }
+
+        std::cout
+            << "Morph primitive count: "
+            << morphPrimitiveCount
+            << '\n';
+
+        if (smokeTest_ &&
+            morphPrimitiveCount > 0)
+        {
+            for (stylized::render::RuntimeMeshInstance& instance :
+                 morphMeshInstances_)
+            {
+                bool selectedTarget = false;
+
+                for (std::size_t primitiveIndex = 0;
+                     primitiveIndex < instance.primitiveCount();
+                     ++primitiveIndex)
+                {
+                    stylized::animation::MorphState* state =
+                        instance.morphState(primitiveIndex);
+
+                    if (state == nullptr ||
+                        state->targetCount() == 0)
+                    {
+                        continue;
+                    }
+
+                    if (!state->setWeight(0, 1.0F))
+                    {
+                        return false;
+                    }
+
+                    selectedTarget = true;
+                    break;
+                }
+
+                if (selectedTarget)
+                {
+                    break;
+                }
+            }
         }
 
         std::cout
@@ -793,6 +953,9 @@ private:
 
     stylized::render::SkinningPaletteSet
         skinningPalettes_;
+
+    std::vector<stylized::render::RuntimeMeshInstance>
+        morphMeshInstances_;
 };
 
 } // namespace

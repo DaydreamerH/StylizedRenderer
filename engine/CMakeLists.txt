@@ -45,6 +45,7 @@ add_library(stylized_engine STATIC
     include/render/renderers/StaticModelRenderer.hpp
     include/render/resources/RuntimeMaterial.hpp
     include/render/resources/RuntimeMesh.hpp
+    include/render/resources/RuntimeMeshInstance.hpp
     include/render/resources/RuntimeResourceCache.hpp
     include/render/resources/SkinningPalette.hpp
     include/render/resources/SkinningPaletteSet.hpp
@@ -96,6 +97,7 @@ add_library(stylized_engine STATIC
     src/render/renderers/StaticModelRenderer.cpp
     src/render/resources/RuntimeMaterial.cpp
     src/render/resources/RuntimeMesh.cpp
+    src/render/resources/RuntimeMeshInstance.cpp
     src/render/resources/RuntimeResourceCache.cpp
     src/render/resources/SkinningPalette.cpp
     src/render/resources/SkinningPaletteSet.cpp

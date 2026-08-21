@@ -4,6 +4,8 @@
 #include <render/world/RenderWorld.hpp>
 #include <asset/AssetHandle.hpp>
 
+#include <span>
+
 namespace stylized::asset
 {
 class AssetRegistry;
@@ -33,6 +35,7 @@ namespace stylized::render
 {
 
 class RuntimeResourceCache;
+class RuntimeMeshInstance;
 class SkinningPaletteSet;
 
 class RenderExtractor final : public core::NonCopyable
@@ -45,6 +48,8 @@ public:
         const asset::SceneAsset& sceneAsset,
         const animation::ScenePose& scenePose,
         const SkinningPaletteSet& skinningPalettes,
+        std::span<const RuntimeMeshInstance>
+            morphMeshInstances,
         const asset::AssetRegistry& assetRegistry,
         const scene::Camera& camera,
         const DirectionalLightData& mainLight,

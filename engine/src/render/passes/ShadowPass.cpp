@@ -184,6 +184,7 @@ bool ShadowPass::execute(
          renderWorld.shadowItems)
     {
         if (item.primitive == nullptr ||
+            item.vertexArray == nullptr ||
             !item.primitive->isValid())
         {
             continue;
@@ -246,7 +247,7 @@ bool ShadowPass::execute(
             &shader_;
 
         command.vertexArray =
-            &item.primitive->vertexArray();
+            item.vertexArray;
 
         command.topology =
             graphics::PrimitiveTopology::Triangles;

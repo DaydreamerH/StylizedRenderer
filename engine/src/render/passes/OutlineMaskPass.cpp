@@ -235,6 +235,7 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         if (item.materialClass !=
                 RenderMaterialClass::Opaque ||
             item.primitive == nullptr ||
+            item.vertexArray == nullptr ||
             item.materialInstance == nullptr ||
             !item.primitive->isValid())
         {
@@ -340,7 +341,7 @@ bool OutlineMaskPass::execute(FrameContext& frame)
 
         command.shader = &shader_;
         command.vertexArray =
-            &item.primitive->vertexArray();
+            item.vertexArray;
 
         command.topology =
             graphics::PrimitiveTopology::Triangles;

@@ -49,6 +49,7 @@ bool StaticModelRenderer::render(
         }
 
         if (item.primitive == nullptr ||
+            item.vertexArray == nullptr ||
             item.materialInstance == nullptr ||
             item.runtimeMaterial == nullptr)
         {
@@ -246,7 +247,7 @@ bool StaticModelRenderer::render(
         command.shader = shader;
 
         command.vertexArray =
-            &item.primitive->vertexArray();
+            item.vertexArray;
 
         command.topology =
             graphics::PrimitiveTopology::Triangles;

@@ -31,6 +31,8 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
+class RuntimeMeshInstance;
+
 class RuntimeMeshPrimitive final : public core::NonCopyable
 {
 public:
@@ -49,6 +51,7 @@ public:
 
 private:
     friend class RuntimeMesh;
+    friend class RuntimeMeshInstance;
 
     graphics::Buffer vertexBuffer_;
     graphics::Buffer indexBuffer_;

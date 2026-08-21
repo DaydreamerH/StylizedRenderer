@@ -20,6 +20,13 @@ struct MaterialInstance;
 
 } // namespace stylized::material
 
+namespace stylized::graphics
+{
+
+class VertexArray;
+
+} // namespace stylized::graphics
+
 namespace stylized::render
 {
 
@@ -116,6 +123,8 @@ struct ShadowRenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
+    const graphics::VertexArray* vertexArray = nullptr;
+
     const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
@@ -149,6 +158,8 @@ struct RenderView
 struct RenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
+
+    const graphics::VertexArray* vertexArray = nullptr;
 
     const material::MaterialInstance* materialInstance = nullptr;
 

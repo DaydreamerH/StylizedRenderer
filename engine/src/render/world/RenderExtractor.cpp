@@ -7,6 +7,7 @@
 #include <asset/MaterialAsset.hpp>
 
 #include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/SkinningPalette.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
@@ -20,9 +21,11 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
+#include <span>
 #include <vector>
 
 namespace stylized::render
@@ -37,6 +40,57 @@ constexpr float minimumDirectionLength = 1.0e-6F;
 constexpr float shadowNearPlaneScale = 0.01F;
 constexpr float shadowEyeDistanceScale = 2.0F;
 constexpr float shadowFarMarginScale = 2.0F;
+
+[[nodiscard]] float maximumLinearScale(
+    const std::vector<glm::mat4>& matrices) noexcept
+{
+    float maximumScale = 0.0F;
+
+    for (const glm::mat4& matrix : matrices)
+    {
+        float squaredFrobeniusNorm = 0.0F;
+
+        for (glm::length_t column = 0;
+             column < 3;
+             ++column)
+        {
+            for (glm::length_t row = 0;
+                 row < 3;
+                 ++row)
+            {
+                const float value =
+                    matrix[column][row];
+
+                squaredFrobeniusNorm +=
+                    value * value;
+            }
+        }
+
+        maximumScale = std::max(
+            maximumScale,
+            std::sqrt(squaredFrobeniusNorm));
+    }
+
+    return maximumScale;
+}
+
+[[nodiscard]] math::Bounds expandBounds(
+    const math::Bounds& bounds,
+    const float radius) noexcept
+{
+    if (!bounds.isValid() ||
+        !std::isfinite(radius) ||
+        radius <= 0.0F)
+    {
+        return bounds;
+    }
+
+    const glm::vec3 expansion{radius};
+
+    return math::Bounds{
+        bounds.minimum() - expansion,
+        bounds.maximum() + expansion};
+}
 
 bool buildDirectionalShadowView(
     const math::Bounds& bounds,
@@ -121,6 +175,8 @@ bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
     const animation::ScenePose& scenePose,
     const SkinningPaletteSet& skinningPalettes,
+    const std::span<const RuntimeMeshInstance>
+        morphMeshInstances,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
     const DirectionalLightData& mainLight,
@@ -133,6 +189,8 @@ bool RenderExtractor::extract(
         !scenePose.isForScene(sceneAsset) ||
         scenePose.worldMatricesDirty() ||
         scenePose.nodeCount() !=
+            sceneAsset.nodes.size() ||
+        morphMeshInstances.size() !=
             sceneAsset.nodes.size())
     {
         return false;
@@ -187,6 +245,9 @@ bool RenderExtractor::extract(
             return false;
         }
 
+        const RuntimeMeshInstance& morphMeshInstance =
+            morphMeshInstances[nodeIndex];
+
         const std::vector<RuntimeMeshPrimitive>&
             runtimePrimitives =
                 runtimeMesh->primitives();
@@ -230,6 +291,36 @@ bool RenderExtractor::extract(
 
             if (!primitive.isValid()) continue;
 
+            const graphics::VertexArray* vertexArray =
+                &primitive.vertexArray();
+
+            const math::Bounds* morphedLocalBounds =
+                &primitive.localBounds();
+
+            if (sourcePrimitive.hasMorphTargets())
+            {
+                if (!morphMeshInstance.isValid())
+                {
+                    return false;
+                }
+
+                vertexArray =
+                    morphMeshInstance.vertexArray(
+                        primitiveIndex);
+
+                morphedLocalBounds =
+                    morphMeshInstance.localBounds(
+                        primitiveIndex);
+
+                if (vertexArray == nullptr ||
+                    !vertexArray->isValid() ||
+                    morphedLocalBounds == nullptr ||
+                    !morphedLocalBounds->isValid())
+                {
+                    return false;
+                }
+            }
+
             const SkinningPalette* skinningPalette =
                 skinningPalettes.find(
                     static_cast<std::uint32_t>(
@@ -246,20 +337,39 @@ bool RenderExtractor::extract(
             
             RenderItem item;
 
+            item.vertexArray = vertexArray;
             item.skinningPalette =
                 skinningPalette;
 
             if (!sourcePrimitive.hasSkin())
             {
                 item.worldBounds =
-                    primitive.localBounds().transformed(worldMatrix);
+                    morphedLocalBounds->transformed(
+                        worldMatrix);
             }
             else
             {
-                item.worldBounds =
+                math::Bounds skinnedLocalBounds =
                     skinningPalette
-                        ->currentLocalBounds()
-                        .transformed(worldMatrix);
+                        ->currentLocalBounds();
+
+                if (sourcePrimitive.hasMorphTargets())
+                {
+                    const float morphRadius =
+                        morphMeshInstance
+                            .maximumPositionDelta(
+                                primitiveIndex) *
+                        maximumLinearScale(
+                            skinningPalette->matrices());
+
+                    skinnedLocalBounds = expandBounds(
+                        skinnedLocalBounds,
+                        morphRadius);
+                }
+
+                item.worldBounds =
+                    skinnedLocalBounds.transformed(
+                        worldMatrix);
             }
 
             if (hasFlag(item.flags, RenderItemFlags::CastShadow))
@@ -268,6 +378,7 @@ bool RenderExtractor::extract(
 
                 ShadowRenderItem shadowItem;
                 shadowItem.primitive = &primitive;
+                shadowItem.vertexArray = vertexArray;
                 shadowItem.skinningPalette =
                     skinningPalette;
                 shadowItem.world = worldMatrix;
