@@ -1,5 +1,6 @@
 add_library(stylized_engine STATIC
     include/animation/AnimationPlayer.hpp
+    include/animation/MorphState.hpp
     include/animation/ScenePose.hpp
     include/asset/AnimationAsset.hpp
     include/asset/AssetHandle.hpp
@@ -67,6 +68,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/detail/AssimpTextureImporter.cpp
     src/asset/importers/detail/StbImage.cpp
     src/animation/AnimationPlayer.cpp
+    src/animation/MorphState.cpp
     src/animation/ScenePose.cpp
     src/core/Application.cpp
     src/graphics/opengl/device/GraphicsDevice.cpp
