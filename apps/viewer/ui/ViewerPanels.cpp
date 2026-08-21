@@ -75,23 +75,37 @@ void drawPassStatus(
     const bool hasGpuTime,
     const double gpuTimeMilliseconds)
 {
+    ImGui::TableNextRow();
+
+    ImGui::TableSetColumnIndex(0);
+    ImGui::TextUnformatted(name);
+
+    ImGui::TableSetColumnIndex(1);
+    ImGui::TextUnformatted(status);
+
+    ImGui::TableSetColumnIndex(2);
+    ImGui::Text("%zu", drawCallCount);
+
+    ImGui::TableSetColumnIndex(3);
+
     if (hasGpuTime)
     {
-        ImGui::TextWrapped(
-            "%s: %s, Draws: %zu, GPU: %.3f ms",
-            name,
-            status,
-            drawCallCount,
-            gpuTimeMilliseconds);
+        ImGui::Text("%.3f ms", gpuTimeMilliseconds);
+        return;
     }
-    else
-    {
-        ImGui::TextWrapped(
-            "%s: %s, Draws: %zu, GPU: pending",
-            name,
-            status,
-            drawCallCount);
-    }
+
+    ImGui::TextUnformatted("Pending");
+}
+
+void drawCpuTimingRow(
+    const char* name,
+    const double milliseconds)
+{
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::TextUnformatted(name);
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("%.3f ms", milliseconds);
 }
 
 [[nodiscard]] bool beginPropertyTable(
@@ -653,6 +667,7 @@ void ViewerPanels::draw(
         morphMeshInstances,
     stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
+    const ViewerCpuTimings& cpuTimings,
     const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
@@ -1939,7 +1954,126 @@ void ViewerPanels::draw(
     if (ImGui::BeginTabItem("Stats"))
     {
 
-    ImGui::SeparatorText("Render Pipeline");
+    const double framesPerSecond =
+        cpuTimings.frameIntervalMilliseconds > 0.0
+            ? 1000.0 /
+                cpuTimings.frameIntervalMilliseconds
+            : 0.0;
+
+    const double totalCpuMilliseconds =
+        cpuTimings.updateMilliseconds +
+        cpuTimings.renderMilliseconds;
+
+    const bool hasGpuPipelineTime =
+        framePipeline != nullptr &&
+        framePipeline->hasCompleteGpuTiming();
+
+    ImGui::SeparatorText("Frame Timing");
+
+    if (ImGui::BeginTable(
+            "##FrameTiming",
+            3,
+            ImGuiTableFlags_SizingStretchProp |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_PadOuterX))
+    {
+        ImGui::TableSetupColumn("Metric");
+        ImGui::TableSetupColumn("Time");
+        ImGui::TableSetupColumn("Rate");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Frame interval");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text(
+            "%.3f ms",
+            cpuTimings.frameIntervalMilliseconds);
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%.1f FPS", framesPerSecond);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("CPU work");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%.3f ms", totalCpuMilliseconds);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("GPU pipeline");
+        ImGui::TableSetColumnIndex(1);
+
+        if (hasGpuPipelineTime)
+        {
+            ImGui::Text(
+                "%.3f ms",
+                framePipeline->totalGpuTimeMilliseconds());
+        }
+        else
+        {
+            ImGui::TextUnformatted("Pending");
+        }
+
+        ImGui::EndTable();
+    }
+
+    ImGui::SeparatorText("CPU Breakdown");
+
+    if (ImGui::BeginTable(
+            "##CpuBreakdown",
+            2,
+            ImGuiTableFlags_SizingStretchProp |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_PadOuterX))
+    {
+        ImGui::TableSetupColumn("Stage");
+        ImGui::TableSetupColumn("CPU Time");
+        ImGui::TableHeadersRow();
+
+        drawCpuTimingRow(
+            "Update total",
+            cpuTimings.updateMilliseconds);
+        drawCpuTimingRow(
+            "  Animation",
+            cpuTimings.animationMilliseconds);
+        drawCpuTimingRow(
+            "  Skinning palettes",
+            cpuTimings.skinningMilliseconds);
+        drawCpuTimingRow(
+            "  Morph meshes",
+            cpuTimings.morphMilliseconds);
+        drawCpuTimingRow(
+            "Render total",
+            cpuTimings.renderMilliseconds);
+        drawCpuTimingRow(
+            "  Render extraction",
+            cpuTimings.extractionMilliseconds);
+        drawCpuTimingRow(
+            "  Pipeline submission",
+            cpuTimings.pipelineMilliseconds);
+        drawCpuTimingRow(
+            "  Viewer UI",
+            cpuTimings.uiMilliseconds);
+
+        ImGui::EndTable();
+    }
+
+    ImGui::SeparatorText("GPU Passes");
+
+    const bool gpuPassTableOpen = ImGui::BeginTable(
+        "##GpuPasses",
+        4,
+        ImGuiTableFlags_SizingStretchProp |
+            ImGuiTableFlags_RowBg |
+            ImGuiTableFlags_PadOuterX);
+
+    if (gpuPassTableOpen)
+    {
+        ImGui::TableSetupColumn("Pass");
+        ImGui::TableSetupColumn("State");
+        ImGui::TableSetupColumn("Draws");
+        ImGui::TableSetupColumn("GPU Time");
+        ImGui::TableHeadersRow();
 
     drawPassStatus(
         "ShadowPass",
@@ -2038,18 +2172,22 @@ void ViewerPanels::draw(
             ? framePipeline->passGpuTimeMilliseconds(4)
             : 0.0);
 
-    if (framePipeline != nullptr &&
-        framePipeline->hasCompleteGpuTiming())
-    {
-        ImGui::Text(
-            "Pipeline GPU: %.3f ms",
-            framePipeline->totalGpuTimeMilliseconds());
+        ImGui::EndTable();
     }
-    else
+
+    std::size_t morphUploadCount = 0;
+
+    for (const stylized::render::RuntimeMeshInstance& instance :
+         morphMeshInstances)
     {
-        ImGui::TextUnformatted(
-            "Pipeline GPU: pending");
+        morphUploadCount += instance.lastUploadCount();
     }
+
+    ImGui::SeparatorText("Resource Updates");
+    ImGui::Text(
+        "Buffer uploads: palettes=%zu, morphs=%zu",
+        skinningPalettes.lastUploadCount(),
+        morphUploadCount);
 
     ImGui::SeparatorText("Render Targets");
 

@@ -33,6 +33,7 @@
 #include "camera/OrbitCameraController.hpp"
 #include "ui/ViewerPanels.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -43,6 +44,39 @@
 
 namespace
 {
+
+using CpuClock = std::chrono::steady_clock;
+
+void updateSmoothedTiming(
+    double& averageMilliseconds,
+    const double sampleMilliseconds) noexcept
+{
+    constexpr double smoothingFactor = 0.1;
+
+    if (averageMilliseconds <= 0.0)
+    {
+        averageMilliseconds = sampleMilliseconds;
+        return;
+    }
+
+    averageMilliseconds +=
+        (sampleMilliseconds - averageMilliseconds) *
+        smoothingFactor;
+}
+
+void updateCpuTiming(
+    double& averageMilliseconds,
+    const CpuClock::time_point startTime) noexcept
+{
+    const double sampleMilliseconds =
+        std::chrono::duration<double, std::milli>{
+            CpuClock::now() - startTime
+        }.count();
+
+    updateSmoothedTiming(
+        averageMilliseconds,
+        sampleMilliseconds);
+}
 
 stylized::core::ApplicationDesc makeApplicationDesc(
     const bool smokeTest)
@@ -111,6 +145,13 @@ protected:
     void onUpdate(
         const float deltaTime) override
     {
+        const CpuClock::time_point updateStart =
+            CpuClock::now();
+
+        updateSmoothedTiming(
+            cpuTimings_.frameIntervalMilliseconds,
+            static_cast<double>(deltaTime) * 1000.0);
+
         if (animationPlayer_.clip() != nullptr)
         {
             const stylized::asset::SceneAsset*
@@ -126,10 +167,20 @@ protected:
                 return;
             }
 
-            if (!animationPlayer_.update(
+            const CpuClock::time_point animationStart =
+                CpuClock::now();
+
+            const bool animationUpdated =
+                animationPlayer_.update(
                     deltaTime,
                     *sceneAsset,
-                    scenePose_))
+                    scenePose_);
+
+            updateCpuTiming(
+                cpuTimings_.animationMilliseconds,
+                animationStart);
+
+            if (!animationUpdated)
             {
                 std::cerr
                     << "Failed to update animation.\n";
@@ -138,10 +189,20 @@ protected:
                 return;
             }
 
-            if (!skinningPalettes_.update(
+            const CpuClock::time_point skinningStart =
+                CpuClock::now();
+
+            const bool skinningUpdated =
+                skinningPalettes_.update(
                     *sceneAsset,
                     assetRegistry_,
-                    scenePose_))
+                    scenePose_);
+
+            updateCpuTiming(
+                cpuTimings_.skinningMilliseconds,
+                skinningStart);
+
+            if (!skinningUpdated)
             {
                 std::cerr
                     << "Failed to update "
@@ -151,6 +212,14 @@ protected:
                 return;
             }
         }
+        else
+        {
+            cpuTimings_.animationMilliseconds = 0.0;
+            cpuTimings_.skinningMilliseconds = 0.0;
+        }
+
+        const CpuClock::time_point morphStart =
+            CpuClock::now();
 
         for (stylized::render::RuntimeMeshInstance& instance :
              morphMeshInstances_)
@@ -170,6 +239,10 @@ protected:
             }
         }
 
+        updateCpuTiming(
+            cpuTimings_.morphMilliseconds,
+            morphStart);
+
         cameraController_.update(
             window(),
             !viewerPanels_.wantsMouseCapture());
@@ -179,10 +252,17 @@ protected:
         {
             requestExit();
         }
+
+        updateCpuTiming(
+            cpuTimings_.updateMilliseconds,
+            updateStart);
     }
 
     void onRender() override
     {
+        const CpuClock::time_point renderStart =
+            CpuClock::now();
+
         std::uint32_t framebufferWidth = 0;
         std::uint32_t framebufferHeight = 0;
 
@@ -210,7 +290,10 @@ protected:
             return;
         }
 
-        if (!extractor_->extract(
+        const CpuClock::time_point extractionStart =
+            CpuClock::now();
+
+        const bool extracted = extractor_->extract(
                 *sceneAsset,
                 scenePose_,
                 skinningPalettes_,
@@ -219,7 +302,13 @@ protected:
                 camera_,
                 mainLight_,
                 activeMaterialTemplateHandle_,
-                renderWorld_))
+                renderWorld_);
+
+        updateCpuTiming(
+            cpuTimings_.extractionMilliseconds,
+            extractionStart);
+
+        if (!extracted)
         {
             std::cerr << "Failed to extract RenderWorld.\n";
 
@@ -274,7 +363,17 @@ protected:
         frame.toneMappingEnabled =
             toneMappingEnabled_;
 
-        if (!framePipeline_->execute(frame))
+        const CpuClock::time_point pipelineStart =
+            CpuClock::now();
+
+        const bool pipelineExecuted =
+            framePipeline_->execute(frame);
+
+        updateCpuTiming(
+            cpuTimings_.pipelineMilliseconds,
+            pipelineStart);
+
+        if (!pipelineExecuted)
         {
             std::cerr << "Failed to execute frame pipeline.\n";
 
@@ -287,6 +386,9 @@ protected:
             renderWorld_.renderStats.drawCalls =
                 forwardOpaquePass_->lastDrawCallCount();
         }
+
+        const CpuClock::time_point uiStart =
+            CpuClock::now();
 
         viewerPanels_.beginFrame();
 
@@ -301,6 +403,7 @@ protected:
             morphMeshInstances_,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
+            cpuTimings_,
             framePipeline_.get(),
             shadowPass_,
             forwardOpaquePass_,
@@ -323,6 +426,14 @@ protected:
         }
 
         viewerPanels_.endFrame();
+
+        updateCpuTiming(
+            cpuTimings_.uiMilliseconds,
+            uiStart);
+
+        updateCpuTiming(
+            cpuTimings_.renderMilliseconds,
+            renderStart);
 
         ++statsPrintFrameCount_;
 
@@ -940,6 +1051,8 @@ private:
     };
 
     ViewerPanels viewerPanels_;
+
+    ViewerCpuTimings cpuTimings_;
 
     stylized::scene::Camera camera_;
     OrbitCameraController cameraController_{

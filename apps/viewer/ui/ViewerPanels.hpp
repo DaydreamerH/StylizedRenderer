@@ -11,6 +11,19 @@
 
 struct GLFWwindow;
 
+struct ViewerCpuTimings
+{
+    double frameIntervalMilliseconds = 0.0;
+    double animationMilliseconds = 0.0;
+    double skinningMilliseconds = 0.0;
+    double morphMilliseconds = 0.0;
+    double updateMilliseconds = 0.0;
+    double extractionMilliseconds = 0.0;
+    double pipelineMilliseconds = 0.0;
+    double uiMilliseconds = 0.0;
+    double renderMilliseconds = 0.0;
+};
+
 namespace stylized::asset
 {
 class AssetRegistry;
@@ -64,6 +77,7 @@ public:
             morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
+        const ViewerCpuTimings& cpuTimings,
         const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,
         const stylized::render::ForwardOpaquePass* forwardPass,
