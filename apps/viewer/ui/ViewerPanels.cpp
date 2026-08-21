@@ -624,16 +624,55 @@ void ViewerPanels::draw(
 
     if (ImGui::BeginTabItem("Scene"))
     {
-    ImGui::Text("Model: %s", modelPath.string().c_str());
+    ImGui::SeparatorText("Scene Overview");
 
-    if (scene != nullptr)
+    if (ImGui::BeginTable(
+            "##SceneOverview",
+            2,
+            ImGuiTableFlags_SizingStretchProp |
+                ImGuiTableFlags_RowBg))
     {
-        ImGui::Text("Scene: %s", scene->name.c_str());
-        ImGui::Text("Nodes: %zu", scene->nodes.size());
-    }
-    else
-    {
-        ImGui::TextUnformatted("Scene: not loaded");
+        ImGui::TableSetupColumn(
+            "Property",
+            ImGuiTableColumnFlags_WidthFixed,
+            5.5F * ImGui::GetFontSize());
+
+        ImGui::TableSetupColumn(
+            "Value",
+            ImGuiTableColumnFlags_WidthStretch);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Model");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextWrapped(
+            "%s",
+            modelPath.string().c_str());
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Scene");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextUnformatted(
+            scene != nullptr
+                ? scene->name.c_str()
+                : "Not loaded");
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted("Nodes");
+        ImGui::TableSetColumnIndex(1);
+
+        if (scene != nullptr)
+        {
+            ImGui::Text("%zu", scene->nodes.size());
+        }
+        else
+        {
+            ImGui::TextUnformatted("-");
+        }
+
+        ImGui::EndTable();
     }
 
     if (scene != nullptr &&
@@ -695,7 +734,10 @@ void ViewerPanels::draw(
 
             if (animationPlayer.clip() != nullptr)
             {
-                constexpr float playbackButtonWidth = 64.0F;
+                const float playbackButtonWidth =
+                    0.5F *
+                    (ImGui::GetContentRegionAvail().x -
+                     ImGui::GetStyle().ItemSpacing.x);
 
                 if (animationPlayer.isPlaying())
                 {
@@ -730,8 +772,6 @@ void ViewerPanels::draw(
 
                 bool looping =
                     animationPlayer.isLooping();
-
-                ImGui::SameLine();
 
                 if (ImGui::Checkbox("Loop", &looping))
                 {
@@ -826,7 +866,11 @@ void ViewerPanels::draw(
             ImGui::CollapsingHeader(
                 "Expressions / Morph Targets"))
         {
-            if (ImGui::Button("Reset All Morphs"))
+            if (ImGui::Button(
+                    "Reset All Morphs",
+                    ImVec2{
+                        ImGui::GetContentRegionAvail().x,
+                        0.0F}))
             {
                 for (stylized::render::RuntimeMeshInstance& instance :
                      morphMeshInstances)
@@ -1002,7 +1046,7 @@ void ViewerPanels::draw(
         "MToon"
     };
 
-    ImGui::Separator();
+    ImGui::SeparatorText("Material Mode");
 
     if (ImGui::Combo(
             "Material Mode",
@@ -1091,7 +1135,7 @@ void ViewerPanels::draw(
         ? selectedMaterial->name.c_str()
         : "None";
 
-    ImGui::Separator();
+    ImGui::SeparatorText("Materials");
     ImGui::Text(
         "Materials: %zu",
         materialHandles.size());
@@ -1151,7 +1195,14 @@ void ViewerPanels::draw(
 
         stylized::material::MToonSidecarError sidecarError;
 
-        if (ImGui::Button("Save Materials"))
+        const float actionButtonWidth =
+            0.5F *
+            (ImGui::GetContentRegionAvail().x -
+             ImGui::GetStyle().ItemSpacing.x);
+
+        if (ImGui::Button(
+                "Save Materials",
+                ImVec2{actionButtonWidth, 0.0F}))
         {
             materialSidecarFailed_ =
                 !saveMaterialSidecar(
@@ -1170,7 +1221,9 @@ void ViewerPanels::draw(
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Load Materials"))
+        if (ImGui::Button(
+                "Load Materials",
+                ImVec2{actionButtonWidth, 0.0F}))
         {
             materialSidecarFailed_ =
                 !loadMaterialSidecar(
@@ -1216,7 +1269,11 @@ void ViewerPanels::draw(
         {
             bool resetFailed = false;
 
-            if (ImGui::Button("Reset Selected Material"))
+            if (ImGui::Button(
+                    "Reset Selected Material",
+                    ImVec2{
+                        ImGui::GetContentRegionAvail().x,
+                        0.0F}))
             {
                 resetFailed =
                     !resourceCache.resetMaterialInstance(
@@ -1460,8 +1517,7 @@ void ViewerPanels::draw(
     if (ImGui::BeginTabItem("Render"))
     {
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Screen Space Outline");
+    ImGui::SeparatorText("Screen Space Outline");
 
     if (screenSpaceOutlinePass != nullptr)
     {
@@ -1535,8 +1591,7 @@ void ViewerPanels::draw(
         ImGui::TextUnformatted("Unavailable");
     }
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Lighting");
+    ImGui::SeparatorText("Lighting");
 
     ImGui::Checkbox(
         "Shadows",
@@ -1561,8 +1616,7 @@ void ViewerPanels::draw(
         "Intensity: %.2f",
         mainLight.intensity);
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Post Process");
+    ImGui::SeparatorText("Post Process");
 
     ImGui::SliderFloat(
         "Exposure",
@@ -1581,8 +1635,7 @@ void ViewerPanels::draw(
     if (ImGui::BeginTabItem("Stats"))
     {
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Render Pipeline");
+    ImGui::SeparatorText("Render Pipeline");
 
     drawPassStatus(
         "ShadowPass",
@@ -1694,8 +1747,7 @@ void ViewerPanels::draw(
             "Pipeline GPU: pending");
     }
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Render Targets");
+    ImGui::SeparatorText("Render Targets");
 
     if (shadowPass != nullptr &&
         shadowPass->hasShadowMap())
@@ -1796,7 +1848,7 @@ void ViewerPanels::draw(
             "Outlined HDR: not created");
     }
 
-    ImGui::Separator();
+    ImGui::SeparatorText("Frame Statistics");
     ImGui::Text("Assets: %zu", assets.size());
     ImGui::Text("Render Items: %zu", renderWorld.size());
     ImGui::Text("Total Items: %zu", renderWorld.renderStats.totalItems);
@@ -1804,7 +1856,7 @@ void ViewerPanels::draw(
     ImGui::Text("Culled Items: %zu", renderWorld.renderStats.culledItems);
     ImGui::Text("Draw Calls: %zu", drawCallCount);
 
-    ImGui::Separator();
+    ImGui::SeparatorText("Camera");
     ImGui::Text(
         "Camera: (%.2f, %.2f, %.2f)",
         renderWorld.mainView.cameraPosition.x,
