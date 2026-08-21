@@ -1,12 +1,18 @@
 #include <render/world/RenderExtractor.hpp>
 
 #include <asset/AssetRegistry.hpp>
+#include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Camera.hpp>
 #include <asset/MaterialAsset.hpp>
 
 #include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/SkinningPalette.hpp>
+#include <render/resources/SkinningPaletteSet.hpp>
+
+#include <animation/ScenePose.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
@@ -15,11 +21,12 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <vector>
 #include <cmath>
+#include <span>
+#include <vector>
 
 namespace stylized::render
 {
@@ -33,6 +40,57 @@ constexpr float minimumDirectionLength = 1.0e-6F;
 constexpr float shadowNearPlaneScale = 0.01F;
 constexpr float shadowEyeDistanceScale = 2.0F;
 constexpr float shadowFarMarginScale = 2.0F;
+
+[[nodiscard]] float maximumLinearScale(
+    const std::vector<glm::mat4>& matrices) noexcept
+{
+    float maximumScale = 0.0F;
+
+    for (const glm::mat4& matrix : matrices)
+    {
+        float squaredFrobeniusNorm = 0.0F;
+
+        for (glm::length_t column = 0;
+             column < 3;
+             ++column)
+        {
+            for (glm::length_t row = 0;
+                 row < 3;
+                 ++row)
+            {
+                const float value =
+                    matrix[column][row];
+
+                squaredFrobeniusNorm +=
+                    value * value;
+            }
+        }
+
+        maximumScale = std::max(
+            maximumScale,
+            std::sqrt(squaredFrobeniusNorm));
+    }
+
+    return maximumScale;
+}
+
+[[nodiscard]] math::Bounds expandBounds(
+    const math::Bounds& bounds,
+    const float radius) noexcept
+{
+    if (!bounds.isValid() ||
+        !std::isfinite(radius) ||
+        radius <= 0.0F)
+    {
+        return bounds;
+    }
+
+    const glm::vec3 expansion{radius};
+
+    return math::Bounds{
+        bounds.minimum() - expansion,
+        bounds.maximum() + expansion};
+}
 
 bool buildDirectionalShadowView(
     const math::Bounds& bounds,
@@ -115,6 +173,10 @@ RenderExtractor::RenderExtractor(RuntimeResourceCache& resourceCache) noexcept
 
 bool RenderExtractor::extract(
     const asset::SceneAsset& sceneAsset,
+    const animation::ScenePose& scenePose,
+    const SkinningPaletteSet& skinningPalettes,
+    const std::span<const RuntimeMeshInstance>
+        morphMeshInstances,
     const asset::AssetRegistry& assetRegistry,
     const scene::Camera& camera,
     const DirectionalLightData& mainLight,
@@ -123,7 +185,16 @@ bool RenderExtractor::extract(
         materialTemplate,
     RenderWorld& renderWorld) const
 {
-    if (!sceneAsset.isValid()) return false;
+    if (!sceneAsset.isValid() ||
+        !scenePose.isForScene(sceneAsset) ||
+        scenePose.worldMatricesDirty() ||
+        scenePose.nodeCount() !=
+            sceneAsset.nodes.size() ||
+        morphMeshInstances.size() !=
+            sceneAsset.nodes.size())
+    {
+        return false;
+    }
 
     renderWorld.clear();
 
@@ -145,51 +216,8 @@ bool RenderExtractor::extract(
 
     renderWorld.mainView.mainLight = mainLight;
 
-    const std::size_t nodeCount = sceneAsset.nodes.size();
-    
-    std::vector<glm::mat4> worldMatrices(nodeCount, glm::mat4{1.F});
-
-    std::vector<std::uint8_t> states(nodeCount, 0);
-
-    std::function<bool(std::size_t) > resolveWorldMatrix;
-
-    resolveWorldMatrix = [&](const std::size_t nodeIndex) -> bool
-    {
-        if (nodeIndex >= nodeCount) return false;
-
-        if (states[nodeIndex] == 2) return true;
-
-        if(states[nodeIndex] == 1) return false;
-
-        states[nodeIndex] = 1;
-
-        const asset::SceneNodeAsset& node = sceneAsset.nodes[nodeIndex];
-
-        const glm::mat4 localMatrix = node.localTransform.localMatrix();
-
-        if (!node.hasParent()) 
-            worldMatrices[nodeIndex] = localMatrix;
-        else 
-        {
-            const std::size_t parentIndex = static_cast<std::size_t>(node.parentIndex);
-
-            if (!resolveWorldMatrix(parentIndex))
-            {
-                return false;
-            }
-
-            worldMatrices[nodeIndex] = worldMatrices[parentIndex] * localMatrix;
-        }
-
-        states[nodeIndex] = 2;
-        return true;
-    };
-
-    for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
-    {
-        if (!resolveWorldMatrix(nodeIndex)) 
-            return false;
-    }
+    const std::size_t nodeCount =
+        sceneAsset.nodes.size();
 
     math::Bounds shadowCasterBounds;
 
@@ -199,23 +227,150 @@ bool RenderExtractor::extract(
 
         if (node.mesh.isNull()) continue;
 
-        const RuntimeMesh* runtimeMesh = resourceCache_.getOrCreateMesh(node.mesh, assetRegistry);
+        const asset::MeshAsset* sourceMesh =
+            assetRegistry.get(node.mesh);
 
-        if (runtimeMesh == nullptr) continue;
-
-        const glm::mat4& worldMatrix = worldMatrices[nodeIndex];
-        const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3{worldMatrix}));
-
-        for (const RuntimeMeshPrimitive& primitive : runtimeMesh->primitives())
+        if (sourceMesh == nullptr)
         {
+            return false;
+        }
+
+        const RuntimeMesh* runtimeMesh =
+            resourceCache_.getOrCreateMesh(
+                node.mesh,
+                assetRegistry);
+
+        if (runtimeMesh == nullptr)
+        {
+            return false;
+        }
+
+        const RuntimeMeshInstance& morphMeshInstance =
+            morphMeshInstances[nodeIndex];
+
+        const std::vector<RuntimeMeshPrimitive>&
+            runtimePrimitives =
+                runtimeMesh->primitives();
+
+        if (runtimePrimitives.size() !=
+            sourceMesh->primitives.size())
+        {
+            return false;
+        }
+
+        const glm::mat4* poseWorldMatrix =
+            scenePose.worldMatrix(
+                static_cast<std::uint32_t>(
+                    nodeIndex));
+
+        if (poseWorldMatrix == nullptr)
+        {
+            return false;
+        }
+
+        const glm::mat4& worldMatrix =
+            *poseWorldMatrix;
+
+        const glm::mat3 normalMatrix =
+            glm::transpose(
+                glm::inverse(
+                    glm::mat3{worldMatrix}));
+
+        for (std::size_t primitiveIndex = 0;
+             primitiveIndex <
+                 runtimePrimitives.size();
+             ++primitiveIndex)
+        {
+            const RuntimeMeshPrimitive& primitive =
+                runtimePrimitives[primitiveIndex];
+
+            const asset::MeshPrimitiveAsset&
+                sourcePrimitive =
+                    sourceMesh->primitives[
+                        primitiveIndex];
+
             if (!primitive.isValid()) continue;
+
+            const graphics::VertexArray* vertexArray =
+                &primitive.vertexArray();
+
+            const math::Bounds* morphedLocalBounds =
+                &primitive.localBounds();
+
+            if (sourcePrimitive.hasMorphTargets())
+            {
+                if (!morphMeshInstance.isValid())
+                {
+                    return false;
+                }
+
+                vertexArray =
+                    morphMeshInstance.vertexArray(
+                        primitiveIndex);
+
+                morphedLocalBounds =
+                    morphMeshInstance.localBounds(
+                        primitiveIndex);
+
+                if (vertexArray == nullptr ||
+                    !vertexArray->isValid() ||
+                    morphedLocalBounds == nullptr ||
+                    !morphedLocalBounds->isValid())
+                {
+                    return false;
+                }
+            }
+
+            const SkinningPalette* skinningPalette =
+                skinningPalettes.find(
+                    static_cast<std::uint32_t>(
+                        nodeIndex),
+                    primitiveIndex);
+
+            if (sourcePrimitive.hasSkin() !=
+                (skinningPalette != nullptr))
+            {
+                return false;
+            }
 
             ++renderWorld.renderStats.totalItems;
             
             RenderItem item;
 
-            item.worldBounds =
-                primitive.localBounds().transformed(worldMatrix);
+            item.vertexArray = vertexArray;
+            item.skinningPalette =
+                skinningPalette;
+
+            if (!sourcePrimitive.hasSkin())
+            {
+                item.worldBounds =
+                    morphedLocalBounds->transformed(
+                        worldMatrix);
+            }
+            else
+            {
+                math::Bounds skinnedLocalBounds =
+                    skinningPalette
+                        ->currentLocalBounds();
+
+                if (sourcePrimitive.hasMorphTargets())
+                {
+                    const float morphRadius =
+                        morphMeshInstance
+                            .maximumPositionDelta(
+                                primitiveIndex) *
+                        maximumLinearScale(
+                            skinningPalette->matrices());
+
+                    skinnedLocalBounds = expandBounds(
+                        skinnedLocalBounds,
+                        morphRadius);
+                }
+
+                item.worldBounds =
+                    skinnedLocalBounds.transformed(
+                        worldMatrix);
+            }
 
             if (hasFlag(item.flags, RenderItemFlags::CastShadow))
             {
@@ -223,6 +378,9 @@ bool RenderExtractor::extract(
 
                 ShadowRenderItem shadowItem;
                 shadowItem.primitive = &primitive;
+                shadowItem.vertexArray = vertexArray;
+                shadowItem.skinningPalette =
+                    skinningPalette;
                 shadowItem.world = worldMatrix;
                 renderWorld.shadowItems.push_back(shadowItem);
             }

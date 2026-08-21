@@ -1,5 +1,7 @@
 #include "ViewerPanels.hpp"
 
+#include <animation/AnimationPlayer.hpp>
+#include <asset/AnimationAsset.hpp>
 #include <asset/AssetRegistry.hpp>
 #include <asset/MaterialAsset.hpp>
 #include <asset/MeshAsset.hpp>
@@ -13,6 +15,8 @@
 #include <render/world/RenderWorld.hpp>
 #include <render/passes/ShadowPass.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/RuntimeMeshInstance.hpp>
+#include <render/resources/SkinningPaletteSet.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/mtoon/MToonMaterialSidecar.hpp>
@@ -23,6 +27,8 @@
 #include <backends/imgui_impl_opengl3.h>
 
 #include <algorithm>
+#include <map>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -489,6 +495,12 @@ void ViewerPanels::draw(
         stylized::material::MaterialTemplate>
         materialTemplate,
     const stylized::asset::SceneAsset* scene,
+    stylized::animation::AnimationPlayer&
+        animationPlayer,
+    const stylized::render::SkinningPaletteSet&
+        skinningPalettes,
+    const std::span<stylized::render::RuntimeMeshInstance>
+        morphMeshInstances,
     stylized::render::RenderWorld& renderWorld,
     const std::size_t drawCallCount,
     const stylized::render::FramePipeline* framePipeline,
@@ -520,6 +532,338 @@ void ViewerPanels::draw(
     else
     {
         ImGui::TextUnformatted("Scene: not loaded");
+    }
+
+    if (scene != nullptr &&
+        ImGui::TreeNodeEx(
+            "Animation",
+            ImGuiTreeNodeFlags_DefaultOpen |
+                ImGuiTreeNodeFlags_NoTreePushOnOpen))
+    {
+        if (scene->animations.empty())
+        {
+            ImGui::TextUnformatted(
+                "No animation clips");
+        }
+        else
+        {
+            const stylized::asset::AnimationClipAsset*
+                selectedClip = animationPlayer.clip();
+
+            const char* selectedClipName =
+                selectedClip != nullptr &&
+                    !selectedClip->name.empty()
+                ? selectedClip->name.c_str()
+                : "Select a clip";
+
+            if (ImGui::BeginCombo(
+                    "Clip",
+                    selectedClipName))
+            {
+                for (const stylized::asset::AnimationClipAsset& clip :
+                     scene->animations)
+                {
+                    const bool selected =
+                        selectedClip == &clip;
+
+                    const char* clipName =
+                        clip.name.empty()
+                        ? "Unnamed Clip"
+                        : clip.name.c_str();
+
+                    if (ImGui::Selectable(
+                            clipName,
+                            selected))
+                    {
+                        if (animationPlayer.setClip(&clip))
+                        {
+                            animationPlayer.play();
+                            selectedClip = &clip;
+                        }
+                    }
+
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
+            if (animationPlayer.clip() != nullptr)
+            {
+                constexpr float playbackButtonWidth = 64.0F;
+
+                if (animationPlayer.isPlaying())
+                {
+                    if (ImGui::Button(
+                            "Pause",
+                            ImVec2{
+                                playbackButtonWidth,
+                                0.0F}))
+                    {
+                        animationPlayer.pause();
+                    }
+                }
+                else if (ImGui::Button(
+                             "Play",
+                             ImVec2{
+                                 playbackButtonWidth,
+                                 0.0F}))
+                {
+                    animationPlayer.play();
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::Button(
+                        "Stop",
+                        ImVec2{
+                            playbackButtonWidth,
+                            0.0F}))
+                {
+                    animationPlayer.stop();
+                }
+
+                bool looping =
+                    animationPlayer.isLooping();
+
+                ImGui::SameLine();
+
+                if (ImGui::Checkbox("Loop", &looping))
+                {
+                    animationPlayer.setLooping(looping);
+                }
+
+                float playbackSpeed =
+                    animationPlayer.playbackSpeed();
+
+                if (ImGui::SliderFloat(
+                        "Speed",
+                        &playbackSpeed,
+                        0.0F,
+                        4.0F,
+                        "%.2fx"))
+                {
+                    animationPlayer.setPlaybackSpeed(
+                        playbackSpeed);
+                }
+
+                const stylized::asset::AnimationClipAsset*
+                    clip = animationPlayer.clip();
+
+                float currentTime =
+                    animationPlayer.currentTime();
+
+                if (clip != nullptr &&
+                    ImGui::SliderFloat(
+                        "Time",
+                        &currentTime,
+                        0.0F,
+                        clip->durationSeconds,
+                        "%.3f s"))
+                {
+                    animationPlayer.seek(currentTime);
+                }
+
+                if (clip != nullptr)
+                {
+                    ImGui::Text(
+                        "Duration: %.3f s | Channels: %zu",
+                        clip->durationSeconds,
+                        clip->channels.size());
+                }
+            }
+        }
+
+        ImGui::Text(
+            "Palettes: %zu | Joints: %zu | Uploads: %zu",
+            skinningPalettes.paletteCount(),
+            skinningPalettes.jointMatrixCount(),
+            skinningPalettes.lastUploadCount());
+    }
+
+    if (scene != nullptr &&
+        morphMeshInstances.size() ==
+            scene->nodes.size())
+    {
+        std::size_t morphTargetCount = 0;
+        std::size_t activeMorphCount = 0;
+        std::size_t lastMorphUploadCount = 0;
+        std::size_t totalMorphUploadCount = 0;
+
+        for (const stylized::render::RuntimeMeshInstance& instance :
+             morphMeshInstances)
+        {
+            lastMorphUploadCount +=
+                instance.lastUploadCount();
+
+            totalMorphUploadCount +=
+                instance.totalUploadCount();
+
+            for (std::size_t primitiveIndex = 0;
+                 primitiveIndex < instance.primitiveCount();
+                 ++primitiveIndex)
+            {
+                const stylized::animation::MorphState* state =
+                    instance.morphState(primitiveIndex);
+
+                if (state == nullptr)
+                {
+                    continue;
+                }
+
+                morphTargetCount += state->targetCount();
+                activeMorphCount +=
+                    state->activeTargetCount();
+            }
+        }
+
+        if (morphTargetCount > 0 &&
+            ImGui::CollapsingHeader(
+                "Expressions / Morph Targets"))
+        {
+            if (ImGui::Button("Reset All Morphs"))
+            {
+                for (stylized::render::RuntimeMeshInstance& instance :
+                     morphMeshInstances)
+                {
+                    for (std::size_t primitiveIndex = 0;
+                         primitiveIndex < instance.primitiveCount();
+                         ++primitiveIndex)
+                    {
+                        stylized::animation::MorphState* state =
+                            instance.morphState(primitiveIndex);
+
+                        if (state != nullptr)
+                        {
+                            state->reset();
+                        }
+                    }
+                }
+            }
+
+            for (std::size_t nodeIndex = 0;
+                 nodeIndex < scene->nodes.size();
+                 ++nodeIndex)
+            {
+                stylized::render::RuntimeMeshInstance& instance =
+                    morphMeshInstances[nodeIndex];
+
+                if (!instance.isValid())
+                {
+                    continue;
+                }
+
+                const stylized::asset::SceneNodeAsset& node =
+                    scene->nodes[nodeIndex];
+
+                const stylized::asset::MeshAsset* mesh =
+                    assets.get(node.mesh);
+
+                if (mesh == nullptr ||
+                    mesh->primitives.size() !=
+                        instance.primitiveCount())
+                {
+                    continue;
+                }
+
+                ImGui::PushID(
+                    static_cast<int>(nodeIndex));
+
+                const std::string nodeLabel =
+                    node.name.empty()
+                    ? "Node " + std::to_string(nodeIndex)
+                    : node.name;
+
+                if (ImGui::TreeNode(nodeLabel.c_str()))
+                {
+                    using MorphBinding =
+                        std::pair<
+                            stylized::animation::MorphState*,
+                            std::size_t>;
+
+                    std::map<
+                        std::string,
+                        std::vector<MorphBinding>>
+                        namedMorphs;
+
+                    for (std::size_t primitiveIndex = 0;
+                         primitiveIndex < mesh->primitives.size();
+                         ++primitiveIndex)
+                    {
+                        stylized::animation::MorphState* state =
+                            instance.morphState(primitiveIndex);
+
+                        if (state == nullptr)
+                        {
+                            continue;
+                        }
+
+                        const std::vector<stylized::asset::MorphTargetAsset>&
+                            targets =
+                                mesh->primitives[primitiveIndex]
+                                    .morphTargets;
+
+                        for (std::size_t targetIndex = 0;
+                             targetIndex < targets.size();
+                             ++targetIndex)
+                        {
+                            namedMorphs[targets[targetIndex].name]
+                                .emplace_back(
+                                    state,
+                                    targetIndex);
+                        }
+                    }
+
+                    for (auto& [name, bindings] : namedMorphs)
+                    {
+                        if (bindings.empty())
+                        {
+                            continue;
+                        }
+
+                        float weight =
+                            bindings.front().first->weight(
+                                bindings.front().second);
+
+                        if (ImGui::SliderFloat(
+                                name.c_str(),
+                                &weight,
+                                0.0F,
+                                1.0F,
+                                "%.3f"))
+                        {
+                            for (const MorphBinding& binding :
+                                 bindings)
+                            {
+                                if (!binding.first->setWeight(
+                                        binding.second,
+                                        weight))
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::Text(
+                "Morph Targets: %zu, Active: %zu",
+                morphTargetCount,
+                activeMorphCount);
+
+            ImGui::Text(
+                "Morph Uploads: %zu last, %zu total",
+                lastMorphUploadCount,
+                totalMorphUploadCount);
+        }
     }
 
     int materialMode = 0;

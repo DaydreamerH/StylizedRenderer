@@ -4,7 +4,7 @@
 
 namespace stylized::asset
 {
-    
+
 bool SceneAsset::isValid() const noexcept
 {
     if (nodes.empty()) return false;
@@ -31,6 +31,14 @@ bool SceneAsset::isValid() const noexcept
             ++visitedNodeCount;
 
             current = nodes[current].parentIndex;
+        }
+    }
+
+    for (const AnimationClipAsset& animation : animations)
+    {
+        if (!animation.isValid(nodes.size()))
+        {
+            return false;
         }
     }
 

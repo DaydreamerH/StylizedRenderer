@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <span>
 #include <string>
 
 struct GLFWwindow;
@@ -17,6 +18,11 @@ struct MaterialAsset;
 struct SceneAsset;
 }
 
+namespace stylized::animation
+{
+class AnimationPlayer;
+}
+
 namespace stylized::render
 {
 class ForwardOpaquePass;
@@ -24,8 +30,10 @@ class FramePipeline;
 class OutlineMaskPass;
 class PostProcessPass;
 class RuntimeResourceCache;
+class RuntimeMeshInstance;
 class ScreenSpaceOutlinePass;
 class ShadowPass;
+class SkinningPaletteSet;
 struct RenderWorld;
 }
 
@@ -48,6 +56,12 @@ public:
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
+        stylized::animation::AnimationPlayer&
+            animationPlayer,
+        const stylized::render::SkinningPaletteSet&
+            skinningPalettes,
+        std::span<stylized::render::RuntimeMeshInstance>
+            morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,
         std::size_t drawCallCount,
         const stylized::render::FramePipeline* framePipeline,

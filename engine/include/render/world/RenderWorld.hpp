@@ -20,11 +20,19 @@ struct MaterialInstance;
 
 } // namespace stylized::material
 
+namespace stylized::graphics
+{
+
+class VertexArray;
+
+} // namespace stylized::graphics
+
 namespace stylized::render
 {
 
 class RuntimeMeshPrimitive;
 class RuntimeMaterial;
+class SkinningPalette;
 
 enum class MToonDebugView : std::uint8_t
 {
@@ -115,6 +123,10 @@ struct ShadowRenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
+    const graphics::VertexArray* vertexArray = nullptr;
+
+    const SkinningPalette* skinningPalette = nullptr;
+
     glm::mat4 world{1.0F};
 };
 
@@ -147,9 +159,13 @@ struct RenderItem
 {
     const RuntimeMeshPrimitive* primitive = nullptr;
 
+    const graphics::VertexArray* vertexArray = nullptr;
+
     const material::MaterialInstance* materialInstance = nullptr;
 
     RuntimeMaterial* runtimeMaterial = nullptr;
+
+    const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};

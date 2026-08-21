@@ -78,6 +78,8 @@ namespace
         sourceNode.mNumMeshes);
     staged.materialIndices.reserve(
         sourceNode.mNumMeshes);
+    staged.sourceMeshIndices.reserve(
+        sourceNode.mNumMeshes);
 
     for (const unsigned int sourceMeshIndex : meshKey)
     {
@@ -109,6 +111,16 @@ namespace
             std::move(primitive));
         staged.materialIndices.push_back(
             sourceMesh->mMaterialIndex);
+        staged.sourceMeshIndices.push_back(
+            sourceMeshIndex);
+    }
+
+    if (staged.materialIndices.size() !=
+            staged.asset.primitives.size() ||
+        staged.sourceMeshIndices.size() !=
+            staged.asset.primitives.size())
+    {
+        return false;
     }
 
     staged.asset.rebuildBounds();
@@ -200,6 +212,10 @@ namespace
     scene.asset.nodes.push_back(std::move(node));
     scene.meshIndices.push_back(stagedMeshIndex);
 
+    scene.nodeIndicesByName[
+        scene.asset.nodes.back().name
+    ].push_back(nodeIndex);
+
     for (unsigned int childIndex = 0;
          childIndex < sourceNode.mNumChildren;
          ++childIndex)
@@ -225,6 +241,41 @@ namespace
 }
 
 } // namespace
+
+SceneNodeLookupResult findSceneNodeIndex(
+    const StagedScene& scene,
+    const std::string& nodeName,
+    std::uint32_t& nodeIndex) noexcept
+{
+    nodeIndex =
+        SceneNodeAsset::invalidNodeIndex;
+
+    if (nodeName.empty())
+    {
+        return SceneNodeLookupResult::Missing;
+    }
+
+    const auto iterator =
+        scene.nodeIndicesByName.find(nodeName);
+
+    if (iterator ==
+        scene.nodeIndicesByName.end())
+    {
+        return SceneNodeLookupResult::Missing;
+    }
+
+    const std::vector<std::uint32_t>& matches =
+        iterator->second;
+
+    if (matches.size() != 1)
+    {
+        return SceneNodeLookupResult::Ambiguous;
+    }
+
+    nodeIndex = matches.front();
+
+    return SceneNodeLookupResult::Found;
+}
 
 bool stageScene(
     const aiScene& importedScene,

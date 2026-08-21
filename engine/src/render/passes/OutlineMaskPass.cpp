@@ -12,6 +12,7 @@
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/world/RenderWorld.hpp>
+#include <render/resources/SkinningPalette.hpp>
 
 #include <glm/matrix.hpp>
 
@@ -20,6 +21,13 @@
 
 namespace stylized::render
 {
+
+namespace
+{
+
+constexpr std::uint32_t skinningPaletteBinding = 0;
+
+} // namespace
 
 OutlineMaskPass::OutlineMaskPass(
     graphics::GraphicsDevice& graphicsDevice,
@@ -227,6 +235,7 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         if (item.materialClass !=
                 RenderMaterialClass::Opaque ||
             item.primitive == nullptr ||
+            item.vertexArray == nullptr ||
             item.materialInstance == nullptr ||
             !item.primitive->isValid())
         {
@@ -240,6 +249,16 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         if (!materialInstance.mtoonParameters)
         {
             continue;
+        }
+
+        const bool skinningEnabled =
+            item.skinningPalette != nullptr;
+
+        if (skinningEnabled &&
+            !item.skinningPalette->isGpuReady())
+        {
+            restoreState();
+            return false;
         }
 
         const material::MToonOutlineParameters&
@@ -289,6 +308,9 @@ bool OutlineMaskPass::execute(FrameContext& frame)
                 "uNormalMatrix",
                 item.normalMatrix) ||
             !shader_.setInt(
+                "uSkinningEnabled",
+                skinningEnabled ? 1 : 0) ||
+            !shader_.setInt(
                 "uOutlineWidthMode",
                 static_cast<int>(
                 outline.widthMode)) ||
@@ -310,11 +332,16 @@ bool OutlineMaskPass::execute(FrameContext& frame)
 
         widthMaskTexture.bind(0);
 
+        if (skinningEnabled)
+        {
+            item.skinningPalette->bind(skinningPaletteBinding);
+        }
+
         graphics::DrawIndexedCommand command;
 
         command.shader = &shader_;
         command.vertexArray =
-            &item.primitive->vertexArray();
+            item.vertexArray;
 
         command.topology =
             graphics::PrimitiveTopology::Triangles;

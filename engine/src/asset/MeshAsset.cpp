@@ -1,7 +1,153 @@
 #include <asset/MeshAsset.hpp>
 
+#include <cmath>
+
 namespace stylized::asset
 {
+
+namespace
+{
+
+constexpr float skinWeightError = 1.0e-4F;
+
+[[nodiscard]] bool isFinite(
+    const glm::vec3& value) noexcept
+{
+    return
+        std::isfinite(value.x) &&
+        std::isfinite(value.y) &&
+        std::isfinite(value.z);
+}
+
+[[nodiscard]] bool isFinite(
+    const glm::mat4& matrix) noexcept
+{
+    for (glm::length_t column = 0;
+         column < 4;
+         ++column)
+    {
+        for (glm::length_t row = 0;
+             row < 4;
+             ++row)
+        {
+            if (!std::isfinite(
+                    matrix[column][row]))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+[[nodiscard]] bool areFinite(
+    const std::vector<glm::vec3>& values) noexcept
+{
+    for (const glm::vec3& value : values)
+    {
+        if (!isFinite(value))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+[[nodiscard]] bool isSkinVertexValid(
+    const VertexSkinData& vertex,
+    const std::size_t jointCount) noexcept
+{
+    float totalWeight = 0.0F;
+
+    for (glm::length_t component = 0;
+         component < 4;
+         ++component)
+    {
+        const float weight =
+            vertex.weights[component];
+
+        if (!std::isfinite(weight) ||
+            weight < 0.0F)
+        {
+            return false;
+        }
+
+        if (vertex.joints[component] >=
+            jointCount)
+        {
+            return false;
+        }
+
+        totalWeight += weight;
+    }
+
+    return
+        std::abs(totalWeight - 1.0F) <=
+            skinWeightError;
+}
+
+} // namespace
+
+bool MorphTargetAsset::isValid(
+    const std::size_t vertexCount) const noexcept
+{
+    if (name.empty() ||
+        vertexCount == 0 ||
+        positionDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    if (!normalDeltas.empty() &&
+        normalDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    if (!tangentDeltas.empty() &&
+        tangentDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    return
+        areFinite(positionDeltas) &&
+        areFinite(normalDeltas) &&
+        areFinite(tangentDeltas);
+}
+
+bool SkinAsset::empty() const noexcept
+{
+    return
+        jointNodeIndices.empty() &&
+        inverseBindMatrices.empty() &&
+        jointLocalBounds.empty();
+}
+
+bool SkinAsset::isValid() const noexcept
+{
+    if (jointNodeIndices.empty() ||
+        jointNodeIndices.size() !=
+            inverseBindMatrices.size() ||
+        jointNodeIndices.size() !=
+            jointLocalBounds.size())
+    {
+        return false;
+    }
+
+    for (const glm::mat4& inverseBindMatrix :
+        inverseBindMatrices)
+    {
+        if (!isFinite(inverseBindMatrix))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 void MeshPrimitiveAsset::rebuildBounds() noexcept
 {
@@ -34,6 +180,39 @@ bool MeshPrimitiveAsset::isValid() const noexcept
     for (const std::uint32_t index : indices)
     {
         if (index >= vertices.size())
+        {
+            return false;
+        }
+    }
+
+    for (const MorphTargetAsset& morphTarget :
+        morphTargets)
+    {
+        if (!morphTarget.isValid(vertices.size()))
+        {
+            return false;
+        }
+    }
+
+    if (skinVertices.empty())
+    {
+        return
+            skin.empty() &&
+            localBounds.isValid();
+    }
+
+    if (skinVertices.size() != vertices.size() ||
+        !skin.isValid())
+    {
+        return false;
+    }
+
+    for (const VertexSkinData& skinVertex :
+        skinVertices)
+    {
+        if (!isSkinVertexValid(
+                skinVertex,
+                skin.jointNodeIndices.size()))
         {
             return false;
         }

@@ -3,10 +3,13 @@
 #include <asset/AssetHandle.hpp>
 #include <math/Bounds.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 
+#include <glm/ext/vector_uint4.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -14,6 +17,18 @@
 namespace stylized::asset
 {
 struct MaterialAsset;
+
+struct MorphTargetAsset
+{
+    std::string name;
+
+    std::vector<glm::vec3> positionDeltas;
+    std::vector<glm::vec3> normalDeltas;
+    std::vector<glm::vec3> tangentDeltas;
+
+    [[nodiscard]] bool isValid(
+        std::size_t vertexCount) const noexcept;
+};
 
 struct StaticMeshVertex
 {
@@ -23,16 +38,48 @@ struct StaticMeshVertex
     glm::vec2 texCoord0{0.F};
 };
 
+struct VertexSkinData
+{
+    glm::uvec4 joints{0U};
+    glm::vec4 weights{0.0F};
+};
+
+struct SkinAsset
+{
+    std::vector<std::uint32_t> jointNodeIndices;
+    std::vector<glm::mat4> inverseBindMatrices;
+
+    std::vector<math::Bounds> jointLocalBounds;
+
+    [[nodiscard]] bool empty() const noexcept;
+    [[nodiscard]] bool isValid() const noexcept;
+};
+
 struct MeshPrimitiveAsset
 {
     std::vector<StaticMeshVertex> vertices;
+    std::vector<MorphTargetAsset> morphTargets;
+
     std::vector<std::uint32_t> indices;
+
+    std::vector<VertexSkinData> skinVertices;
+    SkinAsset skin;
 
     AssetHandle<MaterialAsset> material;
 
     math::Bounds localBounds;
 
     void rebuildBounds() noexcept;
+
+    [[nodiscard]] bool hasSkin() const noexcept
+    {
+        return !skinVertices.empty();
+    }
+
+    [[nodiscard]] bool hasMorphTargets() const noexcept
+    {
+        return !morphTargets.empty();
+    }
 
     [[nodiscard]] bool isValid() const noexcept;
 };

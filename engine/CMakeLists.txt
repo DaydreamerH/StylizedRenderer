@@ -1,4 +1,8 @@
 add_library(stylized_engine STATIC
+    include/animation/AnimationPlayer.hpp
+    include/animation/MorphState.hpp
+    include/animation/ScenePose.hpp
+    include/asset/AnimationAsset.hpp
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
     include/asset/MaterialAsset.hpp
@@ -41,23 +45,32 @@ add_library(stylized_engine STATIC
     include/render/renderers/StaticModelRenderer.hpp
     include/render/resources/RuntimeMaterial.hpp
     include/render/resources/RuntimeMesh.hpp
+    include/render/resources/RuntimeMeshInstance.hpp
     include/render/resources/RuntimeResourceCache.hpp
+    include/render/resources/SkinningPalette.hpp
+    include/render/resources/SkinningPaletteSet.hpp
     include/render/world/RenderExtractor.hpp
     include/render/world/RenderWorld.hpp
     include/scene/Camera.hpp
     include/scene/Entity.hpp
     include/scene/Scene.hpp
     include/scene/Transform.hpp
+    src/asset/AnimationAsset.cpp
     src/asset/MeshAsset.cpp
     src/asset/SceneAsset.cpp
     src/asset/TextureAsset.cpp
     src/asset/importers/ModelImporter.cpp
     src/asset/importers/TextureImporter.cpp
+    src/asset/importers/detail/AssimpAnimationImporter.cpp
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp
+    src/asset/importers/detail/AssimpSkinImporter.cpp
     src/asset/importers/detail/AssimpTextureImporter.cpp
     src/asset/importers/detail/StbImage.cpp
+    src/animation/AnimationPlayer.cpp
+    src/animation/MorphState.cpp
+    src/animation/ScenePose.cpp
     src/core/Application.cpp
     src/graphics/opengl/device/GraphicsDevice.cpp
     src/graphics/opengl/device/OpenGLContext.cpp
@@ -84,7 +97,10 @@ add_library(stylized_engine STATIC
     src/render/renderers/StaticModelRenderer.cpp
     src/render/resources/RuntimeMaterial.cpp
     src/render/resources/RuntimeMesh.cpp
+    src/render/resources/RuntimeMeshInstance.cpp
     src/render/resources/RuntimeResourceCache.cpp
+    src/render/resources/SkinningPalette.cpp
+    src/render/resources/SkinningPaletteSet.cpp
     src/render/world/RenderExtractor.cpp
     src/scene/Camera.cpp
     src/scene/Scene.cpp

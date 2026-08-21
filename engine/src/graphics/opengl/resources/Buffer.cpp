@@ -172,6 +172,20 @@ bool Buffer::update(const std::size_t offset, const std::span<const std::byte> d
     return true;
 }
 
+void Buffer::bindShaderStorage(
+    const std::uint32_t binding) const noexcept
+{
+    if (!isValid())
+    {
+        return;
+    }
+
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER,
+        binding,
+        id_);
+}
+
 void Buffer::release() noexcept
 {
     if (id_ != 0)

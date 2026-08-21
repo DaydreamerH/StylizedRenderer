@@ -8,11 +8,21 @@
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMaterial.hpp>
+#include <render/resources/SkinningPalette.hpp>
 #include <material/MaterialInstance.hpp>
 #include <material/MaterialTemplate.hpp>
 
+#include <cstdint>
+
 namespace stylized::render
 {
+
+namespace
+{
+    constexpr std::uint32_t skinningPaletteBinding = 0;
+} // namespace
+
+
 StaticModelRenderer::StaticModelRenderer(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
@@ -39,6 +49,7 @@ bool StaticModelRenderer::render(
         }
 
         if (item.primitive == nullptr ||
+            item.vertexArray == nullptr ||
             item.materialInstance == nullptr ||
             item.runtimeMaterial == nullptr)
         {
@@ -87,6 +98,28 @@ bool StaticModelRenderer::render(
                 item.normalMatrix))
         {
             return false;
+        }
+
+        const bool skinningEnabled =
+            item.skinningPalette != nullptr;
+
+        if (skinningEnabled &&
+            !item.skinningPalette->isGpuReady())
+        {
+            return false;
+        }
+
+        if (!shader->setInt(
+                "uSkinningEnabled",
+                skinningEnabled ? 1 : 0))
+        {
+            return false;
+        }
+
+        if (skinningEnabled)
+        {
+            item.skinningPalette->bind(
+                skinningPaletteBinding);
         }
 
         const material::MaterialKind materialKind =
@@ -214,7 +247,7 @@ bool StaticModelRenderer::render(
         command.shader = shader;
 
         command.vertexArray =
-            &item.primitive->vertexArray();
+            item.vertexArray;
 
         command.topology =
             graphics::PrimitiveTopology::Triangles;

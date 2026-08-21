@@ -26,6 +26,7 @@ enum class VertexAttributeFormat : uint8_t
     Float2,
     Float3,
     Float4,
+    Uint4,
     Uint8Normalized4
 };
 
