@@ -5,11 +5,19 @@
 
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeMesh.hpp>
+#include <render/resources/SkinningPalette.hpp>
 
 #include <utility>
 
 namespace stylized::render
 {
+
+namespace
+{
+
+constexpr std::uint32_t skinningPaletteBinding = 0;
+
+} // namespace
 
 ShadowPass::ShadowPass(
     graphics::GraphicsDevice& graphicsDevice) noexcept
@@ -194,6 +202,42 @@ bool ShadowPass::execute(
                 frame.framebufferSize);
 
             return false;
+        }
+
+        const bool skinningEnabled =
+            item.skinningPalette != nullptr;
+
+        if (skinningEnabled &&
+            !item.skinningPalette->isGpuReady())
+        {
+            graphicsDevice_.setPolygonOffset(false);
+
+            graphicsDevice_.bindFramebuffer(nullptr);
+
+            graphicsDevice_.setViewport(
+                frame.framebufferSize);
+
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uSkinningEnabled",
+                skinningEnabled ? 1 : 0))
+        {
+            graphicsDevice_.setPolygonOffset(false);
+
+            graphicsDevice_.bindFramebuffer(nullptr);
+
+            graphicsDevice_.setViewport(
+                frame.framebufferSize);
+
+            return false;
+        }
+
+        if (skinningEnabled)
+        {
+            item.skinningPalette->bind(
+                skinningPaletteBinding);
         }
 
         graphics::DrawIndexedCommand command;
