@@ -1,4 +1,5 @@
 #include "ViewerPanels.hpp"
+#include "ViewerTheme.hpp"
 
 #include <animation/AnimationPlayer.hpp>
 #include <asset/AnimationAsset.hpp>
@@ -446,7 +447,13 @@ bool ViewerPanels::initialize(GLFWwindow* window)
     IMGUI_CHECKVERSION();
 
     ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+
+    if (!stylized::viewer::ui::applyViewerTheme(
+            window))
+    {
+        ImGui::DestroyContext();
+        return false;
+    }
 
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
     {

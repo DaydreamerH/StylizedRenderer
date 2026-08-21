@@ -30,12 +30,19 @@ add_executable(stylized_viewer
     camera/OrbitCameraController.cpp
     ui/ViewerPanels.hpp
     ui/ViewerPanels.cpp
+    ui/ViewerTheme.hpp
+    ui/ViewerTheme.cpp
 )
 
 target_link_libraries(stylized_viewer
     PRIVATE
         stylized_engine
         stylized_imgui
+)
+
+target_compile_definitions(stylized_viewer
+    PRIVATE
+        STYLIZED_VIEWER_FONT_PATH="${imgui_SOURCE_DIR}/misc/fonts/Roboto-Medium.ttf"
 )
 
 if(MSVC)
