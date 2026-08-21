@@ -18,6 +18,11 @@ struct MaterialAsset;
 struct SceneAsset;
 }
 
+namespace stylized::animation
+{
+class AnimationPlayer;
+}
+
 namespace stylized::render
 {
 class ForwardOpaquePass;
@@ -28,6 +33,7 @@ class RuntimeResourceCache;
 class RuntimeMeshInstance;
 class ScreenSpaceOutlinePass;
 class ShadowPass;
+class SkinningPaletteSet;
 struct RenderWorld;
 }
 
@@ -50,6 +56,10 @@ public:
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
+        stylized::animation::AnimationPlayer&
+            animationPlayer,
+        const stylized::render::SkinningPaletteSet&
+            skinningPalettes,
         std::span<stylized::render::RuntimeMeshInstance>
             morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,

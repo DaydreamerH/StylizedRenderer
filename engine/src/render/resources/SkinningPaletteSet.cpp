@@ -93,6 +93,8 @@ bool SkinningPaletteSet::initialize(
                 std::move(palette);
 
             ++paletteCount_;
+            jointMatrixCount_ +=
+                primitive.skin.jointNodeIndices.size();
         }
     }
 
@@ -224,6 +226,7 @@ void SkinningPaletteSet::clear() noexcept
     palettes_.clear();
 
     paletteCount_ = 0;
+    jointMatrixCount_ = 0;
     lastUploadCount_ = 0;
 }
 
@@ -231,6 +234,12 @@ std::size_t SkinningPaletteSet::paletteCount()
     const noexcept
 {
     return paletteCount_;
+}
+
+std::size_t SkinningPaletteSet::jointMatrixCount()
+    const noexcept
+{
+    return jointMatrixCount_;
 }
 
 std::size_t SkinningPaletteSet::lastUploadCount()

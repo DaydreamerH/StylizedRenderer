@@ -1,5 +1,7 @@
 #include "ViewerPanels.hpp"
 
+#include <animation/AnimationPlayer.hpp>
+#include <asset/AnimationAsset.hpp>
 #include <asset/AssetRegistry.hpp>
 #include <asset/MaterialAsset.hpp>
 #include <asset/MeshAsset.hpp>
@@ -14,6 +16,7 @@
 #include <render/passes/ShadowPass.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMeshInstance.hpp>
+#include <render/resources/SkinningPaletteSet.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/mtoon/MToonMaterialSidecar.hpp>
@@ -492,6 +495,10 @@ void ViewerPanels::draw(
         stylized::material::MaterialTemplate>
         materialTemplate,
     const stylized::asset::SceneAsset* scene,
+    stylized::animation::AnimationPlayer&
+        animationPlayer,
+    const stylized::render::SkinningPaletteSet&
+        skinningPalettes,
     const std::span<stylized::render::RuntimeMeshInstance>
         morphMeshInstances,
     stylized::render::RenderWorld& renderWorld,
@@ -525,6 +532,156 @@ void ViewerPanels::draw(
     else
     {
         ImGui::TextUnformatted("Scene: not loaded");
+    }
+
+    if (scene != nullptr &&
+        ImGui::TreeNodeEx(
+            "Animation",
+            ImGuiTreeNodeFlags_DefaultOpen |
+                ImGuiTreeNodeFlags_NoTreePushOnOpen))
+    {
+        if (scene->animations.empty())
+        {
+            ImGui::TextUnformatted(
+                "No animation clips");
+        }
+        else
+        {
+            const stylized::asset::AnimationClipAsset*
+                selectedClip = animationPlayer.clip();
+
+            const char* selectedClipName =
+                selectedClip != nullptr &&
+                    !selectedClip->name.empty()
+                ? selectedClip->name.c_str()
+                : "Select a clip";
+
+            if (ImGui::BeginCombo(
+                    "Clip",
+                    selectedClipName))
+            {
+                for (const stylized::asset::AnimationClipAsset& clip :
+                     scene->animations)
+                {
+                    const bool selected =
+                        selectedClip == &clip;
+
+                    const char* clipName =
+                        clip.name.empty()
+                        ? "Unnamed Clip"
+                        : clip.name.c_str();
+
+                    if (ImGui::Selectable(
+                            clipName,
+                            selected))
+                    {
+                        if (animationPlayer.setClip(&clip))
+                        {
+                            animationPlayer.play();
+                            selectedClip = &clip;
+                        }
+                    }
+
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
+            if (animationPlayer.clip() != nullptr)
+            {
+                constexpr float playbackButtonWidth = 64.0F;
+
+                if (animationPlayer.isPlaying())
+                {
+                    if (ImGui::Button(
+                            "Pause",
+                            ImVec2{
+                                playbackButtonWidth,
+                                0.0F}))
+                    {
+                        animationPlayer.pause();
+                    }
+                }
+                else if (ImGui::Button(
+                             "Play",
+                             ImVec2{
+                                 playbackButtonWidth,
+                                 0.0F}))
+                {
+                    animationPlayer.play();
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::Button(
+                        "Stop",
+                        ImVec2{
+                            playbackButtonWidth,
+                            0.0F}))
+                {
+                    animationPlayer.stop();
+                }
+
+                bool looping =
+                    animationPlayer.isLooping();
+
+                ImGui::SameLine();
+
+                if (ImGui::Checkbox("Loop", &looping))
+                {
+                    animationPlayer.setLooping(looping);
+                }
+
+                float playbackSpeed =
+                    animationPlayer.playbackSpeed();
+
+                if (ImGui::SliderFloat(
+                        "Speed",
+                        &playbackSpeed,
+                        0.0F,
+                        4.0F,
+                        "%.2fx"))
+                {
+                    animationPlayer.setPlaybackSpeed(
+                        playbackSpeed);
+                }
+
+                const stylized::asset::AnimationClipAsset*
+                    clip = animationPlayer.clip();
+
+                float currentTime =
+                    animationPlayer.currentTime();
+
+                if (clip != nullptr &&
+                    ImGui::SliderFloat(
+                        "Time",
+                        &currentTime,
+                        0.0F,
+                        clip->durationSeconds,
+                        "%.3f s"))
+                {
+                    animationPlayer.seek(currentTime);
+                }
+
+                if (clip != nullptr)
+                {
+                    ImGui::Text(
+                        "Duration: %.3f s | Channels: %zu",
+                        clip->durationSeconds,
+                        clip->channels.size());
+                }
+            }
+        }
+
+        ImGui::Text(
+            "Palettes: %zu | Joints: %zu | Uploads: %zu",
+            skinningPalettes.paletteCount(),
+            skinningPalettes.jointMatrixCount(),
+            skinningPalettes.lastUploadCount());
     }
 
     if (scene != nullptr &&

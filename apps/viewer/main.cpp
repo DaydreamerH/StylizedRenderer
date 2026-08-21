@@ -296,6 +296,8 @@ protected:
             *resourceCache_,
             activeMaterialTemplateHandle_,
             sceneAsset,
+            animationPlayer_,
+            skinningPalettes_,
             morphMeshInstances_,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,

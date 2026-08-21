@@ -60,6 +60,9 @@ public:
     [[nodiscard]] std::size_t paletteCount()
         const noexcept;
 
+    [[nodiscard]] std::size_t jointMatrixCount()
+        const noexcept;
+
     [[nodiscard]] std::size_t lastUploadCount()
         const noexcept;
 
@@ -70,6 +73,7 @@ private:
         palettes_;
 
     std::size_t paletteCount_ = 0;
+    std::size_t jointMatrixCount_ = 0;
     std::size_t lastUploadCount_ = 0;
 };
 
