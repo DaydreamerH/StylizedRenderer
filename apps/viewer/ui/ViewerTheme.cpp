@@ -173,7 +173,7 @@ bool applyViewerTheme(
     style.ScrollbarSize = 15.0F;
     style.GrabMinSize = 12.0F;
 
-    style.WindowBorderSize = 1.0F;
+    style.WindowBorderSize = 0.0F;
     style.ChildBorderSize = 1.0F;
     style.PopupBorderSize = 1.0F;
     style.FrameBorderSize = 0.0F;

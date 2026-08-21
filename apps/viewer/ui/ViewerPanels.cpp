@@ -28,6 +28,7 @@
 #include <backends/imgui_impl_opengl3.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <map>
 #include <span>
 #include <string>
@@ -91,6 +92,145 @@ void drawPassStatus(
             status,
             drawCallCount);
     }
+}
+
+[[nodiscard]] bool beginPropertyTable(
+    const char* identifier)
+{
+    if (!ImGui::BeginTable(
+            identifier,
+            2,
+            ImGuiTableFlags_SizingStretchProp |
+                ImGuiTableFlags_PadOuterX))
+    {
+        return false;
+    }
+
+    ImGui::TableSetupColumn(
+        "Property",
+        ImGuiTableColumnFlags_WidthFixed,
+        10.5F * ImGui::GetFontSize());
+
+    ImGui::TableSetupColumn(
+        "Value",
+        ImGuiTableColumnFlags_WidthStretch);
+
+    return true;
+}
+
+void beginPropertyRow(
+    const char* label)
+{
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextWrapped("%s", label);
+    ImGui::TableSetColumnIndex(1);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::PushID(label);
+}
+
+void endPropertyRow()
+{
+    ImGui::PopID();
+}
+
+bool drawCheckboxProperty(
+    const char* label,
+    bool* value)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::Checkbox("##Value", value);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawComboProperty(
+    const char* label,
+    int* value,
+    const char* const* items,
+    const int itemCount)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::Combo(
+            "##Value",
+            value,
+            items,
+            itemCount);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawSliderFloatProperty(
+    const char* label,
+    float* value,
+    const float minimum,
+    const float maximum,
+    const char* format)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::SliderFloat(
+            "##Value",
+            value,
+            minimum,
+            maximum,
+            format);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawColorEdit3Property(
+    const char* label,
+    float* value,
+    const ImGuiColorEditFlags flags = 0)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::ColorEdit3(
+            "##Value",
+            value,
+            flags);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawColorEdit4Property(
+    const char* label,
+    float* value,
+    const ImGuiColorEditFlags flags = 0)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::ColorEdit4(
+            "##Value",
+            value,
+            flags);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawDragFloatProperty(
+    const char* label,
+    float* value,
+    const float speed,
+    const float minimum,
+    const float maximum,
+    const char* format)
+{
+    beginPropertyRow(label);
+    const bool changed =
+        ImGui::DragFloat(
+            "##Value",
+            value,
+            speed,
+            minimum,
+            maximum,
+            format);
+    endPropertyRow();
+    return changed;
 }
 
 std::vector<
@@ -390,14 +530,14 @@ void drawTextureStatus(
     const stylized::asset::AssetRegistry& assets,
     const char* fallbackName)
 {
-    ImGui::TextUnformatted(label);
-    ImGui::SameLine();
+    beginPropertyRow(label);
 
     if (handle.isNull())
     {
         ImGui::TextDisabled(
             "Missing (%s fallback)",
             fallbackName);
+        endPropertyRow();
         return;
     }
 
@@ -409,6 +549,7 @@ void drawTextureStatus(
         ImGui::TextColored(
             ImVec4{1.0F, 0.3F, 0.3F, 1.0F},
             "Invalid texture asset");
+        endPropertyRow();
         return;
     }
 
@@ -423,6 +564,8 @@ void drawTextureStatus(
     ImGui::TextWrapped(
         "%s",
         textureName.c_str());
+
+    endPropertyRow();
 }
 
 } // namespace
@@ -608,38 +751,49 @@ void ViewerPanels::draw(
         return;
     }
 
-    const ImVec2 contentCursorPosition =
-        ImGui::GetCursorScreenPos();
-
     constexpr float resizeHandleWidth = 8.0F;
 
-    ImGui::SetCursorScreenPos(
+    const ImVec2 resizeHandleMinimum =
         ImVec2{
             viewport->WorkPos.x +
                 sidebarWidth_ -
-                resizeHandleWidth,
-            viewport->WorkPos.y});
+                0.5F * resizeHandleWidth,
+            viewport->WorkPos.y};
 
-    ImGui::InvisibleButton(
-        "##ResizeViewerSidebar",
+    const ImVec2 resizeHandleMaximum =
         ImVec2{
-            resizeHandleWidth,
-            viewport->WorkSize.y});
+            resizeHandleMinimum.x +
+                resizeHandleWidth,
+            viewport->WorkPos.y +
+                viewport->WorkSize.y};
 
     const bool resizeHandleHovered =
-        ImGui::IsItemHovered();
+        ImGui::IsMouseHoveringRect(
+            resizeHandleMinimum,
+            resizeHandleMaximum,
+            false);
 
-    const bool resizeHandleActive =
-        ImGui::IsItemActive();
+    if (resizeHandleHovered &&
+        ImGui::IsMouseClicked(
+            ImGuiMouseButton_Left))
+    {
+        sidebarResizing_ = true;
+    }
+
+    if (!ImGui::IsMouseDown(
+            ImGuiMouseButton_Left))
+    {
+        sidebarResizing_ = false;
+    }
 
     if (resizeHandleHovered ||
-        resizeHandleActive)
+        sidebarResizing_)
     {
         ImGui::SetMouseCursor(
             ImGuiMouseCursor_ResizeEW);
     }
 
-    if (resizeHandleActive)
+    if (sidebarResizing_)
     {
         sidebarWidth_ =
             std::clamp(
@@ -649,54 +803,6 @@ void ViewerPanels::draw(
                 maximumSidebarWidth);
     }
 
-    const ImU32 resizeHandleColor =
-        ImGui::GetColorU32(
-            resizeHandleHovered ||
-                    resizeHandleActive
-                ? ImGuiCol_SeparatorHovered
-                : ImGuiCol_Separator);
-
-    ImGui::GetWindowDrawList()->AddLine(
-        ImVec2{
-            viewport->WorkPos.x +
-                sidebarWidth_ - 1.0F,
-            viewport->WorkPos.y},
-        ImVec2{
-            viewport->WorkPos.x +
-                sidebarWidth_ - 1.0F,
-            viewport->WorkPos.y +
-                viewport->WorkSize.y},
-        resizeHandleColor,
-        resizeHandleActive ? 2.0F : 1.0F);
-
-    ImGui::SetCursorScreenPos(
-        contentCursorPosition);
-
-    ImGui::TextUnformatted("Stylized Renderer");
-
-    ImGui::SameLine();
-
-    const float collapseButtonX =
-        ImGui::GetWindowWidth() -
-        ImGui::GetStyle().WindowPadding.x -
-        ImGui::GetFrameHeight();
-
-    ImGui::SetCursorPosX(collapseButtonX);
-
-    if (ImGui::ArrowButton(
-            "##CollapseViewerSidebar",
-            ImGuiDir_Left))
-    {
-        sidebarExpanded_ = false;
-    }
-
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Collapse viewer controls");
-    }
-
-    ImGui::Separator();
-
     if (!ImGui::BeginTabBar(
             "##ViewerSections",
             ImGuiTabBarFlags_FittingPolicyResizeDown))
@@ -705,18 +811,18 @@ void ViewerPanels::draw(
         return;
     }
 
-    const float availablePropertyWidth =
-        ImGui::GetContentRegionAvail().x;
+    if (ImGui::TabItemButton(
+            "<<##CollapseViewerSidebar",
+            ImGuiTabItemFlags_Trailing |
+                ImGuiTabItemFlags_NoTooltip))
+    {
+        sidebarExpanded_ = false;
+    }
 
-    const float propertyControlWidth =
-        std::clamp(
-            availablePropertyWidth -
-                11.5F * ImGui::GetFontSize(),
-            7.0F * ImGui::GetFontSize(),
-            availablePropertyWidth * 0.62F);
-
-    ImGui::PushItemWidth(
-        propertyControlWidth);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Collapse viewer controls");
+    }
 
     if (ImGui::BeginTabItem("Scene"))
     {
@@ -731,7 +837,7 @@ void ViewerPanels::draw(
         ImGui::TableSetupColumn(
             "Property",
             ImGuiTableColumnFlags_WidthFixed,
-            5.5F * ImGui::GetFontSize());
+            10.5F * ImGui::GetFontSize());
 
         ImGui::TableSetupColumn(
             "Value",
@@ -793,39 +899,48 @@ void ViewerPanels::draw(
                 ? selectedClip->name.c_str()
                 : "Select a clip";
 
-            if (ImGui::BeginCombo(
-                    "Clip",
-                    selectedClipName))
+            if (beginPropertyTable(
+                    "##AnimationClipProperties"))
             {
-                for (const stylized::asset::AnimationClipAsset& clip :
-                     scene->animations)
+                beginPropertyRow("Clip");
+
+                if (ImGui::BeginCombo(
+                        "##Value",
+                        selectedClipName))
                 {
-                    const bool selected =
-                        selectedClip == &clip;
-
-                    const char* clipName =
-                        clip.name.empty()
-                        ? "Unnamed Clip"
-                        : clip.name.c_str();
-
-                    if (ImGui::Selectable(
-                            clipName,
-                            selected))
+                    for (const stylized::asset::AnimationClipAsset& clip :
+                         scene->animations)
                     {
-                        if (animationPlayer.setClip(&clip))
+                        const bool selected =
+                            selectedClip == &clip;
+
+                        const char* clipName =
+                            clip.name.empty()
+                            ? "Unnamed Clip"
+                            : clip.name.c_str();
+
+                        if (ImGui::Selectable(
+                                clipName,
+                                selected))
                         {
-                            animationPlayer.play();
-                            selectedClip = &clip;
+                            if (animationPlayer.setClip(&clip))
+                            {
+                                animationPlayer.play();
+                                selectedClip = &clip;
+                            }
+                        }
+
+                        if (selected)
+                        {
+                            ImGui::SetItemDefaultFocus();
                         }
                     }
 
-                    if (selected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
+                    ImGui::EndCombo();
                 }
 
-                ImGui::EndCombo();
+                endPropertyRow();
+                ImGui::EndTable();
             }
 
             if (animationPlayer.clip() != nullptr)
@@ -869,24 +984,8 @@ void ViewerPanels::draw(
                 bool looping =
                     animationPlayer.isLooping();
 
-                if (ImGui::Checkbox("Loop", &looping))
-                {
-                    animationPlayer.setLooping(looping);
-                }
-
                 float playbackSpeed =
                     animationPlayer.playbackSpeed();
-
-                if (ImGui::SliderFloat(
-                        "Speed",
-                        &playbackSpeed,
-                        0.0F,
-                        4.0F,
-                        "%.2fx"))
-                {
-                    animationPlayer.setPlaybackSpeed(
-                        playbackSpeed);
-                }
 
                 const stylized::asset::AnimationClipAsset*
                     clip = animationPlayer.clip();
@@ -894,15 +993,39 @@ void ViewerPanels::draw(
                 float currentTime =
                     animationPlayer.currentTime();
 
-                if (clip != nullptr &&
-                    ImGui::SliderFloat(
-                        "Time",
-                        &currentTime,
-                        0.0F,
-                        clip->durationSeconds,
-                        "%.3f s"))
+                if (beginPropertyTable(
+                        "##AnimationPlaybackProperties"))
                 {
-                    animationPlayer.seek(currentTime);
+                    if (drawCheckboxProperty(
+                            "Loop",
+                            &looping))
+                    {
+                        animationPlayer.setLooping(looping);
+                    }
+
+                    if (drawSliderFloatProperty(
+                            "Speed",
+                            &playbackSpeed,
+                            0.0F,
+                            4.0F,
+                            "%.2fx"))
+                    {
+                        animationPlayer.setPlaybackSpeed(
+                            playbackSpeed);
+                    }
+
+                    if (clip != nullptr &&
+                        drawSliderFloatProperty(
+                            "Time",
+                            &currentTime,
+                            0.0F,
+                            clip->durationSeconds,
+                            "%.3f s"))
+                    {
+                        animationPlayer.seek(currentTime);
+                    }
+
+                    ImGui::EndTable();
                 }
 
                 if (clip != nullptr)
@@ -1059,35 +1182,41 @@ void ViewerPanels::draw(
                         }
                     }
 
-                    for (auto& [name, bindings] : namedMorphs)
+                    if (beginPropertyTable(
+                            "##MorphProperties"))
                     {
-                        if (bindings.empty())
+                        for (auto& [name, bindings] : namedMorphs)
                         {
-                            continue;
-                        }
-
-                        float weight =
-                            bindings.front().first->weight(
-                                bindings.front().second);
-
-                        if (ImGui::SliderFloat(
-                                name.c_str(),
-                                &weight,
-                                0.0F,
-                                1.0F,
-                                "%.3f"))
-                        {
-                            for (const MorphBinding& binding :
-                                 bindings)
+                            if (bindings.empty())
                             {
-                                if (!binding.first->setWeight(
-                                        binding.second,
-                                        weight))
+                                continue;
+                            }
+
+                            float weight =
+                                bindings.front().first->weight(
+                                    bindings.front().second);
+
+                            if (drawSliderFloatProperty(
+                                    name.c_str(),
+                                    &weight,
+                                    0.0F,
+                                    1.0F,
+                                    "%.3f"))
+                            {
+                                for (const MorphBinding& binding :
+                                     bindings)
                                 {
-                                    break;
+                                    if (!binding.first->setWeight(
+                                            binding.second,
+                                            weight))
+                                    {
+                                        break;
+                                    }
                                 }
                             }
                         }
+
+                        ImGui::EndTable();
                     }
 
                     ImGui::TreePop();
@@ -1144,63 +1273,69 @@ void ViewerPanels::draw(
 
     ImGui::SeparatorText("Material Mode");
 
-    if (ImGui::Combo(
-            "Material Mode",
-            &materialMode,
-            materialModes,
-            IM_ARRAYSIZE(materialModes)))
+    if (beginPropertyTable(
+            "##MaterialModeProperties"))
     {
-        switch (materialMode)
+        if (drawComboProperty(
+                "Mode",
+                &materialMode,
+                materialModes,
+                IM_ARRAYSIZE(materialModes)))
         {
-        case 0:
-            materialKind =
-                stylized::material::MaterialKind::Unlit;
-            break;
+            switch (materialMode)
+            {
+            case 0:
+                materialKind =
+                    stylized::material::MaterialKind::Unlit;
+                break;
 
-        case 1:
-            materialKind =
-                stylized::material::MaterialKind::DebugNormal;
-            break;
+            case 1:
+                materialKind =
+                    stylized::material::MaterialKind::DebugNormal;
+                break;
 
-        case 2:
-            materialKind =
-                stylized::material::MaterialKind::BasicPbr;
-            break;
+            case 2:
+                materialKind =
+                    stylized::material::MaterialKind::BasicPbr;
+                break;
 
-        case 3:
-            materialKind =
-                stylized::material::MaterialKind::MToon;
-            break;
+            case 3:
+                materialKind =
+                    stylized::material::MaterialKind::MToon;
+                break;
+            }
         }
-    }
 
-    if (materialKind ==
-        stylized::material::MaterialKind::MToon)
-    {
-        int debugView = static_cast<int>(
-            renderWorld.mainView.mtoonDebugView);
+        if (materialKind ==
+            stylized::material::MaterialKind::MToon)
+        {
+            int debugView = static_cast<int>(
+                renderWorld.mainView.mtoonDebugView);
 
-        constexpr const char* debugViews[] = {
-            "Final",
-            "Base",
-            "Shade",
-            "Lighting",
-            "Rim",
-            "MatCap",
-            "Emission"
-        };
+            constexpr const char* debugViews[] = {
+                "Final",
+                "Base",
+                "Shade",
+                "Lighting",
+                "Rim",
+                "MatCap",
+                "Emission"
+            };
 
-        if (ImGui::Combo(
-                "MToon Debug View",
+            if (drawComboProperty(
+                "Debug View",
                 &debugView,
                 debugViews,
                 IM_ARRAYSIZE(debugViews)))
-        {
-            renderWorld.mainView.mtoonDebugView =
-                static_cast<
-                    stylized::render::MToonDebugView>(
-                        debugView);
+            {
+                renderWorld.mainView.mtoonDebugView =
+                    static_cast<
+                        stylized::render::MToonDebugView>(
+                            debugView);
+            }
         }
+
+        ImGui::EndTable();
     }
 
     const auto materialHandles =
@@ -1236,47 +1371,56 @@ void ViewerPanels::draw(
         "Materials: %zu",
         materialHandles.size());
 
-    if (ImGui::BeginCombo(
-            "Selected Material",
-            selectedMaterialName))
+    if (beginPropertyTable(
+            "##MaterialSelectionProperties"))
     {
-        for (const auto handle : materialHandles)
+        beginPropertyRow("Selected");
+
+        if (ImGui::BeginCombo(
+                "##Value",
+                selectedMaterialName))
         {
-            const stylized::asset::MaterialAsset* material =
-                assets.get(handle);
-
-            if (material == nullptr)
+            for (const auto handle : materialHandles)
             {
-                continue;
+                const stylized::asset::MaterialAsset* material =
+                    assets.get(handle);
+
+                if (material == nullptr)
+                {
+                    continue;
+                }
+
+                const std::string visibleName =
+                    material->name.empty()
+                    ? "Unnamed Material"
+                    : material->name;
+
+                const std::string label =
+                    visibleName +
+                    "##material_" +
+                    std::to_string(handle.id().value);
+
+                const bool selected =
+                    handle == selectedMaterial_;
+
+                if (ImGui::Selectable(
+                        label.c_str(),
+                        selected))
+                {
+                    selectedMaterial_ = handle;
+                }
+
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
             }
 
-            const std::string visibleName =
-                material->name.empty()
-                ? "Unnamed Material"
-                : material->name;
-
-            const std::string label =
-                visibleName +
-                "##material_" +
-                std::to_string(handle.id().value);
-
-            const bool selected =
-                handle == selectedMaterial_;
-
-            if (ImGui::Selectable(
-                    label.c_str(),
-                    selected))
-            {
-                selectedMaterial_ = handle;
-            }
-
-            if (selected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
+            ImGui::EndCombo();
         }
 
-        ImGui::EndCombo();
+        endPropertyRow();
+        ImGui::EndTable();
     }
 
     if (materialKind ==
@@ -1392,162 +1536,194 @@ void ViewerPanels::draw(
                     "Base / Shade",
                     ImGuiTreeNodeFlags_DefaultOpen))
             {
-                ImGui::ColorEdit4(
-                    "Base Color Factor",
-                    &materialInstance->baseColorFactor.x);
+                if (beginPropertyTable(
+                        "##BaseShadeProperties"))
+                {
+                    drawColorEdit4Property(
+                        "Base Color Factor",
+                        &materialInstance->baseColorFactor.x);
 
-                drawTextureStatus(
-                    "Base Texture:",
-                    materialInstance->baseColorTexture,
-                    assets,
-                    "White");
+                    drawTextureStatus(
+                        "Base Texture",
+                        materialInstance->baseColorTexture,
+                        assets,
+                        "White");
 
-                ImGui::ColorEdit3(
-                    "Shade Color",
-                    &parameters.shadeColor.x);
+                    drawColorEdit3Property(
+                        "Shade Color",
+                        &parameters.shadeColor.x);
 
-                drawTextureStatus(
-                    "Shade Texture:",
-                    parameters.textures.shadeTexture,
-                    assets,
-                    "White");
+                    drawTextureStatus(
+                        "Shade Texture",
+                        parameters.textures.shadeTexture,
+                        assets,
+                        "White");
 
-                ImGui::SliderFloat(
-                    "Shading Shift",
-                    &parameters.shadingShift,
-                    -1.0F,
-                    1.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Shading Shift",
+                        &parameters.shadingShift,
+                        -1.0F,
+                        1.0F,
+                        "%.3f");
 
-                ImGui::SliderFloat(
-                    "Shift Texture Scale",
-                    &parameters.shadingShiftTextureScale,
-                    -2.0F,
-                    2.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Shift Texture Scale",
+                        &parameters.shadingShiftTextureScale,
+                        -2.0F,
+                        2.0F,
+                        "%.3f");
 
-                drawTextureStatus(
-                    "Shift Texture:",
-                    parameters.textures.shadingShiftTexture,
-                    assets,
-                    "Black");
+                    drawTextureStatus(
+                        "Shift Texture",
+                        parameters.textures.shadingShiftTexture,
+                        assets,
+                        "Black");
 
-                ImGui::SliderFloat(
-                    "Shading Toony",
-                    &parameters.shadingToony,
-                    0.0F,
-                    1.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Shading Toony",
+                        &parameters.shadingToony,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("Normal"))
             {
-                ImGui::SliderFloat(
-                    "Normal Scale",
-                    &parameters.normalScale,
-                    0.0F,
-                    2.0F,
-                    "%.3f");
+                if (beginPropertyTable(
+                        "##NormalProperties"))
+                {
+                    drawSliderFloatProperty(
+                        "Scale",
+                        &parameters.normalScale,
+                        0.0F,
+                        2.0F,
+                        "%.3f");
 
-                drawTextureStatus(
-                    "Normal Texture:",
-                    parameters.textures.normalTexture,
-                    assets,
-                    "Neutral Normal");
+                    drawTextureStatus(
+                        "Texture",
+                        parameters.textures.normalTexture,
+                        assets,
+                        "Neutral Normal");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("GI"))
             {
-                ImGui::SliderFloat(
-                    "GI Equalization",
-                    &parameters.giEqualization,
-                    0.0F,
-                    1.0F,
-                    "%.3f");
+                if (beginPropertyTable(
+                        "##GIProperties"))
+                {
+                    drawSliderFloatProperty(
+                        "Equalization",
+                        &parameters.giEqualization,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("MatCap"))
             {
-                ImGui::ColorEdit3(
-                    "MatCap Color",
-                    &parameters.matcapColor.x);
+                if (beginPropertyTable(
+                        "##MatCapProperties"))
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &parameters.matcapColor.x);
 
-                ImGui::SliderFloat(
-                    "MatCap Strength",
-                    &parameters.matcapStrength,
-                    0.0F,
-                    4.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Strength",
+                        &parameters.matcapStrength,
+                        0.0F,
+                        4.0F,
+                        "%.3f");
 
-                drawTextureStatus(
-                    "MatCap Texture:",
-                    parameters.textures.matcapTexture,
-                    assets,
-                    "Black");
+                    drawTextureStatus(
+                        "Texture",
+                        parameters.textures.matcapTexture,
+                        assets,
+                        "Black");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("Rim"))
             {
-                ImGui::ColorEdit3(
-                    "Rim Color",
-                    &parameters.rimColor.x);
+                if (beginPropertyTable(
+                        "##RimProperties"))
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &parameters.rimColor.x);
 
-                ImGui::SliderFloat(
-                    "Rim Fresnel Power",
-                    &parameters.rimFresnelPower,
-                    0.1F,
-                    16.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Fresnel Power",
+                        &parameters.rimFresnelPower,
+                        0.1F,
+                        16.0F,
+                        "%.3f");
 
-                ImGui::SliderFloat(
-                    "Rim Lift",
-                    &parameters.rimLift,
-                    -1.0F,
-                    1.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Lift",
+                        &parameters.rimLift,
+                        -1.0F,
+                        1.0F,
+                        "%.3f");
 
-                ImGui::SliderFloat(
-                    "Rim Lighting Mix",
-                    &parameters.rimLightingMix,
-                    0.0F,
-                    1.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Lighting Mix",
+                        &parameters.rimLightingMix,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
 
-                drawTextureStatus(
-                    "Rim Mask Texture:",
-                    parameters.textures.rimMaskTexture,
-                    assets,
-                    "White");
+                    drawTextureStatus(
+                        "Mask Texture",
+                        parameters.textures.rimMaskTexture,
+                        assets,
+                        "White");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("Emission"))
             {
-                ImGui::ColorEdit3(
-                    "Emission Color",
-                    &parameters.emissionColor.x,
-                    ImGuiColorEditFlags_HDR |
-                        ImGuiColorEditFlags_Float);
+                if (beginPropertyTable(
+                        "##EmissionProperties"))
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &parameters.emissionColor.x,
+                        ImGuiColorEditFlags_HDR |
+                            ImGuiColorEditFlags_Float);
 
-                ImGui::SliderFloat(
-                    "Emission Strength",
-                    &parameters.emissionStrength,
-                    0.0F,
-                    10.0F,
-                    "%.3f");
+                    drawSliderFloatProperty(
+                        "Strength",
+                        &parameters.emissionStrength,
+                        0.0F,
+                        10.0F,
+                        "%.3f");
 
-                drawTextureStatus(
-                    "Emission Texture:",
-                    parameters.textures.emissionTexture,
-                    assets,
-                    "Black");
+                    drawTextureStatus(
+                        "Texture",
+                        parameters.textures.emissionTexture,
+                        assets,
+                        "Black");
+
+                    ImGui::EndTable();
+                }
             }
 
             if (ImGui::CollapsingHeader("Outline"))
             {
-                ImGui::Checkbox(
-                    "Outline Enabled",
-                    &parameters.outline.enabled);
-
                 int widthMode =
                     parameters.outline.widthMode ==
                             stylized::material::OutlineWidthMode::World
@@ -1559,50 +1735,60 @@ void ViewerPanels::draw(
                     "Screen"
                 };
 
-                if (ImGui::Combo(
-                        "Outline Width Mode",
-                        &widthMode,
-                        widthModes,
-                        IM_ARRAYSIZE(widthModes)))
+                if (beginPropertyTable(
+                        "##OutlineProperties"))
                 {
-                    parameters.outline.widthMode =
-                        widthMode == 0
-                            ? stylized::material::
-                                OutlineWidthMode::World
-                            : stylized::material::
-                                OutlineWidthMode::Screen;
+                    drawCheckboxProperty(
+                        "Enabled",
+                        &parameters.outline.enabled);
+
+                    if (drawComboProperty(
+                            "Width Mode",
+                            &widthMode,
+                            widthModes,
+                            IM_ARRAYSIZE(widthModes)))
+                    {
+                        parameters.outline.widthMode =
+                            widthMode == 0
+                                ? stylized::material::
+                                    OutlineWidthMode::World
+                                : stylized::material::
+                                    OutlineWidthMode::Screen;
+                    }
+
+                    const float widthSpeed =
+                        parameters.outline.widthMode ==
+                                stylized::material::OutlineWidthMode::World
+                            ? 0.001F
+                            : 0.1F;
+
+                    drawDragFloatProperty(
+                        "Width",
+                        &parameters.outline.width,
+                        widthSpeed,
+                        0.0F,
+                        100.0F,
+                        "%.3f");
+
+                    drawColorEdit3Property(
+                        "Color",
+                        &parameters.outline.color.x);
+
+                    drawSliderFloatProperty(
+                        "Lighting Mix",
+                        &parameters.outline.lightingMix,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
+
+                    drawTextureStatus(
+                        "Width Mask",
+                        parameters.textures.outlineWidthMaskTexture,
+                        assets,
+                        "White");
+
+                    ImGui::EndTable();
                 }
-
-                const float widthSpeed =
-                    parameters.outline.widthMode ==
-                            stylized::material::OutlineWidthMode::World
-                        ? 0.001F
-                        : 0.1F;
-
-                ImGui::DragFloat(
-                    "Outline Width",
-                    &parameters.outline.width,
-                    widthSpeed,
-                    0.0F,
-                    100.0F,
-                    "%.3f");
-
-                ImGui::ColorEdit3(
-                    "Outline Color",
-                    &parameters.outline.color.x);
-
-                ImGui::SliderFloat(
-                    "Outline Lighting Mix",
-                    &parameters.outline.lightingMix,
-                    0.0F,
-                    1.0F,
-                    "%.3f");
-
-                drawTextureStatus(
-                    "Outline Width Mask:",
-                    parameters.textures.outlineWidthMaskTexture,
-                    assets,
-                    "White");
             }
         }
     }
@@ -1634,48 +1820,54 @@ void ViewerPanels::draw(
             "Combined Outline"
         };
 
-        if (ImGui::Combo(
-                "Outline Debug View",
-                &debugView,
-                debugViews,
-                IM_ARRAYSIZE(debugViews)))
+        if (beginPropertyTable(
+                "##ScreenOutlineProperties"))
         {
-            settings.debugView =
-                static_cast<
-                    stylized::render::OutlineDebugView>(
-                        debugView);
+            if (drawComboProperty(
+                    "Debug View",
+                    &debugView,
+                    debugViews,
+                    IM_ARRAYSIZE(debugViews)))
+            {
+                settings.debugView =
+                    static_cast<
+                        stylized::render::OutlineDebugView>(
+                            debugView);
 
-            changed = true;
+                changed = true;
+            }
+
+            changed |= drawCheckboxProperty(
+                "Enabled",
+                &settings.enabled);
+
+            changed |= drawColorEdit3Property(
+                "Color",
+                &settings.color.x);
+
+            changed |= drawSliderFloatProperty(
+                "Width",
+                &settings.width,
+                1.0F,
+                8.0F,
+                "%.1f");
+
+            changed |= drawSliderFloatProperty(
+                "Depth Threshold",
+                &settings.depthThreshold,
+                0.001F,
+                0.1F,
+                "%.4f");
+
+            changed |= drawSliderFloatProperty(
+                "Normal Threshold",
+                &settings.normalThreshold,
+                0.01F,
+                1.0F,
+                "%.3f");
+
+            ImGui::EndTable();
         }
-
-        changed |= ImGui::Checkbox(
-            "Screen Outline Enabled",
-            &settings.enabled);
-
-        changed |= ImGui::ColorEdit3(
-            "Screen Outline Color",
-            &settings.color.x);
-
-        changed |= ImGui::SliderFloat(
-            "Screen Outline Width",
-            &settings.width,
-            1.0F,
-            8.0F,
-            "%.1f");
-
-        changed |= ImGui::SliderFloat(
-            "Depth Threshold",
-            &settings.depthThreshold,
-            0.001F,
-            0.1F,
-            "%.4f");
-
-        changed |= ImGui::SliderFloat(
-            "Normal Threshold",
-            &settings.normalThreshold,
-            0.01F,
-            1.0F,
-            "%.3f");
 
         if (changed)
         {
@@ -1689,41 +1881,57 @@ void ViewerPanels::draw(
 
     ImGui::SeparatorText("Lighting");
 
-    ImGui::Checkbox(
-        "Shadows",
-        &shadowsEnabled);
-
     const stylized::render::DirectionalLightData& mainLight =
         renderWorld.mainView.mainLight;
 
-    ImGui::Text(
-        "Direction: (%.2f, %.2f, %.2f)",
-        mainLight.direction.x,
-        mainLight.direction.y,
-        mainLight.direction.z);
+    if (beginPropertyTable(
+            "##LightingProperties"))
+    {
+        drawCheckboxProperty(
+            "Shadows",
+            &shadowsEnabled);
 
-    ImGui::Text(
-        "Color: (%.2f, %.2f, %.2f)",
-        mainLight.color.r,
-        mainLight.color.g,
-        mainLight.color.b);
+        beginPropertyRow("Direction");
+        ImGui::Text(
+            "(%.2f, %.2f, %.2f)",
+            mainLight.direction.x,
+            mainLight.direction.y,
+            mainLight.direction.z);
+        endPropertyRow();
 
-    ImGui::Text(
-        "Intensity: %.2f",
-        mainLight.intensity);
+        beginPropertyRow("Color");
+        ImGui::Text(
+            "(%.2f, %.2f, %.2f)",
+            mainLight.color.r,
+            mainLight.color.g,
+            mainLight.color.b);
+        endPropertyRow();
+
+        beginPropertyRow("Intensity");
+        ImGui::Text("%.2f", mainLight.intensity);
+        endPropertyRow();
+
+        ImGui::EndTable();
+    }
 
     ImGui::SeparatorText("Post Process");
 
-    ImGui::SliderFloat(
-        "Exposure",
-        &exposure,
-        0.0F,
-        5.0F,
-        "%.2f");
+    if (beginPropertyTable(
+            "##PostProcessProperties"))
+    {
+        drawSliderFloatProperty(
+            "Exposure",
+            &exposure,
+            0.0F,
+            5.0F,
+            "%.2f");
 
-    ImGui::Checkbox(
-        "Tone Mapping",
-        &toneMappingEnabled);
+        drawCheckboxProperty(
+            "Tone Mapping",
+            &toneMappingEnabled);
+
+        ImGui::EndTable();
+    }
 
     ImGui::EndTabItem();
     }
@@ -1962,7 +2170,6 @@ void ViewerPanels::draw(
     ImGui::EndTabItem();
     }
 
-    ImGui::PopItemWidth();
     ImGui::EndTabBar();
 
     ImGui::End();

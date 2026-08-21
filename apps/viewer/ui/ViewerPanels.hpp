@@ -88,6 +88,7 @@ private:
     bool materialSidecarFailed_ = false;
 
     float sidebarWidth_ = 0.0F;
+    bool sidebarResizing_ = false;
     bool sidebarExpanded_ = true;
     bool initialized_ = false;
 };
