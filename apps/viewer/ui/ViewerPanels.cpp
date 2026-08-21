@@ -614,6 +614,16 @@ void ViewerPanels::draw(
 
     ImGui::Separator();
 
+    if (!ImGui::BeginTabBar(
+            "##ViewerSections",
+            ImGuiTabBarFlags_FittingPolicyResizeDown))
+    {
+        ImGui::End();
+        return;
+    }
+
+    if (ImGui::BeginTabItem("Scene"))
+    {
     ImGui::Text("Model: %s", modelPath.string().c_str());
 
     if (scene != nullptr)
@@ -957,6 +967,12 @@ void ViewerPanels::draw(
                 totalMorphUploadCount);
         }
     }
+
+    ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Material"))
+    {
 
     int materialMode = 0;
 
@@ -1438,6 +1454,12 @@ void ViewerPanels::draw(
         }
     }
 
+    ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Render"))
+    {
+
     ImGui::Separator();
     ImGui::TextUnformatted("Screen Space Outline");
 
@@ -1552,6 +1574,12 @@ void ViewerPanels::draw(
     ImGui::Checkbox(
         "Tone Mapping",
         &toneMappingEnabled);
+
+    ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Stats"))
+    {
 
     ImGui::Separator();
     ImGui::TextUnformatted("Render Pipeline");
@@ -1782,6 +1810,11 @@ void ViewerPanels::draw(
         renderWorld.mainView.cameraPosition.x,
         renderWorld.mainView.cameraPosition.y,
         renderWorld.mainView.cameraPosition.z);
+
+    ImGui::EndTabItem();
+    }
+
+    ImGui::EndTabBar();
 
     ImGui::End();
 }
