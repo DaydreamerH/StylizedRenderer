@@ -87,6 +87,7 @@ private:
     std::string materialSidecarStatus_;
     bool materialSidecarFailed_ = false;
 
+    bool sidebarExpanded_ = true;
     bool initialized_ = false;
 };
 

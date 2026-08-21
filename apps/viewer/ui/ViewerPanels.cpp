@@ -527,7 +527,92 @@ void ViewerPanels::draw(
         return;
     }
 
-    ImGui::Begin("StylizedRenderer");
+    const ImGuiViewport* viewport =
+        ImGui::GetMainViewport();
+
+    const float expandedWidth =
+        std::min(
+            23.0F * ImGui::GetFontSize(),
+            viewport->WorkSize.x * 0.45F);
+
+    const float collapsedWidth =
+        ImGui::GetFrameHeight() +
+        2.0F * ImGui::GetStyle().WindowPadding.x;
+
+    ImGui::SetNextWindowPos(
+        viewport->WorkPos,
+        ImGuiCond_Always);
+
+    ImGui::SetNextWindowSize(
+        ImVec2{
+            sidebarExpanded_
+                ? expandedWidth
+                : collapsedWidth,
+            viewport->WorkSize.y},
+        ImGuiCond_Always);
+
+    constexpr ImGuiWindowFlags sidebarFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoSavedSettings;
+
+    ImGui::Begin(
+        "StylizedRenderer##ViewerSidebar",
+        nullptr,
+        sidebarFlags);
+
+    if (!sidebarExpanded_)
+    {
+        const float buttonWidth =
+            ImGui::GetFrameHeight();
+
+        ImGui::SetCursorPosX(
+            0.5F *
+                (ImGui::GetWindowWidth() -
+                 buttonWidth));
+
+        if (ImGui::ArrowButton(
+                "##ExpandViewerSidebar",
+                ImGuiDir_Right))
+        {
+            sidebarExpanded_ = true;
+        }
+
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Expand viewer controls");
+        }
+
+        ImGui::End();
+        return;
+    }
+
+    ImGui::TextUnformatted("Stylized Renderer");
+
+    ImGui::SameLine();
+
+    const float collapseButtonX =
+        ImGui::GetWindowWidth() -
+        ImGui::GetStyle().WindowPadding.x -
+        ImGui::GetFrameHeight();
+
+    ImGui::SetCursorPosX(collapseButtonX);
+
+    if (ImGui::ArrowButton(
+            "##CollapseViewerSidebar",
+            ImGuiDir_Left))
+    {
+        sidebarExpanded_ = false;
+    }
+
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Collapse viewer controls");
+    }
+
+    ImGui::Separator();
 
     ImGui::Text("Model: %s", modelPath.string().c_str());
 
