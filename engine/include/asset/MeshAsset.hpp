@@ -36,6 +36,8 @@ struct SkinAsset
     std::vector<std::uint32_t> jointNodeIndices;
     std::vector<glm::mat4> inverseBindMatrices;
 
+    std::vector<math::Bounds> jointLocalBounds;
+
     [[nodiscard]] bool empty() const noexcept;
     [[nodiscard]] bool isValid() const noexcept;
 };

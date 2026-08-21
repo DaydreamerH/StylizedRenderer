@@ -145,6 +145,31 @@ bool SkinningPalette::update(
             skin.inverseBindMatrices[jointIndex]);
     }
 
+    currentLocalBounds_.reset();
+
+    for (std::size_t boundsIndex = 0;
+         boundsIndex < matrices_.size();
+         ++boundsIndex)
+    {
+        const math::Bounds& jointBounds =
+            skin.jointLocalBounds[boundsIndex];
+
+        if (!jointBounds.isValid())
+        {
+            continue;
+        }
+
+        currentLocalBounds_.expand(
+            jointBounds.transformed(
+                matrices_[boundsIndex]));
+    }
+
+    if (!currentLocalBounds_.isValid())
+    {
+        clear();
+        return false;
+    }
+
     return true;
 }
 
@@ -175,6 +200,7 @@ bool SkinningPalette::upload()
 void SkinningPalette::clear() noexcept
 {
     matrices_.clear();
+    currentLocalBounds_.reset();
     uploaded_ = false;
 }
 
@@ -211,6 +237,12 @@ const std::vector<glm::mat4>&
 SkinningPalette::matrices() const noexcept
 {
     return matrices_;
+}
+
+const math::Bounds&
+SkinningPalette::currentLocalBounds() const noexcept
+{
+    return currentLocalBounds_;
 }
 
 } // namespace stylized::render

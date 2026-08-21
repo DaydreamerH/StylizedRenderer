@@ -8,6 +8,7 @@
 
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
+#include <render/resources/SkinningPalette.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
 
 #include <animation/ScenePose.hpp>
@@ -248,8 +249,18 @@ bool RenderExtractor::extract(
             item.skinningPalette =
                 skinningPalette;
 
-            item.worldBounds =
-                primitive.localBounds().transformed(worldMatrix);
+            if (!sourcePrimitive.hasSkin())
+            {
+                item.worldBounds =
+                    primitive.localBounds().transformed(worldMatrix);
+            }
+            else
+            {
+                item.worldBounds =
+                    skinningPalette
+                        ->currentLocalBounds()
+                        .transformed(worldMatrix);
+            }
 
             if (hasFlag(item.flags, RenderItemFlags::CastShadow))
             {

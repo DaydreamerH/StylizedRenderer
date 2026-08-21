@@ -152,6 +152,9 @@ void addInfluence(
     primitive.skin.inverseBindMatrices.reserve(
         sourceMesh.mNumBones);
 
+    primitive.skin.jointLocalBounds.reserve(
+        sourceMesh.mNumBones);
+
     for (unsigned int boneIndex = 0;
          boneIndex < sourceMesh.mNumBones;
          ++boneIndex)
@@ -217,6 +220,8 @@ void addInfluence(
             convertMatrix(
                 sourceBone->mOffsetMatrix));
 
+        primitive.skin.jointLocalBounds.emplace_back();
+
         for (unsigned int weightIndex = 0;
              weightIndex < sourceBone->mNumWeights;
              ++weightIndex)
@@ -239,6 +244,14 @@ void addInfluence(
                 ++discardedInfluenceCount;
                 continue;
             }
+
+            primitive.skin.jointLocalBounds[
+                paletteIndex
+            ].expand(
+                primitive.vertices[
+                    sourceWeight.mVertexId
+                ].position
+            );
 
             addInfluence(
                 primitive.skinVertices[

@@ -71,14 +71,17 @@ bool SkinAsset::empty() const noexcept
 {
     return
         jointNodeIndices.empty() &&
-        inverseBindMatrices.empty();
+        inverseBindMatrices.empty() &&
+        jointLocalBounds.empty();
 }
 
 bool SkinAsset::isValid() const noexcept
 {
     if (jointNodeIndices.empty() ||
         jointNodeIndices.size() !=
-            inverseBindMatrices.size())
+            inverseBindMatrices.size() ||
+        jointNodeIndices.size() !=
+            jointLocalBounds.size())
     {
         return false;
     }

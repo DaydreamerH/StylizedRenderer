@@ -2,6 +2,7 @@
 
 #include <core/NonCopyable.hpp>
 #include <graphics/resources/Buffer.hpp>
+#include <math/Bounds.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -69,6 +70,9 @@ public:
     [[nodiscard]] const std::vector<glm::mat4>&
         matrices() const noexcept;
 
+    [[nodiscard]] const math::Bounds&
+        currentLocalBounds() const noexcept;
+
 private:
     std::vector<glm::mat4> matrices_;
 
@@ -77,6 +81,8 @@ private:
     std::size_t jointCapacity_ = 0;
 
     bool uploaded_ = false;
+
+    math::Bounds currentLocalBounds_;
 };
 
 } // namespace stylized::render
