@@ -76,7 +76,7 @@ void drawPassStatus(
 {
     if (hasGpuTime)
     {
-        ImGui::Text(
+        ImGui::TextWrapped(
             "%s: %s, Draws: %zu, GPU: %.3f ms",
             name,
             status,
@@ -85,7 +85,7 @@ void drawPassStatus(
     }
     else
     {
-        ImGui::Text(
+        ImGui::TextWrapped(
             "%s: %s, Draws: %zu, GPU: pending",
             name,
             status,
@@ -530,10 +530,29 @@ void ViewerPanels::draw(
     const ImGuiViewport* viewport =
         ImGui::GetMainViewport();
 
-    const float expandedWidth =
+    const float maximumSidebarWidth =
+        std::max(
+            12.0F * ImGui::GetFontSize(),
+            viewport->WorkSize.x * 0.65F);
+
+    const float minimumSidebarWidth =
         std::min(
-            23.0F * ImGui::GetFontSize(),
-            viewport->WorkSize.x * 0.45F);
+            22.0F * ImGui::GetFontSize(),
+            maximumSidebarWidth);
+
+    if (sidebarWidth_ <= 0.0F)
+    {
+        sidebarWidth_ =
+            std::min(
+                28.0F * ImGui::GetFontSize(),
+                viewport->WorkSize.x * 0.55F);
+    }
+
+    sidebarWidth_ =
+        std::clamp(
+            sidebarWidth_,
+            minimumSidebarWidth,
+            maximumSidebarWidth);
 
     const float collapsedWidth =
         ImGui::GetFrameHeight() +
@@ -546,7 +565,7 @@ void ViewerPanels::draw(
     ImGui::SetNextWindowSize(
         ImVec2{
             sidebarExpanded_
-                ? expandedWidth
+                ? sidebarWidth_
                 : collapsedWidth,
             viewport->WorkSize.y},
         ImGuiCond_Always);
@@ -589,6 +608,70 @@ void ViewerPanels::draw(
         return;
     }
 
+    const ImVec2 contentCursorPosition =
+        ImGui::GetCursorScreenPos();
+
+    constexpr float resizeHandleWidth = 8.0F;
+
+    ImGui::SetCursorScreenPos(
+        ImVec2{
+            viewport->WorkPos.x +
+                sidebarWidth_ -
+                resizeHandleWidth,
+            viewport->WorkPos.y});
+
+    ImGui::InvisibleButton(
+        "##ResizeViewerSidebar",
+        ImVec2{
+            resizeHandleWidth,
+            viewport->WorkSize.y});
+
+    const bool resizeHandleHovered =
+        ImGui::IsItemHovered();
+
+    const bool resizeHandleActive =
+        ImGui::IsItemActive();
+
+    if (resizeHandleHovered ||
+        resizeHandleActive)
+    {
+        ImGui::SetMouseCursor(
+            ImGuiMouseCursor_ResizeEW);
+    }
+
+    if (resizeHandleActive)
+    {
+        sidebarWidth_ =
+            std::clamp(
+                ImGui::GetIO().MousePos.x -
+                    viewport->WorkPos.x,
+                minimumSidebarWidth,
+                maximumSidebarWidth);
+    }
+
+    const ImU32 resizeHandleColor =
+        ImGui::GetColorU32(
+            resizeHandleHovered ||
+                    resizeHandleActive
+                ? ImGuiCol_SeparatorHovered
+                : ImGuiCol_Separator);
+
+    ImGui::GetWindowDrawList()->AddLine(
+        ImVec2{
+            viewport->WorkPos.x +
+                sidebarWidth_ - 1.0F,
+            viewport->WorkPos.y},
+        ImVec2{
+            viewport->WorkPos.x +
+                sidebarWidth_ - 1.0F,
+            viewport->WorkPos.y +
+                viewport->WorkSize.y},
+        resizeHandleColor,
+        resizeHandleActive ? 2.0F : 1.0F);
+
+    ImGui::SetCursorScreenPos(
+        contentCursorPosition);
+
     ImGui::TextUnformatted("Stylized Renderer");
 
     ImGui::SameLine();
@@ -621,6 +704,19 @@ void ViewerPanels::draw(
         ImGui::End();
         return;
     }
+
+    const float availablePropertyWidth =
+        ImGui::GetContentRegionAvail().x;
+
+    const float propertyControlWidth =
+        std::clamp(
+            availablePropertyWidth -
+                11.5F * ImGui::GetFontSize(),
+            7.0F * ImGui::GetFontSize(),
+            availablePropertyWidth * 0.62F);
+
+    ImGui::PushItemWidth(
+        propertyControlWidth);
 
     if (ImGui::BeginTabItem("Scene"))
     {
@@ -1755,7 +1851,7 @@ void ViewerPanels::draw(
         const stylized::graphics::Extent2D extent =
             shadowPass->shadowMapExtent();
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "Shadow Map: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1778,7 +1874,7 @@ void ViewerPanels::draw(
         const std::size_t rebuildCount =
             forwardPass->renderTargetRebuildCount();
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "HDR Color: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1786,7 +1882,7 @@ void ViewerPanels::draw(
                 forwardPass->colorFormat()),
             rebuildCount);
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "Forward Depth: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1794,7 +1890,7 @@ void ViewerPanels::draw(
                 forwardPass->depthFormat()),
             rebuildCount);
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "Forward Normal: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1814,7 +1910,7 @@ void ViewerPanels::draw(
         const stylized::graphics::Extent2D extent =
             outlineMaskPass->renderTargetExtent();
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "Outline Mask: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1834,7 +1930,7 @@ void ViewerPanels::draw(
         const stylized::graphics::Extent2D extent =
             screenSpaceOutlinePass->renderTargetExtent();
 
-        ImGui::Text(
+        ImGui::TextWrapped(
             "Outlined HDR: %u x %u, %s, Rebuilds: %zu",
             extent.width,
             extent.height,
@@ -1866,6 +1962,7 @@ void ViewerPanels::draw(
     ImGui::EndTabItem();
     }
 
+    ImGui::PopItemWidth();
     ImGui::EndTabBar();
 
     ImGui::End();
