@@ -3,6 +3,7 @@
 #include <asset/AssetHandle.hpp>
 #include <math/Bounds.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -16,6 +17,18 @@
 namespace stylized::asset
 {
 struct MaterialAsset;
+
+struct MorphTargetAsset
+{
+    std::string name;
+
+    std::vector<glm::vec3> positionDeltas;
+    std::vector<glm::vec3> normalDeltas;
+    std::vector<glm::vec3> tangentDeltas;
+
+    [[nodiscard]] bool isValid(
+        std::size_t vertexCount) const noexcept;
+};
 
 struct StaticMeshVertex
 {
@@ -45,6 +58,8 @@ struct SkinAsset
 struct MeshPrimitiveAsset
 {
     std::vector<StaticMeshVertex> vertices;
+    std::vector<MorphTargetAsset> morphTargets;
+
     std::vector<std::uint32_t> indices;
 
     std::vector<VertexSkinData> skinVertices;
@@ -59,6 +74,11 @@ struct MeshPrimitiveAsset
     [[nodiscard]] bool hasSkin() const noexcept
     {
         return !skinVertices.empty();
+    }
+
+    [[nodiscard]] bool hasMorphTargets() const noexcept
+    {
+        return !morphTargets.empty();
     }
 
     [[nodiscard]] bool isValid() const noexcept;

@@ -11,6 +11,15 @@ namespace
 constexpr float skinWeightError = 1.0e-4F;
 
 [[nodiscard]] bool isFinite(
+    const glm::vec3& value) noexcept
+{
+    return
+        std::isfinite(value.x) &&
+        std::isfinite(value.y) &&
+        std::isfinite(value.z);
+}
+
+[[nodiscard]] bool isFinite(
     const glm::mat4& matrix) noexcept
 {
     for (glm::length_t column = 0;
@@ -26,6 +35,20 @@ constexpr float skinWeightError = 1.0e-4F;
             {
                 return false;
             }
+        }
+    }
+
+    return true;
+}
+
+[[nodiscard]] bool areFinite(
+    const std::vector<glm::vec3>& values) noexcept
+{
+    for (const glm::vec3& value : values)
+    {
+        if (!isFinite(value))
+        {
+            return false;
         }
     }
 
@@ -66,6 +89,34 @@ constexpr float skinWeightError = 1.0e-4F;
 }
 
 } // namespace
+
+bool MorphTargetAsset::isValid(
+    const std::size_t vertexCount) const noexcept
+{
+    if (name.empty() ||
+        vertexCount == 0 ||
+        positionDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    if (!normalDeltas.empty() &&
+        normalDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    if (!tangentDeltas.empty() &&
+        tangentDeltas.size() != vertexCount)
+    {
+        return false;
+    }
+
+    return
+        areFinite(positionDeltas) &&
+        areFinite(normalDeltas) &&
+        areFinite(tangentDeltas);
+}
 
 bool SkinAsset::empty() const noexcept
 {
@@ -129,6 +180,15 @@ bool MeshPrimitiveAsset::isValid() const noexcept
     for (const std::uint32_t index : indices)
     {
         if (index >= vertices.size())
+        {
+            return false;
+        }
+    }
+
+    for (const MorphTargetAsset& morphTarget :
+        morphTargets)
+    {
+        if (!morphTarget.isValid(vertices.size()))
         {
             return false;
         }

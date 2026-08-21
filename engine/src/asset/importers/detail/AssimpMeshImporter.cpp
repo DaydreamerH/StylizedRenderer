@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 #include <assimp/mesh.h>
 
@@ -10,6 +12,134 @@
 
 namespace stylized::asset::importers::detail
 {
+
+namespace
+{
+
+[[nodiscard]] glm::vec3 toGlm(
+    const aiVector3D& value) noexcept
+{
+    return {
+        value.x,
+        value.y,
+        value.z};
+}
+
+[[nodiscard]] bool buildMorphTargets(
+    const aiMesh& sourceMesh,
+    MeshPrimitiveAsset& primitiveAsset)
+{
+    if (sourceMesh.mNumAnimMeshes == 0)
+    {
+        return true;
+    }
+
+    if (sourceMesh.mAnimMeshes == nullptr)
+    {
+        return false;
+    }
+
+    primitiveAsset.morphTargets.reserve(
+        sourceMesh.mNumAnimMeshes);
+
+    for (unsigned int morphIndex = 0;
+         morphIndex < sourceMesh.mNumAnimMeshes;
+         ++morphIndex)
+    {
+        const aiAnimMesh* sourceMorph =
+            sourceMesh.mAnimMeshes[morphIndex];
+
+        if (sourceMorph == nullptr ||
+            sourceMorph->mNumVertices !=
+                sourceMesh.mNumVertices)
+        {
+            return false;
+        }
+
+        MorphTargetAsset morphTarget;
+
+        morphTarget.name =
+            sourceMorph->mName.length > 0
+                ? sourceMorph->mName.C_Str()
+                : "Morph_" +
+                    std::to_string(morphIndex);
+
+        morphTarget.positionDeltas.resize(
+            sourceMesh.mNumVertices,
+            glm::vec3{0.0F});
+
+        if (sourceMorph->HasPositions())
+        {
+            for (unsigned int vertexIndex = 0;
+                 vertexIndex < sourceMesh.mNumVertices;
+                 ++vertexIndex)
+            {
+                morphTarget.positionDeltas[vertexIndex] =
+                    toGlm(
+                        sourceMorph->mVertices[vertexIndex]) -
+                    toGlm(
+                        sourceMesh.mVertices[vertexIndex]);
+            }
+        }
+
+        if (sourceMorph->HasNormals())
+        {
+            if (!sourceMesh.HasNormals())
+            {
+                return false;
+            }
+
+            morphTarget.normalDeltas.resize(
+                sourceMesh.mNumVertices);
+
+            for (unsigned int vertexIndex = 0;
+                 vertexIndex < sourceMesh.mNumVertices;
+                 ++vertexIndex)
+            {
+                morphTarget.normalDeltas[vertexIndex] =
+                    toGlm(
+                        sourceMorph->mNormals[vertexIndex]) -
+                    toGlm(
+                        sourceMesh.mNormals[vertexIndex]);
+            }
+        }
+
+        if (sourceMorph->HasTangentsAndBitangents())
+        {
+            if (!sourceMesh.HasTangentsAndBitangents())
+            {
+                return false;
+            }
+
+            morphTarget.tangentDeltas.resize(
+                sourceMesh.mNumVertices);
+
+            for (unsigned int vertexIndex = 0;
+                 vertexIndex < sourceMesh.mNumVertices;
+                 ++vertexIndex)
+            {
+                morphTarget.tangentDeltas[vertexIndex] =
+                    toGlm(
+                        sourceMorph->mTangents[vertexIndex]) -
+                    toGlm(
+                        sourceMesh.mTangents[vertexIndex]);
+            }
+        }
+
+        if (!morphTarget.isValid(
+                primitiveAsset.vertices.size()))
+        {
+            return false;
+        }
+
+        primitiveAsset.morphTargets.push_back(
+            std::move(morphTarget));
+    }
+
+    return true;
+}
+
+} // namespace
 
 bool buildMeshPrimitive(
     const aiMesh& sourceMesh,
@@ -99,6 +229,13 @@ bool buildMeshPrimitive(
                 tangent.z,
                 handedness};
         }
+    }
+
+    if (!buildMorphTargets(
+            sourceMesh,
+            primitiveAsset))
+    {
+        return false;
     }
 
     primitiveAsset.indices.reserve(
