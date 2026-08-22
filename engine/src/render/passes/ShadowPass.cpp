@@ -6,6 +6,7 @@
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/SkinningPalette.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 #include <utility>
 
@@ -20,8 +21,12 @@ constexpr std::uint32_t skinningPaletteBinding = 0;
 } // namespace
 
 ShadowPass::ShadowPass(
-    graphics::GraphicsDevice& graphicsDevice) noexcept
-    : graphicsDevice_(graphicsDevice)
+    graphics::GraphicsDevice& graphicsDevice,
+    const asset::AssetRegistry& assetRegistry,
+    RuntimeResourceCache& resourceCache) noexcept
+    : graphicsDevice_(graphicsDevice),
+      assetRegistry_(assetRegistry),
+      resourceCache_(resourceCache)
 {
 }
 
@@ -239,6 +244,70 @@ bool ShadowPass::execute(
         {
             item.skinningPalette->bind(
                 skinningPaletteBinding);
+        }
+
+        const bool alphaMaskEnabled =
+            item.materialClass ==
+                RenderMaterialClass::Masked;
+
+        if (!shader_.setInt(
+                "uAlphaMaskEnabled",
+                alphaMaskEnabled ? 1 : 0))
+        {
+            graphicsDevice_.setPolygonOffset(false);
+            graphicsDevice_.bindFramebuffer(nullptr);
+            graphicsDevice_.setViewport(
+                frame.framebufferSize);
+
+            return false;
+        }
+
+        if (alphaMaskEnabled)
+        {
+            if (item.materialInstance == nullptr)
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            const material::MaterialInstance& instance =
+                *item.materialInstance;
+
+            const graphics::Texture2D& baseColorTexture =
+                resourceCache_.getOrCreateTexture(
+                    instance.baseColorTexture,
+                    assetRegistry_);
+
+            if (!baseColorTexture.isValid())
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            if (!shader_.setVec4(
+                    "uBaseColorFactor",
+                    instance.baseColorFactor) ||
+                !shader_.setFloat(
+                    "uAlphaCutoff",
+                    instance.alphaCutoff))
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            baseColorTexture.bind(0);
         }
 
         graphics::DrawIndexedCommand command;

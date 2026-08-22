@@ -371,29 +371,6 @@ bool RenderExtractor::extract(
                         worldMatrix);
             }
 
-            if (hasFlag(item.flags, RenderItemFlags::CastShadow))
-            {
-                shadowCasterBounds.expand(item.worldBounds);
-
-                ShadowRenderItem shadowItem;
-                shadowItem.primitive = &primitive;
-                shadowItem.vertexArray = vertexArray;
-                shadowItem.skinningPalette =
-                    skinningPalette;
-                shadowItem.world = worldMatrix;
-                renderWorld.shadowItems.push_back(shadowItem);
-            }
-
-            if (!renderWorld.mainView.frustum.intersects(item.worldBounds))
-            {
-                ++renderWorld.renderStats.culledItems;
-                continue;
-            }
-
-            ++renderWorld.renderStats.visibleItems;
-
-            item.primitive = &primitive;
-
             const asset::AssetHandle<asset::MaterialAsset>
                 sourceMaterialHandle =
                     primitive.material();
@@ -440,7 +417,36 @@ bool RenderExtractor::extract(
                     item.flags = item.flags | RenderItemFlags::DoubleSided;
                 }
             }
-            
+
+            if (hasFlag(item.flags, RenderItemFlags::CastShadow)
+                && item.materialClass !=
+                    RenderMaterialClass::Transparent)
+            {
+                shadowCasterBounds.expand(item.worldBounds);
+
+                ShadowRenderItem shadowItem;
+                shadowItem.primitive = &primitive;
+                shadowItem.vertexArray = vertexArray;
+                shadowItem.materialInstance =
+                    item.materialInstance;
+                shadowItem.skinningPalette =
+                    skinningPalette;
+                shadowItem.world = worldMatrix;
+                shadowItem.materialClass =
+                    item.materialClass;
+                renderWorld.shadowItems.push_back(shadowItem);
+            }
+
+            if (!renderWorld.mainView.frustum.intersects(item.worldBounds))
+            {
+                ++renderWorld.renderStats.culledItems;
+                continue;
+            }
+
+            ++renderWorld.renderStats.visibleItems;
+
+            item.primitive = &primitive;
+
             item.world = worldMatrix;
             item.normalMatrix = normalMatrix;
 

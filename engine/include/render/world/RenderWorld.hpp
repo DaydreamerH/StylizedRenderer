@@ -125,9 +125,13 @@ struct ShadowRenderItem
 
     const graphics::VertexArray* vertexArray = nullptr;
 
+    const material::MaterialInstance* materialInstance = nullptr;
+
     const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
+
+    RenderMaterialClass materialClass = RenderMaterialClass::Opaque;
 };
 
 struct RenderView

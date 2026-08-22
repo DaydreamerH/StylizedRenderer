@@ -535,7 +535,9 @@ private:
         auto shadowPass =
             std::make_unique<
                 stylized::render::ShadowPass>(
-                    graphicsDevice());
+                    graphicsDevice(),
+                    assetRegistry_,
+                    *resourceCache_);
 
         if (!shadowPass->initialize())
         {
