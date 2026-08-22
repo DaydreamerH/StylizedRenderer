@@ -116,6 +116,15 @@ bool SkinningPaletteSet::update(
         return false;
     }
 
+    const std::uint64_t poseVersion =
+        scenePose.version();
+
+    if (poseVersion != 0 &&
+        poseVersion == lastPoseVersion_)
+    {
+        return true;
+    }
+
     for (std::size_t nodeIndex = 0;
          nodeIndex < sceneAsset.nodes.size();
          ++nodeIndex)
@@ -194,6 +203,8 @@ bool SkinningPaletteSet::update(
         }
     }
 
+    lastPoseVersion_ = poseVersion;
+
     return true;
 }
 
@@ -227,6 +238,7 @@ void SkinningPaletteSet::clear() noexcept
     paletteCount_ = 0;
     jointMatrixCount_ = 0;
     lastUploadCount_ = 0;
+    lastPoseVersion_ = 0;
 }
 
 std::size_t SkinningPaletteSet::paletteCount()

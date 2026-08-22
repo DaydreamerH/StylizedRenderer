@@ -64,6 +64,7 @@ void ScenePose::clear() noexcept
     resolutionStates_.clear();
 
     worldMatricesDirty_ = true;
+    version_ = 0;
 }
 
 bool ScenePose::resetToBindPose() noexcept
@@ -145,6 +146,7 @@ bool ScenePose::updateWorldMatrices() noexcept
     }
 
     worldMatricesDirty_ = false;
+    advanceVersion();
 
     return true;
 }
@@ -172,9 +174,24 @@ bool ScenePose::worldMatricesDirty() const noexcept
     return worldMatricesDirty_;
 }
 
+std::uint64_t ScenePose::version() const noexcept
+{
+    return version_;
+}
+
 std::size_t ScenePose::nodeCount() const noexcept
 {
     return localTransforms_.size();
+}
+
+void ScenePose::advanceVersion() noexcept
+{
+    ++version_;
+
+    if (version_ == 0)
+    {
+        ++version_;
+    }
 }
 
 bool ScenePose::resolveWorldMatrix(

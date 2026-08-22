@@ -75,6 +75,7 @@ private:
     std::size_t paletteCount_ = 0;
     std::size_t jointMatrixCount_ = 0;
     std::size_t lastUploadCount_ = 0;
+    std::uint64_t lastPoseVersion_ = 0;
 };
 
 } // namespace stylized::render

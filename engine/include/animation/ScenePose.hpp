@@ -49,9 +49,13 @@ public:
 
     [[nodiscard]] bool worldMatricesDirty() const noexcept;
 
+    [[nodiscard]] std::uint64_t version() const noexcept;
+
     [[nodiscard]] std::size_t nodeCount() const noexcept;
 
 private:
+    void advanceVersion() noexcept;
+
     [[nodiscard]] bool resolveWorldMatrix(
         std::size_t nodeIndex) noexcept;
 
@@ -63,6 +67,7 @@ private:
     std::vector<std::uint8_t> resolutionStates_;
 
     bool worldMatricesDirty_ = true;
+    std::uint64_t version_ = 0;
 };
 
 } // namespace stylized::animation
