@@ -185,8 +185,7 @@ bool RenderExtractor::extract(
         materialTemplate,
     RenderWorld& renderWorld) const
 {
-    if (!sceneAsset.isValid() ||
-        !scenePose.isForScene(sceneAsset) ||
+    if (!scenePose.isForScene(sceneAsset) ||
         scenePose.worldMatricesDirty() ||
         scenePose.nodeCount() !=
             sceneAsset.nodes.size() ||

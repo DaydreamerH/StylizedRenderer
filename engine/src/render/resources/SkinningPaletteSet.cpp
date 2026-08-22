@@ -108,8 +108,7 @@ bool SkinningPaletteSet::update(
 {
     lastUploadCount_ = 0;
 
-    if (!sceneAsset.isValid() ||
-        !scenePose.isForScene(sceneAsset) ||
+    if (!scenePose.isForScene(sceneAsset) ||
         scenePose.worldMatricesDirty() ||
         palettes_.size() !=
             sceneAsset.nodes.size())
