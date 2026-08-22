@@ -16,6 +16,7 @@
 #include <render/resources/SkinningPaletteSet.hpp>
 #include <render/renderers/StaticModelRenderer.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
+#include <render/passes/ForwardTransparentPass.hpp>
 #include <render/pipeline/FrameContext.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ShadowPass.hpp>
@@ -380,10 +381,18 @@ protected:
             return;
         }
 
+        renderWorld_.renderStats.drawCalls = 0;
+
         if (forwardOpaquePass_ != nullptr)
         {
-            renderWorld_.renderStats.drawCalls =
+            renderWorld_.renderStats.drawCalls +=
                 forwardOpaquePass_->lastDrawCallCount();
+        }
+
+        if (forwardTransparentPass_ != nullptr)
+        {
+            renderWorld_.renderStats.drawCalls +=
+                forwardTransparentPass_->lastDrawCallCount();
         }
 
         const CpuClock::time_point uiStart =
@@ -406,6 +415,7 @@ protected:
             framePipeline_.get(),
             shadowPass_,
             forwardOpaquePass_,
+            forwardTransparentPass_,
             outlineMaskPass_,
             screenSpaceOutlinePass_,
             postProcessPass_,
@@ -491,6 +501,7 @@ protected:
         framePipeline_.reset();
         shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
+        forwardTransparentPass_ = nullptr;
         outlineMaskPass_ = nullptr;
         screenSpaceOutlinePass_ = nullptr;
         postProcessPass_ = nullptr;
@@ -563,6 +574,27 @@ private:
 
         if (!framePipeline_->addPass(std::move(forwardPass)))
             return false;
+
+        auto transparentPass =
+            std::make_unique<
+                stylized::render::ForwardTransparentPass>(
+                    graphicsDevice(),
+                    assetRegistry_,
+                    *resourceCache_);
+
+        if (!transparentPass->initialize())
+        {
+            return false;
+        }
+
+        forwardTransparentPass_ =
+            transparentPass.get();
+
+        if (!framePipeline_->addPass(
+                std::move(transparentPass)))
+        {
+            return false;
+        }
 
         auto outlineMaskPass =
             std::make_unique<
@@ -1028,6 +1060,8 @@ private:
 
     stylized::render::ShadowPass* shadowPass_ = nullptr;
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;
+    stylized::render::ForwardTransparentPass*
+        forwardTransparentPass_ = nullptr;
     stylized::render::OutlineMaskPass* outlineMaskPass_ = nullptr;
     stylized::render::ScreenSpaceOutlinePass* screenSpaceOutlinePass_ = nullptr;
     stylized::render::PostProcessPass* postProcessPass_ = nullptr;

@@ -39,6 +39,7 @@ class AnimationPlayer;
 namespace stylized::render
 {
 class ForwardOpaquePass;
+class ForwardTransparentPass;
 class FramePipeline;
 class OutlineMaskPass;
 class PostProcessPass;
@@ -81,6 +82,8 @@ public:
         const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,
         const stylized::render::ForwardOpaquePass* forwardPass,
+        const stylized::render::ForwardTransparentPass*
+            transparentPass,
         const stylized::render::OutlineMaskPass* outlineMaskPass,
         stylized::render::ScreenSpaceOutlinePass*
             screenSpaceOutlinePass,

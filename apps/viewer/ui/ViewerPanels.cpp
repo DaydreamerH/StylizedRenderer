@@ -10,6 +10,7 @@
 #include <asset/TextureAsset.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
+#include <render/passes/ForwardTransparentPass.hpp>
 #include <render/passes/OutlineMaskPass.hpp>
 #include <render/passes/PostProcessPass.hpp>
 #include <render/passes/ScreenSpaceOutlinePass.hpp>
@@ -671,6 +672,8 @@ void ViewerPanels::draw(
     const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
+    const stylized::render::ForwardTransparentPass*
+        transparentPass,
     const stylized::render::OutlineMaskPass* outlineMaskPass,
     stylized::render::ScreenSpaceOutlinePass*
         screenSpaceOutlinePass,
@@ -2112,17 +2115,18 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
-        "OutlineMaskPass",
-        outlineMaskPass == nullptr
+        "ForwardTransparentPass",
+        transparentPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(2)
+                    !framePipeline
+                        ->passLastExecutionSucceeded(2)
                 ? "Failed"
-                : outlineMaskPass->lastDrawCallCount() == 0
+                : transparentPass->lastDrawCallCount() == 0
                     ? "Idle"
                     : "Active",
-        outlineMaskPass != nullptr
-            ? outlineMaskPass->lastDrawCallCount()
+        transparentPass != nullptr
+            ? transparentPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
             framePipeline->passHasGpuTime(2),
@@ -2131,12 +2135,31 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
+        "OutlineMaskPass",
+        outlineMaskPass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline->passLastExecutionSucceeded(3)
+                ? "Failed"
+                : outlineMaskPass->lastDrawCallCount() == 0
+                    ? "Idle"
+                    : "Active",
+        outlineMaskPass != nullptr
+            ? outlineMaskPass->lastDrawCallCount()
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(3),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(3)
+            : 0.0);
+
+    drawPassStatus(
         "ScreenSpaceOutlinePass",
         screenSpaceOutlinePass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
                     !framePipeline
-                        ->passLastExecutionSucceeded(3)
+                        ->passLastExecutionSucceeded(4)
                 ? "Failed"
                 : screenSpaceOutlinePass->settings().debugView !=
                         stylized::render::OutlineDebugView::Final
@@ -2149,10 +2172,10 @@ void ViewerPanels::draw(
                 ->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(3),
+            framePipeline->passHasGpuTime(4),
         framePipeline != nullptr
             ? framePipeline
-                ->passGpuTimeMilliseconds(3)
+                ->passGpuTimeMilliseconds(4)
             : 0.0);
 
     drawPassStatus(
@@ -2160,16 +2183,16 @@ void ViewerPanels::draw(
         postProcessPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(4)
+                    !framePipeline->passLastExecutionSucceeded(5)
                 ? "Failed"
                 : "Active",
         postProcessPass != nullptr
             ? postProcessPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(4),
+            framePipeline->passHasGpuTime(5),
         framePipeline != nullptr
-            ? framePipeline->passGpuTimeMilliseconds(4)
+            ? framePipeline->passGpuTimeMilliseconds(5)
             : 0.0);
 
         ImGui::EndTable();
