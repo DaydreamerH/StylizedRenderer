@@ -49,6 +49,8 @@ const char* shaderStageName(const GLenum stage) noexcept
         return "Vertex";
     case GL_FRAGMENT_SHADER:
         return "Fragment";
+    case GL_COMPUTE_SHADER:
+        return "Compute";
     }
 
     return "Unkonwn";
@@ -141,13 +143,25 @@ void printProgramLinkLog(
         log.data());
 
     std::cerr
-        << "Shader program linking failed.\n"
-        << "Vertex file: "
-        << desc.vertexShaderPath.string()
-        << '\n'
-        << "Fragment file: "
-        << desc.fragmentShaderPath.string()
-        << '\n';
+        << "Shader program linking failed.\n";
+
+    if (!desc.computeShaderPath.empty())
+    {
+        std::cerr
+            << "Compute file: "
+            << desc.computeShaderPath.string()
+            << '\n';
+    }
+    else
+    {
+        std::cerr
+            << "Vertex file: "
+            << desc.vertexShaderPath.string()
+            << '\n'
+            << "Fragment file: "
+            << desc.fragmentShaderPath.string()
+            << '\n';
+    }
 
     if (writtenLength > 0)
     {
@@ -221,6 +235,73 @@ GLuint compileShader(const GLenum stage, const std::filesystem::path& path, cons
 
 GLuint buildProgram(const ShaderProgramDesc& desc)
 {
+    if (!desc.computeShaderPath.empty())
+    {
+        if (!desc.vertexShaderPath.empty() ||
+            !desc.fragmentShaderPath.empty())
+        {
+            std::cerr
+                << "A compute program cannot contain graphics "
+                << "shader stages.\n";
+
+            return 0;
+        }
+
+        const GLuint computeShader =
+            compileShader(
+                GL_COMPUTE_SHADER,
+                desc.computeShaderPath,
+                desc.debugName);
+
+        if (computeShader == 0)
+        {
+            return 0;
+        }
+
+        const GLuint program = glCreateProgram();
+
+        if (program == 0)
+        {
+            glDeleteShader(computeShader);
+            return 0;
+        }
+
+        glAttachShader(program, computeShader);
+        glLinkProgram(program);
+        glDetachShader(program, computeShader);
+        glDeleteShader(computeShader);
+
+        GLint linkStatus = GL_FALSE;
+        glGetProgramiv(
+            program,
+            GL_LINK_STATUS,
+            &linkStatus);
+
+        if (linkStatus != GL_TRUE)
+        {
+            printProgramLinkLog(program, desc);
+            glDeleteProgram(program);
+            return 0;
+        }
+
+        setObjectLabel(
+            GL_PROGRAM,
+            program,
+            desc.debugName);
+
+        return program;
+    }
+
+    if (desc.vertexShaderPath.empty() ||
+        desc.fragmentShaderPath.empty())
+    {
+        std::cerr
+            << "A graphics program requires vertex and fragment "
+            << "shader files.\n";
+
+        return 0;
+    }
+
     const GLuint vertexShader =
         compileShader(
             GL_VERTEX_SHADER,
@@ -372,6 +453,36 @@ void ShaderProgram::bind() const noexcept
     glUseProgram(id_);
 }
 
+bool ShaderProgram::dispatchCompute(
+    const std::uint32_t groupCountX,
+    const std::uint32_t groupCountY,
+    const std::uint32_t groupCountZ) const noexcept
+{
+    if (!isValid() ||
+        groupCountX == 0 ||
+        groupCountY == 0 ||
+        groupCountZ == 0)
+    {
+        return false;
+    }
+
+    glUseProgram(id_);
+    glDispatchCompute(
+        groupCountX,
+        groupCountY,
+        groupCountZ);
+
+    return true;
+}
+
+void ShaderProgram::makeComputeWritesVisibleToVertexInput()
+    const noexcept
+{
+    glMemoryBarrier(
+        GL_SHADER_STORAGE_BARRIER_BIT |
+        GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+}
+
 bool ShaderProgram::setInt(
     const std::string_view name,
     const int32_t value)
@@ -385,6 +496,26 @@ bool ShaderProgram::setInt(
     }
 
     glProgramUniform1i(
+        id_,
+        location,
+        value);
+
+    return true;
+}
+
+bool ShaderProgram::setUInt(
+    const std::string_view name,
+    const std::uint32_t value)
+{
+    const int32_t location =
+        uniformLocation(name);
+
+    if (location < 0)
+    {
+        return false;
+    }
+
+    glProgramUniform1ui(
         id_,
         location,
         value);

@@ -525,6 +525,25 @@ protected:
 private:
     bool createRuntimeResources()
     {
+        stylized::graphics::ShaderProgramDesc
+            morphComputeProgramDesc;
+        morphComputeProgramDesc.computeShaderPath =
+            "assets/shaders/morph/morph.comp";
+        morphComputeProgramDesc.debugName =
+            "GPU Morph";
+
+        morphComputeProgram_ =
+            graphicsDevice().createShaderProgram(
+                morphComputeProgramDesc);
+
+        if (!morphComputeProgram_.isValid())
+        {
+            std::cerr
+                << "Failed to create GPU morph program.\n";
+
+            return false;
+        }
+
         if (!createMaterialTemplates())
         {
             std::cerr
@@ -802,6 +821,7 @@ private:
             if (runtimeMesh == nullptr ||
                 !morphMeshInstances_[nodeIndex].initialize(
                     graphicsDevice(),
+                    morphComputeProgram_,
                     *meshAsset,
                     *runtimeMesh))
             {
@@ -1200,6 +1220,9 @@ private:
 
     stylized::render::SkinningPaletteSet
         skinningPalettes_;
+
+    stylized::graphics::ShaderProgram
+        morphComputeProgram_;
 
     std::vector<stylized::render::RuntimeMeshInstance>
         morphMeshInstances_;

@@ -23,6 +23,7 @@ namespace stylized::graphics
 {
 
 class GraphicsDevice;
+class ShaderProgram;
 
 } // namespace stylized::graphics
 
@@ -63,6 +64,7 @@ public:
 
     [[nodiscard]] bool initialize(
         graphics::GraphicsDevice& graphicsDevice,
+        graphics::ShaderProgram& morphComputeProgram,
         const asset::MeshAsset& meshAsset,
         const RuntimeMesh& runtimeMesh);
 
@@ -117,16 +119,11 @@ private:
         animation::MorphState morphState;
 
         graphics::Buffer vertexBuffer;
+        graphics::Buffer baseVertexBuffer;
+        graphics::Buffer morphOffsetBuffer;
+        graphics::Buffer morphDeltaBuffer;
+        graphics::Buffer morphWeightBuffer;
         graphics::VertexArray vertexArray;
-
-        std::vector<asset::StaticMeshVertex>
-            morphedVertices;
-
-        std::vector<detail::MorphedSkinnedVertex>
-            skinnedVertices;
-
-        std::vector<std::vector<std::uint32_t>>
-            morphVertexIndices;
 
         math::Bounds localBounds;
 
@@ -147,6 +144,8 @@ private:
 
     const asset::MeshAsset* meshAsset_ = nullptr;
     const RuntimeMesh* runtimeMesh_ = nullptr;
+    graphics::ShaderProgram*
+        morphComputeProgram_ = nullptr;
 
     std::vector<PrimitiveInstance> primitives_;
 

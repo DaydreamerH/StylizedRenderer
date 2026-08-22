@@ -21,6 +21,7 @@ struct ShaderProgramDesc
 {
     std::filesystem::path vertexShaderPath;
     std::filesystem::path fragmentShaderPath;
+    std::filesystem::path computeShaderPath;
     std::string debugName;
 };
 
@@ -40,7 +41,17 @@ public:
 
     void bind() const noexcept;
 
+    [[nodiscard]] bool dispatchCompute(
+        std::uint32_t groupCountX,
+        std::uint32_t groupCountY = 1,
+        std::uint32_t groupCountZ = 1) const noexcept;
+
+    void makeComputeWritesVisibleToVertexInput()
+        const noexcept;
+
     bool setInt(std::string_view name, int32_t value);
+
+    bool setUInt(std::string_view name, std::uint32_t value);
 
     bool setFloat(std::string_view name, float value);
 
