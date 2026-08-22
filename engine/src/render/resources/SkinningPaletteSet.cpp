@@ -11,9 +11,102 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
+
+#include <glm/mat4x4.hpp>
 
 namespace stylized::render
 {
+
+class SkinningPaletteGroup final
+{
+public:
+    std::uint32_t meshNodeIndex = 0;
+    asset::SkinAsset skin;
+    SkinningPalette palette;
+};
+
+namespace
+{
+
+[[nodiscard]] bool matricesEqual(
+    const glm::mat4& left,
+    const glm::mat4& right) noexcept
+{
+    for (glm::length_t column = 0;
+         column < 4;
+         ++column)
+    {
+        for (glm::length_t row = 0;
+             row < 4;
+             ++row)
+        {
+            if (left[column][row] !=
+                right[column][row])
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+[[nodiscard]] bool skinDefinitionsEqual(
+    const asset::SkinAsset& left,
+    const asset::SkinAsset& right) noexcept
+{
+    if (left.jointNodeIndices !=
+            right.jointNodeIndices ||
+        left.inverseBindMatrices.size() !=
+            right.inverseBindMatrices.size())
+    {
+        return false;
+    }
+
+    for (std::size_t jointIndex = 0;
+         jointIndex <
+             left.inverseBindMatrices.size();
+         ++jointIndex)
+    {
+        if (!matricesEqual(
+                left.inverseBindMatrices[jointIndex],
+                right.inverseBindMatrices[jointIndex]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+[[nodiscard]] bool mergeJointBounds(
+    asset::SkinAsset& destination,
+    const asset::SkinAsset& source) noexcept
+{
+    if (!skinDefinitionsEqual(
+            destination,
+            source) ||
+        destination.jointLocalBounds.size() !=
+            source.jointLocalBounds.size())
+    {
+        return false;
+    }
+
+    for (std::size_t jointIndex = 0;
+         jointIndex <
+             destination.jointLocalBounds.size();
+         ++jointIndex)
+    {
+        destination.jointLocalBounds[jointIndex]
+            .expand(
+                source.jointLocalBounds[jointIndex]);
+    }
+
+    return true;
+}
+
+} // namespace
 
 SkinningPaletteSet::SkinningPaletteSet() = default;
 
@@ -31,7 +124,8 @@ bool SkinningPaletteSet::initialize(
         return false;
     }
 
-    palettes_.resize(sceneAsset.nodes.size());
+    paletteLookup_.resize(
+        sceneAsset.nodes.size());
 
     for (std::size_t nodeIndex = 0;
          nodeIndex < sceneAsset.nodes.size();
@@ -55,10 +149,9 @@ bool SkinningPaletteSet::initialize(
             return false;
         }
 
-        std::vector<
-            std::unique_ptr<SkinningPalette>>&
+        std::vector<SkinningPalette*>&
             nodePalettes =
-                palettes_[nodeIndex];
+                paletteLookup_[nodeIndex];
 
         nodePalettes.resize(
             mesh->primitives.size());
@@ -78,23 +171,64 @@ bool SkinningPaletteSet::initialize(
                 continue;
             }
 
-            auto palette =
-                std::make_unique<SkinningPalette>();
+            SkinningPaletteGroup* group = nullptr;
 
-            if (!palette->initializeGpuBuffer(
-                    graphicsDevice,
-                    primitive.skin))
+            for (const std::unique_ptr<
+                     SkinningPaletteGroup>&
+                     candidate : paletteGroups_)
+            {
+                if (candidate->meshNodeIndex ==
+                        nodeIndex &&
+                    skinDefinitionsEqual(
+                        candidate->skin,
+                        primitive.skin))
+                {
+                    group = candidate.get();
+                    break;
+                }
+            }
+
+            if (group == nullptr)
+            {
+                auto newGroup =
+                    std::make_unique<
+                        SkinningPaletteGroup>();
+
+                newGroup->meshNodeIndex =
+                    static_cast<std::uint32_t>(
+                        nodeIndex);
+
+                newGroup->skin = primitive.skin;
+
+                if (!newGroup->palette
+                         .initializeGpuBuffer(
+                             graphicsDevice,
+                             newGroup->skin))
+                {
+                    clear();
+                    return false;
+                }
+
+                group = newGroup.get();
+
+                paletteGroups_.push_back(
+                    std::move(newGroup));
+
+                ++paletteCount_;
+                jointMatrixCount_ +=
+                    primitive.skin
+                        .jointNodeIndices.size();
+            }
+            else if (!mergeJointBounds(
+                         group->skin,
+                         primitive.skin))
             {
                 clear();
                 return false;
             }
 
             nodePalettes[primitiveIndex] =
-                std::move(palette);
-
-            ++paletteCount_;
-            jointMatrixCount_ +=
-                primitive.skin.jointNodeIndices.size();
+                &group->palette;
         }
     }
 
@@ -103,14 +237,13 @@ bool SkinningPaletteSet::initialize(
 
 bool SkinningPaletteSet::update(
     const asset::SceneAsset& sceneAsset,
-    const asset::AssetRegistry& assetRegistry,
     const animation::ScenePose& scenePose)
 {
     lastUploadCount_ = 0;
 
     if (!scenePose.isForScene(sceneAsset) ||
         scenePose.worldMatricesDirty() ||
-        palettes_.size() !=
+        paletteLookup_.size() !=
             sceneAsset.nodes.size())
     {
         return false;
@@ -125,82 +258,29 @@ bool SkinningPaletteSet::update(
         return true;
     }
 
-    for (std::size_t nodeIndex = 0;
-         nodeIndex < sceneAsset.nodes.size();
-         ++nodeIndex)
+    for (const std::unique_ptr<
+             SkinningPaletteGroup>& group :
+         paletteGroups_)
     {
-        const asset::SceneNodeAsset& node =
-            sceneAsset.nodes[nodeIndex];
-
-        if (node.mesh.isNull())
-        {
-            continue;
-        }
-
-        const asset::MeshAsset* mesh =
-            assetRegistry.get(node.mesh);
-
-        if (mesh == nullptr)
+        if (group == nullptr)
         {
             return false;
         }
 
-        const std::vector<
-            std::unique_ptr<SkinningPalette>>&
-            nodePalettes =
-                palettes_[nodeIndex];
-
-        if (nodePalettes.size() !=
-            mesh->primitives.size())
+        if (!group->palette.update(
+                group->skin,
+                group->meshNodeIndex,
+                scenePose))
         {
             return false;
         }
 
-        for (std::size_t primitiveIndex = 0;
-             primitiveIndex <
-                 mesh->primitives.size();
-             ++primitiveIndex)
+        if (!group->palette.upload())
         {
-            const asset::MeshPrimitiveAsset&
-                primitive =
-                    mesh->primitives[
-                        primitiveIndex];
-
-            const std::unique_ptr<SkinningPalette>&
-                palette =
-                    nodePalettes[primitiveIndex];
-
-            if (!primitive.hasSkin())
-            {
-                if (palette != nullptr)
-                {
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (palette == nullptr)
-            {
-                return false;
-            }
-
-            if (!palette->update(
-                    primitive.skin,
-                    static_cast<std::uint32_t>(
-                        nodeIndex),
-                    scenePose))
-            {
-                return false;
-            }
-
-            if (!palette->upload())
-            {
-                return false;
-            }
-
-            ++lastUploadCount_;
+            return false;
         }
+
+        ++lastUploadCount_;
     }
 
     lastPoseVersion_ = poseVersion;
@@ -213,27 +293,27 @@ const SkinningPalette* SkinningPaletteSet::find(
     const std::size_t primitiveIndex)
     const noexcept
 {
-    if (nodeIndex >= palettes_.size())
+    if (nodeIndex >= paletteLookup_.size())
     {
         return nullptr;
     }
 
-    const std::vector<
-        std::unique_ptr<SkinningPalette>>&
+    const std::vector<SkinningPalette*>&
         nodePalettes =
-            palettes_[nodeIndex];
+            paletteLookup_[nodeIndex];
 
     if (primitiveIndex >= nodePalettes.size())
     {
         return nullptr;
     }
 
-    return nodePalettes[primitiveIndex].get();
+    return nodePalettes[primitiveIndex];
 }
 
 void SkinningPaletteSet::clear() noexcept
 {
-    palettes_.clear();
+    paletteLookup_.clear();
+    paletteGroups_.clear();
 
     paletteCount_ = 0;
     jointMatrixCount_ = 0;

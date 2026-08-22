@@ -195,7 +195,6 @@ protected:
             const bool skinningUpdated =
                 skinningPalettes_.update(
                     *sceneAsset,
-                    assetRegistry_,
                     scenePose_);
 
             updateCpuTiming(
@@ -689,7 +688,6 @@ private:
 
         if (!skinningPalettes_.update(
                 *sceneAsset,
-                assetRegistry_,
                 scenePose_))
         {
             std::cerr

@@ -33,6 +33,7 @@ namespace stylized::render
 {
 
 class SkinningPalette;
+class SkinningPaletteGroup;
 
 class SkinningPaletteSet final
     : public core::NonCopyable
@@ -48,7 +49,6 @@ public:
 
     [[nodiscard]] bool update(
         const asset::SceneAsset& sceneAsset,
-        const asset::AssetRegistry& assetRegistry,
         const animation::ScenePose& scenePose);
 
     [[nodiscard]] const SkinningPalette* find(
@@ -69,8 +69,12 @@ public:
 private:
     std::vector<
         std::vector<
-            std::unique_ptr<SkinningPalette>>>
-        palettes_;
+            SkinningPalette*>>
+        paletteLookup_;
+
+    std::vector<
+        std::unique_ptr<SkinningPaletteGroup>>
+        paletteGroups_;
 
     std::size_t paletteCount_ = 0;
     std::size_t jointMatrixCount_ = 0;
