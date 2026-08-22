@@ -35,6 +35,7 @@ add_library(stylized_engine STATIC
     include/math/Frustum.hpp
     include/platform/Window.hpp
     include/render/passes/ForwardOpaquePass.hpp
+    include/render/passes/ForwardTransparentPass.hpp
     include/render/passes/OutlineMaskPass.hpp
     include/render/passes/PostProcessPass.hpp
     include/render/passes/ScreenSpaceOutlinePass.hpp
@@ -89,6 +90,7 @@ add_library(stylized_engine STATIC
     src/math/Frustum.cpp
     src/platform/Window.cpp
     src/render/passes/ForwardOpaquePass.cpp
+    src/render/passes/ForwardTransparentPass.cpp
     src/render/passes/OutlineMaskPass.cpp
     src/render/passes/PostProcessPass.cpp
     src/render/passes/ScreenSpaceOutlinePass.cpp
