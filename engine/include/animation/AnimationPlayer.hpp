@@ -12,6 +12,7 @@ namespace stylized::animation
 {
 
 class ScenePose;
+class SceneMorphPose;
 
 class AnimationPlayer final
 {
@@ -32,7 +33,8 @@ public:
     [[nodiscard]] bool update(
         float deltaTime,
         const asset::SceneAsset& sceneAsset,
-        ScenePose& pose) noexcept;
+        ScenePose& pose,
+        SceneMorphPose& morphPose) noexcept;
 
     [[nodiscard]] const asset::AnimationClipAsset*
         clip() const noexcept;
@@ -45,7 +47,8 @@ public:
 
 private:
     [[nodiscard]] bool sample(
-        ScenePose& pose) noexcept;
+        ScenePose& pose,
+        SceneMorphPose& morphPose) noexcept;
 
     const asset::AnimationClipAsset* clip_ = nullptr;
 

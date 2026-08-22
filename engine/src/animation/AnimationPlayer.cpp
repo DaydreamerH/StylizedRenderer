@@ -1,6 +1,7 @@
 #include <animation/AnimationPlayer.hpp>
 
 #include <animation/ScenePose.hpp>
+#include <animation/SceneMorphPose.hpp>
 #include <asset/AnimationAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Transform.hpp>
@@ -167,6 +168,90 @@ template<typename Key>
             factor));
 }
 
+[[nodiscard]] bool sampleMorphTrack(
+    const asset::NodeMorphAnimationChannelAsset& channel,
+    const float timeSeconds,
+    std::vector<float>& sampledWeights)
+{
+    if (channel.keys.empty() ||
+        channel.targetCount == 0)
+    {
+        return false;
+    }
+
+    const auto copyKey =
+        [&sampledWeights](
+            const asset::MorphWeightKey& key)
+        {
+            sampledWeights = key.weights;
+        };
+
+    if (channel.keys.size() == 1 ||
+        timeSeconds <=
+            channel.keys.front().timeSeconds)
+    {
+        copyKey(channel.keys.front());
+        return true;
+    }
+
+    if (timeSeconds >=
+        channel.keys.back().timeSeconds)
+    {
+        copyKey(channel.keys.back());
+        return true;
+    }
+
+    const std::size_t rightIndex =
+        findRightKey(channel.keys, timeSeconds);
+
+    if (rightIndex == 0 ||
+        rightIndex >= channel.keys.size())
+    {
+        copyKey(channel.keys.back());
+        return true;
+    }
+
+    const asset::MorphWeightKey& left =
+        channel.keys[rightIndex - 1];
+    const asset::MorphWeightKey& right =
+        channel.keys[rightIndex];
+
+    if (left.weights.size() != channel.targetCount ||
+        right.weights.size() != channel.targetCount)
+    {
+        return false;
+    }
+
+    const float interval =
+        right.timeSeconds - left.timeSeconds;
+
+    if (interval <= minimumKeyInterval)
+    {
+        copyKey(right);
+        return true;
+    }
+
+    const float factor = std::clamp(
+        (timeSeconds - left.timeSeconds) / interval,
+        0.0F,
+        1.0F);
+
+    sampledWeights.resize(channel.targetCount);
+
+    for (std::size_t targetIndex = 0;
+         targetIndex < channel.targetCount;
+         ++targetIndex)
+    {
+        sampledWeights[targetIndex] =
+            std::lerp(
+                left.weights[targetIndex],
+                right.weights[targetIndex],
+                factor);
+    }
+
+    return true;
+}
+
 } // namespace
 
 bool AnimationPlayer::setClip(
@@ -175,7 +260,8 @@ bool AnimationPlayer::setClip(
     if (clip == nullptr ||
         !std::isfinite(clip->durationSeconds) ||
         clip->durationSeconds <= 0.0F ||
-        clip->channels.empty())
+        (clip->channels.empty() &&
+         clip->morphChannels.empty()))
     {
         return false;
     }
@@ -253,12 +339,14 @@ void AnimationPlayer::seek(
 bool AnimationPlayer::update(
     const float deltaTime,
     const asset::SceneAsset& sceneAsset,
-    ScenePose& pose) noexcept
+    ScenePose& pose,
+    SceneMorphPose& morphPose) noexcept
 {
     if (clip_ == nullptr ||
         !std::isfinite(deltaTime) ||
         deltaTime < 0.0F ||
-        !pose.isForScene(sceneAsset))
+        !pose.isForScene(sceneAsset) ||
+        !morphPose.isForScene(sceneAsset))
     {
         return false;
     }
@@ -318,10 +406,12 @@ bool AnimationPlayer::update(
             return false;
         }
 
+        morphPose.reset();
+
         resetPoseOnNextSample_ = false;
     }
 
-    if (!sample(pose))
+    if (!sample(pose, morphPose))
     {
         return false;
     }
@@ -358,12 +448,15 @@ float AnimationPlayer::playbackSpeed() const noexcept
 }
 
 bool AnimationPlayer::sample(
-    ScenePose& pose) noexcept
+    ScenePose& pose,
+    SceneMorphPose& morphPose) noexcept
 {
     if (clip_ == nullptr)
     {
         return false;
     }
+
+    bool transformsChanged = false;
 
     for (const asset::NodeAnimationChannelAsset& channel :
          clip_->channels)
@@ -415,9 +508,35 @@ bool AnimationPlayer::sample(
         {
             return false;
         }
+
+
+        transformsChanged = true;
     }
 
-    return pose.updateWorldMatrices();
+    if (transformsChanged &&
+        !pose.updateWorldMatrices())
+    {
+        return false;
+    }
+
+    std::vector<float> sampledWeights;
+
+    for (const asset::NodeMorphAnimationChannelAsset& channel :
+         clip_->morphChannels)
+    {
+        if (!sampleMorphTrack(
+                channel,
+                currentTime_,
+                sampledWeights) ||
+            !morphPose.setWeights(
+                channel.nodeIndex,
+                sampledWeights))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace stylized::animation
