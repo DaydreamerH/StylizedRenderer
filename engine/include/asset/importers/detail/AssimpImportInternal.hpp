@@ -51,6 +51,7 @@ struct StagedScene
 {
     SceneAsset asset;
     std::vector<std::optional<std::size_t>> meshIndices;
+    std::vector<const aiNode*> sourceNodes;
 
     std::unordered_map<
         std::string,

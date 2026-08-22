@@ -211,6 +211,7 @@ namespace
 
     scene.asset.nodes.push_back(std::move(node));
     scene.meshIndices.push_back(stagedMeshIndex);
+    scene.sourceNodes.push_back(&sourceNode);
 
     scene.nodeIndicesByName[
         scene.asset.nodes.back().name
@@ -313,6 +314,8 @@ bool stageScene(
 
     return
         scene.meshIndices.size() ==
+            scene.asset.nodes.size() &&
+        scene.sourceNodes.size() ==
             scene.asset.nodes.size() &&
         scene.asset.isValid();
 }

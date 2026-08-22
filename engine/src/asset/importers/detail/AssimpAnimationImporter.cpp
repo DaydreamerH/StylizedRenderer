@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -204,6 +205,254 @@ constexpr float minimumQuaternionLengthSquared = 1.0e-8F;
             channel.scales);
 }
 
+[[nodiscard]] SceneNodeLookupResult findMorphNodeIndex(
+    const aiScene& importedScene,
+    const StagedScene& scene,
+    const std::string& channelName,
+    std::uint32_t& nodeIndex) noexcept
+{
+    const SceneNodeLookupResult nodeLookup =
+        findSceneNodeIndex(
+            scene,
+            channelName,
+            nodeIndex);
+
+    if (nodeLookup != SceneNodeLookupResult::Missing)
+    {
+        return nodeLookup;
+    }
+
+    std::optional<std::uint32_t> matchedNode;
+
+    for (std::size_t candidateIndex = 0;
+         candidateIndex < scene.sourceNodes.size();
+         ++candidateIndex)
+    {
+        const aiNode* sourceNode =
+            scene.sourceNodes[candidateIndex];
+
+        if (sourceNode == nullptr ||
+            (sourceNode->mNumMeshes > 0 &&
+             sourceNode->mMeshes == nullptr))
+        {
+            return SceneNodeLookupResult::Missing;
+        }
+
+        bool matches = false;
+
+        for (unsigned int meshOffset = 0;
+             meshOffset < sourceNode->mNumMeshes;
+             ++meshOffset)
+        {
+            const unsigned int meshIndex =
+                sourceNode->mMeshes[meshOffset];
+
+            if (meshIndex >= importedScene.mNumMeshes ||
+                importedScene.mMeshes == nullptr ||
+                importedScene.mMeshes[meshIndex] == nullptr)
+            {
+                return SceneNodeLookupResult::Missing;
+            }
+
+            if (channelName ==
+                importedScene.mMeshes[meshIndex]
+                    ->mName.C_Str())
+            {
+                matches = true;
+                break;
+            }
+        }
+
+        if (!matches)
+        {
+            continue;
+        }
+
+        if (matchedNode.has_value())
+        {
+            nodeIndex =
+                SceneNodeAsset::invalidNodeIndex;
+
+            return SceneNodeLookupResult::Ambiguous;
+        }
+
+        matchedNode = static_cast<std::uint32_t>(
+            candidateIndex);
+    }
+
+    if (!matchedNode.has_value())
+    {
+        nodeIndex = SceneNodeAsset::invalidNodeIndex;
+        return SceneNodeLookupResult::Missing;
+    }
+
+    nodeIndex = *matchedNode;
+    return SceneNodeLookupResult::Found;
+}
+
+[[nodiscard]] bool findMorphTargetCount(
+    const aiScene& importedScene,
+    const StagedScene& scene,
+    const std::uint32_t nodeIndex,
+    std::size_t& targetCount) noexcept
+{
+    targetCount = 0;
+
+    if (nodeIndex >= scene.sourceNodes.size() ||
+        importedScene.mMeshes == nullptr)
+    {
+        return false;
+    }
+
+    const aiNode* sourceNode = scene.sourceNodes[nodeIndex];
+
+    if (sourceNode == nullptr ||
+        sourceNode->mNumMeshes == 0 ||
+        sourceNode->mMeshes == nullptr)
+    {
+        return false;
+    }
+
+    for (unsigned int meshOffset = 0;
+         meshOffset < sourceNode->mNumMeshes;
+         ++meshOffset)
+    {
+        const unsigned int meshIndex =
+            sourceNode->mMeshes[meshOffset];
+
+        if (meshIndex >= importedScene.mNumMeshes ||
+            importedScene.mMeshes[meshIndex] == nullptr)
+        {
+            return false;
+        }
+
+        const std::size_t meshTargetCount =
+            importedScene.mMeshes[meshIndex]
+                ->mNumAnimMeshes;
+
+        if (meshTargetCount == 0)
+        {
+            continue;
+        }
+
+        if (targetCount == 0)
+        {
+            targetCount = meshTargetCount;
+        }
+        else if (targetCount != meshTargetCount)
+        {
+            return false;
+        }
+    }
+
+    return targetCount > 0;
+}
+
+[[nodiscard]] bool stageMorphChannel(
+    const aiScene& importedScene,
+    const aiMeshMorphAnim& sourceChannel,
+    const double ticksPerSecond,
+    const StagedScene& scene,
+    NodeMorphAnimationChannelAsset& channel)
+{
+    const std::string channelName =
+        sourceChannel.mName.C_Str();
+
+    if (findMorphNodeIndex(
+            importedScene,
+            scene,
+            channelName,
+            channel.nodeIndex) !=
+        SceneNodeLookupResult::Found)
+    {
+        std::cerr
+            << "Cannot uniquely match Morph animation node: "
+            << channelName
+            << '\n';
+
+        return false;
+    }
+
+    if (!findMorphTargetCount(
+            importedScene,
+            scene,
+            channel.nodeIndex,
+            channel.targetCount) ||
+        sourceChannel.mNumKeys == 0 ||
+        sourceChannel.mKeys == nullptr)
+    {
+        return false;
+    }
+
+    channel.keys.clear();
+    channel.keys.reserve(sourceChannel.mNumKeys);
+
+    for (unsigned int keyIndex = 0;
+         keyIndex < sourceChannel.mNumKeys;
+         ++keyIndex)
+    {
+        const aiMeshMorphKey& sourceKey =
+            sourceChannel.mKeys[keyIndex];
+
+        if (sourceKey.mNumValuesAndWeights > 0 &&
+            (sourceKey.mValues == nullptr ||
+             sourceKey.mWeights == nullptr))
+        {
+            return false;
+        }
+
+        MorphWeightKey key;
+
+        if (!convertTime(
+                sourceKey.mTime,
+                ticksPerSecond,
+                key.timeSeconds))
+        {
+            return false;
+        }
+
+        key.weights.assign(
+            channel.targetCount,
+            0.0F);
+
+        std::vector<bool> assigned(
+            channel.targetCount,
+            false);
+
+        for (unsigned int valueIndex = 0;
+             valueIndex <
+                 sourceKey.mNumValuesAndWeights;
+             ++valueIndex)
+        {
+            const unsigned int targetIndex =
+                sourceKey.mValues[valueIndex];
+            const double sourceWeight =
+                sourceKey.mWeights[valueIndex];
+
+            if (targetIndex >= channel.targetCount ||
+                assigned[targetIndex] ||
+                !std::isfinite(sourceWeight) ||
+                sourceWeight >
+                    static_cast<double>(
+                        std::numeric_limits<float>::max()) ||
+                sourceWeight <
+                    -static_cast<double>(
+                        std::numeric_limits<float>::max()))
+            {
+                return false;
+            }
+
+            key.weights[targetIndex] =
+                static_cast<float>(sourceWeight);
+            assigned[targetIndex] = true;
+        }
+
+        channel.keys.push_back(std::move(key));
+    }
+
+    return true;
+}
+
 } // namespace
 
 bool stageAnimations(
@@ -232,12 +481,16 @@ bool stageAnimations(
             return false;
         }
 
-        if (sourceAnimation->mNumChannels == 0)
+        if (sourceAnimation->mNumChannels == 0 &&
+            sourceAnimation->mNumMorphMeshChannels == 0)
         {
             continue;
         }
 
-        if (sourceAnimation->mChannels == nullptr)
+        if ((sourceAnimation->mNumChannels > 0 &&
+             sourceAnimation->mChannels == nullptr) ||
+            (sourceAnimation->mNumMorphMeshChannels > 0 &&
+             sourceAnimation->mMorphMeshChannels == nullptr))
         {
             return false;
         }
@@ -284,6 +537,8 @@ bool stageAnimations(
 
         clip.channels.reserve(
             sourceAnimation->mNumChannels);
+        clip.morphChannels.reserve(
+            sourceAnimation->mNumMorphMeshChannels);
 
         for (unsigned int channelIndex = 0;
              channelIndex <
@@ -320,7 +575,43 @@ bool stageAnimations(
                 std::move(channel));
         }
 
-        if (clip.channels.empty())
+        for (unsigned int channelIndex = 0;
+             channelIndex <
+                 sourceAnimation->mNumMorphMeshChannels;
+             ++channelIndex)
+        {
+            const aiMeshMorphAnim* sourceChannel =
+                sourceAnimation
+                    ->mMorphMeshChannels[channelIndex];
+
+            if (sourceChannel == nullptr)
+            {
+                return false;
+            }
+
+            if (sourceChannel->mNumKeys == 0)
+            {
+                continue;
+            }
+
+            NodeMorphAnimationChannelAsset channel;
+
+            if (!stageMorphChannel(
+                    importedScene,
+                    *sourceChannel,
+                    ticksPerSecond,
+                    scene,
+                    channel))
+            {
+                return false;
+            }
+
+            clip.morphChannels.push_back(
+                std::move(channel));
+        }
+
+        if (clip.channels.empty() &&
+            clip.morphChannels.empty())
         {
             continue;
         }

@@ -138,13 +138,59 @@ bool NodeAnimationChannelAsset::isValid(
         });
 }
 
+bool NodeMorphAnimationChannelAsset::isValid(
+    const std::size_t nodeCount,
+    const float durationSeconds) const noexcept
+{
+    if (nodeIndex >= nodeCount ||
+        targetCount == 0 ||
+        keys.empty())
+    {
+        return false;
+    }
+
+    float previousTime = 0.0F;
+    bool hasPreviousTime = false;
+
+    for (const MorphWeightKey& key : keys)
+    {
+        if (!std::isfinite(key.timeSeconds) ||
+            key.timeSeconds < 0.0F ||
+            key.timeSeconds >
+                durationSeconds + maximumTimeError ||
+            key.weights.size() != targetCount)
+        {
+            return false;
+        }
+
+        if (hasPreviousTime &&
+            key.timeSeconds < previousTime)
+        {
+            return false;
+        }
+
+        for (const float weight : key.weights)
+        {
+            if (!std::isfinite(weight))
+            {
+                return false;
+            }
+        }
+
+        previousTime = key.timeSeconds;
+        hasPreviousTime = true;
+    }
+
+    return true;
+}
+
 bool AnimationClipAsset::isValid(
     const std::size_t nodeCount) const noexcept
 {
     if (name.empty() ||
         !std::isfinite(durationSeconds) ||
         durationSeconds <= 0.0F ||
-        channels.empty())
+        (channels.empty() && morphChannels.empty()))
     {
         return false;
     }
@@ -168,6 +214,33 @@ bool AnimationClipAsset::isValid(
              ++previousIndex)
         {
             if (channels[previousIndex].nodeIndex ==
+                channel.nodeIndex)
+            {
+                return false;
+            }
+        }
+    }
+
+
+    for (std::size_t channelIndex = 0;
+         channelIndex < morphChannels.size();
+         ++channelIndex)
+    {
+        const NodeMorphAnimationChannelAsset& channel =
+            morphChannels[channelIndex];
+
+        if (!channel.isValid(
+                nodeCount,
+                durationSeconds))
+        {
+            return false;
+        }
+
+        for (std::size_t previousIndex = 0;
+             previousIndex < channelIndex;
+             ++previousIndex)
+        {
+            if (morphChannels[previousIndex].nodeIndex ==
                 channel.nodeIndex)
             {
                 return false;
