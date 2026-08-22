@@ -62,8 +62,8 @@ static_assert(
     math::Bounds& bounds,
     float& maximumPositionDelta)
 {
-    if (!source.isValid() ||
-        !source.hasMorphTargets() ||
+    if (!source.hasMorphTargets() ||
+        source.vertices.empty() ||
         morphState.targetCount() !=
             source.morphTargets.size())
     {
