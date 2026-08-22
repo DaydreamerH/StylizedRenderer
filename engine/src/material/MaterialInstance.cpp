@@ -31,6 +31,9 @@ MaterialInstance makeMaterialInstance(
     instance.baseColorFactor =
         source->baseColorFactor;
 
+    instance.alphaCutoff =
+        source->alphaCutoff;
+
     instance.baseColorTexture =
         source->baseColorTexture;
 

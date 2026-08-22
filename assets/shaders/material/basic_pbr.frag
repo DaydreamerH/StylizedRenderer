@@ -23,6 +23,9 @@ uniform sampler2DShadow uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
 
+uniform int uAlphaMaskEnabled;
+uniform float uAlphaCutoff;
+
 const float PI = 3.14159265359;
 
 float distributionGGX(
@@ -158,6 +161,16 @@ void main()
 {
     const vec4 sampledBaseColor = texture(uBaseColorTexture, vertexTexCoord0);
 
+    const float alpha =
+        sampledBaseColor.a *
+        uBaseColorFactor.a;
+
+    if (uAlphaMaskEnabled != 0 &&
+        alpha < uAlphaCutoff)
+    {
+        discard;
+    }
+
     const vec3 baseColor = sampledBaseColor.rgb * uBaseColorFactor.rgb;
 
     const float metallic = clamp(uMetallic, 0.0, 1.0);
@@ -253,8 +266,6 @@ void main()
     const vec3 ambientLighting = baseColor * 0.03;
 
     const vec3 finalColor = ambientLighting + directLighting * shadowVisibility;
-
-    const float alpha = sampledBaseColor.a * uBaseColorFactor.a;
 
     outColor = vec4(finalColor, alpha);
 

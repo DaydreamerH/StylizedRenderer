@@ -42,8 +42,8 @@ bool StaticModelRenderer::render(
 
     for (const RenderItem& item : renderWorld.items)
     {
-        if (item.materialClass !=
-            RenderMaterialClass::Opaque)
+        if (item.materialClass ==
+            RenderMaterialClass::Transparent)
         {
             continue;
         }
@@ -75,6 +75,24 @@ bool StaticModelRenderer::render(
                 materialInstance,
                 resourceCache_,
                 assetRegistry_))
+        {
+            return false;
+        }
+
+        const bool alphaMaskEnabled =
+            item.materialClass == RenderMaterialClass::Masked;
+
+        if (!shader->setInt(
+                "uAlphaMaskEnabled",
+                alphaMaskEnabled ? 1 : 0
+        ))
+        {
+            return false;
+        }
+
+        if (!shader->setFloat(
+                "uAlphaCutoff",
+                materialInstance.alphaCutoff))
         {
             return false;
         }

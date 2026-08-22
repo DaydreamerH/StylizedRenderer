@@ -23,6 +23,8 @@ struct MaterialInstance
 
     glm::vec4 baseColorFactor{1.F};
 
+    float alphaCutoff = 0.5F;
+
     float metallic = 0.F;
     float roughness = 1.F;
 

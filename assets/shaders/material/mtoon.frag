@@ -56,6 +56,9 @@ uniform float uEmissionStrength;
 
 uniform int uMToonDebugView;
 
+uniform int uAlphaMaskEnabled;
+uniform float uAlphaCutoff;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -230,7 +233,14 @@ void main()
         texture(uBaseColorTexture, vertexTexCoord0);
 
     const vec4 baseColor =
-        uBaseColorFactor * sampledBaseColor;
+        uBaseColorFactor *
+        sampledBaseColor;
+
+    if (uAlphaMaskEnabled != 0 &&
+        baseColor.a < uAlphaCutoff)
+    {
+        discard;
+    }
 
     const vec3 geometricNormal =
         calculateGeometricNormal();

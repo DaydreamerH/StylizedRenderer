@@ -54,6 +54,12 @@ RuntimeMaterial::RuntimeMaterial(
             shader_ = {};
         break;
     case material::MaterialKind::DebugNormal:
+        if (!shader_.setInt(
+                "uBaseColorTexture",
+                0))
+        {
+            shader_ = {};
+        }
         break;
     case material::MaterialKind::MToon:
         if (!shader_.setInt(
@@ -172,7 +178,28 @@ bool RuntimeMaterial::bind(
         return true;
     }
     case material::MaterialKind::DebugNormal:
+    {
+        const graphics::Texture2D& baseColorTexture =
+            resourceCache.getOrCreateTexture(
+                instance.baseColorTexture,
+                assetRegistry);
+
+        if (!baseColorTexture.isValid())
+        {
+            return false;
+        }
+
+        if (!shader_.setVec4(
+                "uBaseColorFactor",
+                instance.baseColorFactor))
+        {
+            return false;
+        }
+
+        baseColorTexture.bind(0);
+
         return true;
+    }
 
     case material::MaterialKind::BasicPbr:
     {
