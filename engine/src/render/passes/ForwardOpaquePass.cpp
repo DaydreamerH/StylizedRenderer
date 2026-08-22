@@ -101,7 +101,8 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
     if (!renderer_.render(
             *frame.renderWorld,
             sampledShadowMap,
-            shadowMapAvailable))
+            shadowMapAvailable,
+            StaticModelRenderQueue::Opaque))
     {
         return false;
     }

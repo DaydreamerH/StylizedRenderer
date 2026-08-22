@@ -13,6 +13,9 @@
 #include <material/MaterialTemplate.hpp>
 
 #include <cstdint>
+#include <algorithm>
+
+#include <glm/geometric.hpp>
 
 namespace stylized::render
 {
@@ -36,17 +39,61 @@ StaticModelRenderer::StaticModelRenderer(
 bool StaticModelRenderer::render(
     const RenderWorld& renderWorld,
     const graphics::DepthTexture& shadowMap,
-    const bool shadowMapAvailable)
+    const bool shadowMapAvailable,
+    const StaticModelRenderQueue renderQueue)
 {
     lastDrawCallCount_ = 0;
 
+    renderItems_.clear();
+    renderItems_.reserve(renderWorld.items.size());
+
     for (const RenderItem& item : renderWorld.items)
     {
-        if (item.materialClass ==
-            RenderMaterialClass::Transparent)
+        const bool transparent =
+            item.materialClass ==
+            RenderMaterialClass::Transparent;
+
+        const bool accepted =
+            renderQueue ==
+                StaticModelRenderQueue::Transparent
+                ? transparent
+                : !transparent;
+
+        if (accepted)
         {
-            continue;
+            renderItems_.push_back(&item);
         }
+    }
+
+    if (renderQueue ==
+        StaticModelRenderQueue::Transparent)
+    {
+        const glm::vec3 cameraPosition =
+            renderWorld.mainView.cameraPosition;
+
+        std::stable_sort(
+            renderItems_.begin(),
+            renderItems_.end(),
+            [cameraPosition](
+                const RenderItem* left,
+                const RenderItem* right)
+            {
+                const glm::vec3 leftOffset =
+                    left->worldBounds.center() -
+                    cameraPosition;
+
+                const glm::vec3 rightOffset =
+                    right->worldBounds.center() -
+                    cameraPosition;
+
+                return glm::dot(leftOffset, leftOffset) >
+                    glm::dot(rightOffset, rightOffset);
+            });
+    }
+
+    for (const RenderItem* itemPointer : renderItems_)
+    {
+        const RenderItem& item = *itemPointer;
 
         if (item.primitive == nullptr ||
             item.vertexArray == nullptr ||

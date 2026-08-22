@@ -122,6 +122,31 @@ void GraphicsDevice::setDepthWrite(const bool enabled)
     glDepthMask(enabled ? GL_TRUE : GL_FALSE);
 }
 
+void GraphicsDevice::setAlphaBlending(
+    const bool enabled
+)
+{
+    if (!initialized_)
+    {
+        return;
+    }
+
+    if (!enabled)
+    {
+        glDisable(GL_BLEND);
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+
+    glBlendFuncSeparate(
+        GL_SRC_ALPHA,
+        GL_ONE_MINUS_SRC_ALPHA,
+        GL_ONE,
+        GL_ONE_MINUS_SRC_ALPHA);
+}
+
 void GraphicsDevice::clear(const ClearValue& value)
 {
     if (!initialized_)
@@ -195,6 +220,26 @@ void GraphicsDevice::setPolygonOffset(
     glEnable(GL_POLYGON_OFFSET_FILL);
 
     glPolygonOffset(factor, units);
+}
+
+void GraphicsDevice::setColorAttachmentWrite(
+    const std::uint32_t attachmentIndex,
+    const bool enabled)
+{
+    if (!initialized_)
+    {
+        return;
+    }
+
+    const GLboolean writeEnabled =
+        enabled ? GL_TRUE : GL_FALSE;
+
+    glColorMaski(
+        static_cast<GLuint>(attachmentIndex),
+        writeEnabled,
+        writeEnabled,
+        writeEnabled,
+        writeEnabled);
 }
 
 void GraphicsDevice::clearDepth(const float value)

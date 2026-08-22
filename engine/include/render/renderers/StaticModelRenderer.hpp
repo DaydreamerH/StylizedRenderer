@@ -4,6 +4,8 @@
 #include <render/world/RenderWorld.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace stylized::asset
 {
@@ -22,6 +24,12 @@ class DepthTexture;
 
 namespace stylized::render
 {
+
+enum class StaticModelRenderQueue : std::uint8_t
+{
+    Opaque,
+    Transparent
+};
 
 class RuntimeResourceCache;
 
@@ -46,9 +54,14 @@ public:
     [[nodiscard]] bool render(
         const RenderWorld& renderWorld,
         const graphics::DepthTexture& shadowMap,
-        bool shadowMapAvailable);
+        bool shadowMapAvailable,
+        StaticModelRenderQueue renderQueue);
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;
+
+private:
+    std::vector<const RenderItem*> renderItems_;
+
 };
 
 } // namespace stylized::render
