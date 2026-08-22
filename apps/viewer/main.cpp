@@ -29,6 +29,7 @@
 #include <material/MaterialTemplate.hpp>
 
 #include <animation/AnimationPlayer.hpp>
+#include <animation/SceneMorphPose.hpp>
 #include <animation/ScenePose.hpp>
 
 #include "camera/OrbitCameraController.hpp"
@@ -39,6 +40,7 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -175,7 +177,8 @@ protected:
                 animationPlayer_.update(
                     deltaTime,
                     *sceneAsset,
-                    scenePose_);
+                    scenePose_,
+                    sceneMorphPose_);
 
             updateCpuTiming(
                 cpuTimings_.animationMilliseconds,
@@ -207,6 +210,15 @@ protected:
                 std::cerr
                     << "Failed to update "
                     << "skinning palettes.\n";
+
+                requestExit();
+                return;
+            }
+
+            if (!applyMorphAnimation(*sceneAsset))
+            {
+                std::cerr
+                    << "Failed to apply Morph animation.\n";
 
                 requestExit();
                 return;
@@ -498,6 +510,7 @@ protected:
     {
         viewerPanels_.shutdown();
         morphMeshInstances_.clear();
+        sceneMorphPose_.clear();
         framePipeline_.reset();
         shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
@@ -708,6 +721,16 @@ private:
             return false;
         }
 
+        if (!sceneMorphPose_.initialize(*sceneAsset))
+        {
+            std::cerr
+                << "Failed to initialize scene Morph pose.\n";
+
+            return false;
+        }
+
+        appliedMorphPoseVersion_ = 0;
+
         if (!skinningPalettes_.initialize(
                 graphicsDevice(),
                 *sceneAsset,
@@ -874,6 +897,76 @@ private:
             << "Node count: "
             << sceneAsset->nodes.size()
             << '\n';
+
+        return true;
+    }
+
+    bool applyMorphAnimation(
+        const stylized::asset::SceneAsset& sceneAsset)
+    {
+        const std::uint64_t morphPoseVersion =
+            sceneMorphPose_.version();
+
+        if (appliedMorphPoseVersion_ == morphPoseVersion)
+        {
+            return true;
+        }
+
+        if (morphMeshInstances_.size() !=
+            sceneAsset.nodes.size())
+        {
+            return false;
+        }
+
+        for (std::size_t nodeIndex = 0;
+             nodeIndex < morphMeshInstances_.size();
+             ++nodeIndex)
+        {
+            stylized::render::RuntimeMeshInstance& instance =
+                morphMeshInstances_[nodeIndex];
+
+            const std::span<const float> animatedWeights =
+                sceneMorphPose_.weights(
+                    static_cast<std::uint32_t>(nodeIndex));
+
+            for (std::size_t primitiveIndex = 0;
+                 primitiveIndex < instance.primitiveCount();
+                 ++primitiveIndex)
+            {
+                stylized::animation::MorphState* state =
+                    instance.morphState(primitiveIndex);
+
+                if (state == nullptr)
+                {
+                    continue;
+                }
+
+                if (animatedWeights.empty())
+                {
+                    state->reset();
+                    continue;
+                }
+
+                for (std::size_t targetIndex = 0;
+                     targetIndex < state->targetCount();
+                     ++targetIndex)
+                {
+                    const float weight =
+                        targetIndex < animatedWeights.size()
+                            ? animatedWeights[targetIndex]
+                            : 0.0F;
+
+                    if (!state->setWeight(
+                            targetIndex,
+                            weight))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        appliedMorphPoseVersion_ = morphPoseVersion;
 
         return true;
     }
@@ -1099,6 +1192,11 @@ private:
         animationPlayer_;
 
     stylized::animation::ScenePose scenePose_;
+
+    stylized::animation::SceneMorphPose
+        sceneMorphPose_;
+
+    std::uint64_t appliedMorphPoseVersion_ = 0;
 
     stylized::render::SkinningPaletteSet
         skinningPalettes_;

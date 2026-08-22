@@ -1049,9 +1049,10 @@ void ViewerPanels::draw(
                 if (clip != nullptr)
                 {
                     ImGui::Text(
-                        "Duration: %.3f s | Channels: %zu",
+                        "Duration: %.3f s | Nodes: %zu | Morphs: %zu",
                         clip->durationSeconds,
-                        clip->channels.size());
+                        clip->channels.size(),
+                        clip->morphChannels.size());
                 }
             }
         }
