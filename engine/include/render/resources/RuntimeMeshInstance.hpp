@@ -1,6 +1,7 @@
 #pragma once
 
 #include <animation/MorphState.hpp>
+#include <asset/MeshAsset.hpp>
 #include <core/NonCopyable.hpp>
 #include <graphics/resources/Buffer.hpp>
 #include <graphics/resources/VertexArray.hpp>
@@ -29,6 +30,22 @@ namespace stylized::render
 {
 
 class RuntimeMesh;
+
+namespace detail
+{
+
+struct MorphedSkinnedVertex
+{
+    glm::vec3 position{0.0F};
+    glm::vec3 normal{0.0F, 1.0F, 0.0F};
+    glm::vec4 tangent{1.0F, 0.0F, 0.0F, 1.0F};
+    glm::vec2 texCoord0{0.0F};
+
+    glm::uvec4 joints{0U};
+    glm::vec4 weights{0.0F};
+};
+
+} // namespace detail
 
 class RuntimeMeshInstance final
     : public core::NonCopyable
@@ -101,6 +118,15 @@ private:
 
         graphics::Buffer vertexBuffer;
         graphics::VertexArray vertexArray;
+
+        std::vector<asset::StaticMeshVertex>
+            morphedVertices;
+
+        std::vector<detail::MorphedSkinnedVertex>
+            skinnedVertices;
+
+        std::vector<std::vector<std::uint32_t>>
+            morphVertexIndices;
 
         math::Bounds localBounds;
 

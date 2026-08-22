@@ -20,25 +20,6 @@ namespace stylized::render
 namespace
 {
 
-struct MorphedSkinnedVertex
-{
-    glm::vec3 position{0.0F};
-    glm::vec3 normal{0.0F, 1.0F, 0.0F};
-    glm::vec4 tangent{1.0F, 0.0F, 0.0F, 1.0F};
-    glm::vec2 texCoord0{0.0F};
-
-    glm::uvec4 joints{0U};
-    glm::vec4 weights{0.0F};
-};
-
-static_assert(
-    std::is_standard_layout_v<
-        MorphedSkinnedVertex>);
-
-static_assert(
-    std::is_trivially_copyable_v<
-        MorphedSkinnedVertex>);
-
 [[nodiscard]] glm::vec3 normalizeOrFallback(
     const glm::vec3& value,
     const glm::vec3& fallback) noexcept
@@ -58,6 +39,8 @@ static_assert(
 [[nodiscard]] bool buildMorphedVertices(
     const asset::MeshPrimitiveAsset& source,
     const animation::MorphState& morphState,
+    const std::vector<std::vector<std::uint32_t>>&
+        morphVertexIndices,
     std::vector<asset::StaticMeshVertex>& vertices,
     math::Bounds& bounds,
     float& maximumPositionDelta)
@@ -65,12 +48,17 @@ static_assert(
     if (!source.hasMorphTargets() ||
         source.vertices.empty() ||
         morphState.targetCount() !=
+            source.morphTargets.size() ||
+        morphVertexIndices.size() !=
             source.morphTargets.size())
     {
         return false;
     }
 
     vertices = source.vertices;
+
+    bool normalsChanged = false;
+    bool tangentsChanged = false;
 
     for (std::size_t targetIndex = 0;
          targetIndex < source.morphTargets.size();
@@ -87,9 +75,12 @@ static_assert(
         const asset::MorphTargetAsset& target =
             source.morphTargets[targetIndex];
 
-        for (std::size_t vertexIndex = 0;
-             vertexIndex < vertices.size();
-             ++vertexIndex)
+        const std::vector<std::uint32_t>&
+            affectedVertices =
+                morphVertexIndices[targetIndex];
+
+        for (const std::uint32_t vertexIndex :
+             affectedVertices)
         {
             asset::StaticMeshVertex& vertex =
                 vertices[vertexIndex];
@@ -100,6 +91,8 @@ static_assert(
 
             if (!target.normalDeltas.empty())
             {
+                normalsChanged = true;
+
                 vertex.normal +=
                     target.normalDeltas[vertexIndex] *
                     weight;
@@ -107,6 +100,8 @@ static_assert(
 
             if (!target.tangentDeltas.empty())
             {
+                tangentsChanged = true;
+
                 glm::vec3 tangent{
                     vertex.tangent};
 
@@ -122,7 +117,7 @@ static_assert(
     }
 
     bounds.reset();
-    maximumPositionDelta = 0.0F;
+    float maximumPositionDeltaSquared = 0.0F;
 
     for (std::size_t vertexIndex = 0;
          vertexIndex < vertices.size();
@@ -134,40 +129,104 @@ static_assert(
         const asset::StaticMeshVertex& baseVertex =
             source.vertices[vertexIndex];
 
-        vertex.normal = normalizeOrFallback(
-            vertex.normal,
-            baseVertex.normal);
+        if (normalsChanged)
+        {
+            vertex.normal = normalizeOrFallback(
+                vertex.normal,
+                baseVertex.normal);
+        }
 
-        const glm::vec3 tangent =
-            normalizeOrFallback(
+        if (tangentsChanged)
+        {
+            const glm::vec3 tangent =
+                normalizeOrFallback(
                 glm::vec3{vertex.tangent},
                 glm::vec3{baseVertex.tangent});
 
-        vertex.tangent = glm::vec4{
-            tangent,
-            baseVertex.tangent.w};
+            vertex.tangent = glm::vec4{
+                tangent,
+                baseVertex.tangent.w};
+        }
 
         bounds.expand(vertex.position);
 
-        maximumPositionDelta = std::max(
-            maximumPositionDelta,
-            glm::length(
-                vertex.position -
-                baseVertex.position));
+        const glm::vec3 positionDelta =
+            vertex.position - baseVertex.position;
+
+        maximumPositionDeltaSquared = std::max(
+            maximumPositionDeltaSquared,
+            glm::dot(positionDelta, positionDelta));
     }
+
+    maximumPositionDelta =
+        std::sqrt(maximumPositionDeltaSquared);
 
     return bounds.isValid();
 }
 
-[[nodiscard]] std::vector<MorphedSkinnedVertex>
-buildSkinnedVertices(
+[[nodiscard]] bool buildMorphVertexIndices(
+    const asset::MeshPrimitiveAsset& source,
+    std::vector<std::vector<std::uint32_t>>& indices)
+{
+    indices.clear();
+    indices.resize(source.morphTargets.size());
+
+    for (std::size_t targetIndex = 0;
+         targetIndex < source.morphTargets.size();
+         ++targetIndex)
+    {
+        const asset::MorphTargetAsset& target =
+            source.morphTargets[targetIndex];
+
+        std::vector<std::uint32_t>& targetIndices =
+            indices[targetIndex];
+
+        for (std::size_t vertexIndex = 0;
+             vertexIndex < source.vertices.size();
+             ++vertexIndex)
+        {
+            const bool positionChanged =
+                target.positionDeltas[vertexIndex] !=
+                glm::vec3{0.0F};
+
+            const bool normalChanged =
+                !target.normalDeltas.empty() &&
+                target.normalDeltas[vertexIndex] !=
+                    glm::vec3{0.0F};
+
+            const bool tangentChanged =
+                !target.tangentDeltas.empty() &&
+                target.tangentDeltas[vertexIndex] !=
+                    glm::vec3{0.0F};
+
+            if (positionChanged ||
+                normalChanged ||
+                tangentChanged)
+            {
+                targetIndices.push_back(
+                    static_cast<std::uint32_t>(
+                        vertexIndex));
+            }
+        }
+    }
+
+    return true;
+}
+
+template<typename Vertex>
+void buildSkinnedVertices(
     const asset::MeshPrimitiveAsset& source,
     const std::vector<asset::StaticMeshVertex>&
-        geometry)
+        geometry,
+    std::vector<Vertex>& vertices)
 {
-    std::vector<MorphedSkinnedVertex> vertices;
+    const bool initializeFixedData =
+        vertices.size() != geometry.size();
 
-    vertices.reserve(geometry.size());
+    if (initializeFixedData)
+    {
+        vertices.resize(geometry.size());
+    }
 
     for (std::size_t vertexIndex = 0;
          vertexIndex < geometry.size();
@@ -176,18 +235,20 @@ buildSkinnedVertices(
         const asset::VertexSkinData& skin =
             source.skinVertices[vertexIndex];
 
-        vertices.push_back(
-            MorphedSkinnedVertex{
-                .position = geometry[vertexIndex].position,
-                .normal = geometry[vertexIndex].normal,
-                .tangent = geometry[vertexIndex].tangent,
-                .texCoord0 = geometry[vertexIndex].texCoord0,
-                .joints = skin.joints,
-                .weights = skin.weights
-            });
-    }
+        Vertex& vertex = vertices[vertexIndex];
 
-    return vertices;
+        vertex.position = geometry[vertexIndex].position;
+        vertex.normal = geometry[vertexIndex].normal;
+        vertex.tangent = geometry[vertexIndex].tangent;
+
+        if (initializeFixedData)
+        {
+            vertex.texCoord0 =
+                geometry[vertexIndex].texCoord0;
+            vertex.joints = skin.joints;
+            vertex.weights = skin.weights;
+        }
+    }
 }
 
 constexpr std::uint32_t vertexBinding = 0;
@@ -235,7 +296,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Float3,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 position)
         },
         graphics::VertexAttributeDesc{
@@ -243,7 +304,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Float3,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 normal)
         },
         graphics::VertexAttributeDesc{
@@ -251,7 +312,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Float4,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 tangent)
         },
         graphics::VertexAttributeDesc{
@@ -259,7 +320,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Float2,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 texCoord0)
         },
         graphics::VertexAttributeDesc{
@@ -267,7 +328,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Uint4,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 joints)
         },
         graphics::VertexAttributeDesc{
@@ -275,7 +336,7 @@ const std::array<graphics::VertexAttributeDesc, 6>
             .binding = vertexBinding,
             .format = graphics::VertexAttributeFormat::Float4,
             .offset = offsetof(
-                MorphedSkinnedVertex,
+            detail::MorphedSkinnedVertex,
                 weights)
         }
     };
@@ -557,18 +618,19 @@ bool RuntimeMeshInstance::initializePrimitive(
     if (runtimeMesh_ == nullptr ||
         !source.hasMorphTargets() ||
         !destination.morphState.initialize(
-            source.morphTargets.size()))
+            source.morphTargets.size()) ||
+        !buildMorphVertexIndices(
+            source,
+            destination.morphVertexIndices))
     {
         return false;
     }
 
-    std::vector<asset::StaticMeshVertex>
-        morphedVertices;
-
     if (!buildMorphedVertices(
             source,
             destination.morphState,
-            morphedVertices,
+            destination.morphVertexIndices,
+            destination.morphedVertices,
             destination.localBounds,
             destination.maximumPositionDelta))
     {
@@ -588,18 +650,17 @@ bool RuntimeMeshInstance::initializePrimitive(
 
     if (source.hasSkin())
     {
-        const std::vector<MorphedSkinnedVertex>
-            skinnedVertices =
-                buildSkinnedVertices(
-                    source,
-                    morphedVertices);
+        buildSkinnedVertices(
+            source,
+            destination.morphedVertices,
+            destination.skinnedVertices);
 
         destination.vertexBuffer =
             graphicsDevice.createBuffer(
                 vertexBufferDesc,
                 std::span<
-                    const MorphedSkinnedVertex>{
-                        skinnedVertices});
+                    const detail::MorphedSkinnedVertex>{
+                        destination.skinnedVertices});
     }
     else
     {
@@ -608,7 +669,7 @@ bool RuntimeMeshInstance::initializePrimitive(
                 vertexBufferDesc,
                 std::span<
                     const asset::StaticMeshVertex>{
-                        morphedVertices});
+                        destination.morphedVertices});
     }
 
     if (!destination.vertexBuffer.isValid())
@@ -630,7 +691,7 @@ bool RuntimeMeshInstance::initializePrimitive(
     if (source.hasSkin())
     {
         vertexArrayDesc.vertexBinding.stride =
-            sizeof(MorphedSkinnedVertex);
+            sizeof(detail::MorphedSkinnedVertex);
         vertexArrayDesc.attributes =
             std::span<
                 const graphics::VertexAttributeDesc>{
@@ -668,16 +729,14 @@ bool RuntimeMeshInstance::uploadPrimitive(
     const asset::MeshPrimitiveAsset& source,
     PrimitiveInstance& destination)
 {
-    std::vector<asset::StaticMeshVertex>
-        morphedVertices;
-
     math::Bounds morphedBounds;
     float maximumPositionDelta = 0.0F;
 
     if (!buildMorphedVertices(
             source,
             destination.morphState,
-            morphedVertices,
+            destination.morphVertexIndices,
+            destination.morphedVertices,
             morphedBounds,
             maximumPositionDelta))
     {
@@ -688,17 +747,16 @@ bool RuntimeMeshInstance::uploadPrimitive(
 
     if (source.hasSkin())
     {
-        const std::vector<MorphedSkinnedVertex>
-            skinnedVertices =
-                buildSkinnedVertices(
-                    source,
-                    morphedVertices);
+        buildSkinnedVertices(
+            source,
+            destination.morphedVertices,
+            destination.skinnedVertices);
 
         uploaded = destination.vertexBuffer.update(
             0,
             std::span<
-                const MorphedSkinnedVertex>{
-                    skinnedVertices});
+                    const detail::MorphedSkinnedVertex>{
+                        destination.skinnedVertices});
     }
     else
     {
@@ -706,7 +764,7 @@ bool RuntimeMeshInstance::uploadPrimitive(
             0,
             std::span<
                 const asset::StaticMeshVertex>{
-                    morphedVertices});
+                    destination.morphedVertices});
     }
 
     if (!uploaded)
