@@ -310,7 +310,10 @@ bool ScreenSpaceOutlinePass::execute(
             static_cast<int>(settings_.debugView)) ||
         !shader_.setInt(
             "uScreenOutlineEnabled",
-            settings_.enabled ? 1 : 0) ||
+            settings_.mode ==
+                    GlobalOutlineMode::Screen
+                ? 1
+                : 0) ||
         !shader_.setVec3(
             "uScreenOutlineColor",
             settings_.color.r,
@@ -318,7 +321,7 @@ bool ScreenSpaceOutlinePass::execute(
             settings_.color.b) ||
         !shader_.setFloat(
             "uScreenOutlineWidth",
-            settings_.width) ||
+            settings_.screenWidth) ||
         !shader_.setFloat(
             "uDepthThreshold",
             settings_.depthThreshold) ||
@@ -410,12 +413,12 @@ ScreenSpaceOutlinePass::renderTargetRebuildCount()
 }
 
 void ScreenSpaceOutlinePass::setSettings(
-    const ScreenSpaceOutlineSettings& settings) noexcept
+    const GlobalOutlineSettings& settings) noexcept
 {
     settings_ = settings;
 }
 
-const ScreenSpaceOutlineSettings&
+const GlobalOutlineSettings&
 ScreenSpaceOutlinePass::settings() const noexcept
 {
     return settings_;

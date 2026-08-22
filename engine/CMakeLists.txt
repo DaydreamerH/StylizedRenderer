@@ -40,6 +40,7 @@ add_library(stylized_engine STATIC
     include/render/passes/PostProcessPass.hpp
     include/render/passes/ScreenSpaceOutlinePass.hpp
     include/render/passes/ShadowPass.hpp
+    include/render/outline/OutlineSettings.hpp
     include/render/pipeline/FrameContext.hpp
     include/render/pipeline/FramePipeline.hpp
     include/render/pipeline/IRenderPass.hpp

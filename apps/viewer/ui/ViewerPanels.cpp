@@ -674,7 +674,7 @@ void ViewerPanels::draw(
     const stylized::render::ForwardOpaquePass* forwardPass,
     const stylized::render::ForwardTransparentPass*
         transparentPass,
-    const stylized::render::OutlineMaskPass* outlineMaskPass,
+    stylized::render::OutlineMaskPass* outlineMaskPass,
     stylized::render::ScreenSpaceOutlinePass*
         screenSpaceOutlinePass,
     const stylized::render::PostProcessPass* postProcessPass,
@@ -1817,11 +1817,11 @@ void ViewerPanels::draw(
     if (ImGui::BeginTabItem("Render"))
     {
 
-    ImGui::SeparatorText("Screen Space Outline");
+    ImGui::SeparatorText("Global Outline");
 
     if (screenSpaceOutlinePass != nullptr)
     {
-        stylized::render::ScreenSpaceOutlineSettings settings =
+        stylized::render::GlobalOutlineSettings settings =
             screenSpaceOutlinePass->settings();
 
         bool changed = false;
@@ -1838,9 +1838,32 @@ void ViewerPanels::draw(
             "Combined Outline"
         };
 
+        int mode =
+            static_cast<int>(settings.mode);
+
+        constexpr const char* modes[] = {
+            "Disabled",
+            "World",
+            "Screen"
+        };
+
         if (beginPropertyTable(
-                "##ScreenOutlineProperties"))
+                "##GlobalOutlineProperties"))
         {
+            if (drawComboProperty(
+                    "Mode",
+                    &mode,
+                    modes,
+                    IM_ARRAYSIZE(modes)))
+            {
+                settings.mode =
+                    static_cast<
+                        stylized::render::GlobalOutlineMode>(
+                            mode);
+
+                changed = true;
+            }
+
             if (drawComboProperty(
                     "Debug View",
                     &debugView,
@@ -1855,34 +1878,45 @@ void ViewerPanels::draw(
                 changed = true;
             }
 
-            changed |= drawCheckboxProperty(
-                "Enabled",
-                &settings.enabled);
-
             changed |= drawColorEdit3Property(
                 "Color",
                 &settings.color.x);
 
-            changed |= drawSliderFloatProperty(
-                "Width",
-                &settings.width,
-                1.0F,
-                8.0F,
-                "%.1f");
+            if (settings.mode ==
+                stylized::render::GlobalOutlineMode::World)
+            {
+                changed |= drawDragFloatProperty(
+                    "World Width",
+                    &settings.worldWidth,
+                    0.001F,
+                    0.0F,
+                    10.0F,
+                    "%.4f");
+            }
+            else if (settings.mode ==
+                stylized::render::GlobalOutlineMode::Screen)
+            {
+                changed |= drawSliderFloatProperty(
+                    "Screen Width",
+                    &settings.screenWidth,
+                    1.0F,
+                    8.0F,
+                    "%.1f");
 
-            changed |= drawSliderFloatProperty(
-                "Depth Threshold",
-                &settings.depthThreshold,
-                0.001F,
-                0.1F,
-                "%.4f");
+                changed |= drawSliderFloatProperty(
+                    "Depth Threshold",
+                    &settings.depthThreshold,
+                    0.001F,
+                    0.1F,
+                    "%.4f");
 
-            changed |= drawSliderFloatProperty(
-                "Normal Threshold",
-                &settings.normalThreshold,
-                0.01F,
-                1.0F,
-                "%.3f");
+                changed |= drawSliderFloatProperty(
+                    "Normal Threshold",
+                    &settings.normalThreshold,
+                    0.01F,
+                    1.0F,
+                    "%.3f");
+            }
 
             ImGui::EndTable();
         }
@@ -1890,6 +1924,11 @@ void ViewerPanels::draw(
         if (changed)
         {
             screenSpaceOutlinePass->setSettings(settings);
+        }
+
+        if (outlineMaskPass != nullptr)
+        {
+            outlineMaskPass->setGlobalSettings(settings);
         }
     }
     else
@@ -2164,7 +2203,8 @@ void ViewerPanels::draw(
                 : screenSpaceOutlinePass->settings().debugView !=
                         stylized::render::OutlineDebugView::Final
                     ? "Debug View"
-                    : screenSpaceOutlinePass->settings().enabled
+                    : screenSpaceOutlinePass->settings().mode ==
+                            stylized::render::GlobalOutlineMode::Screen
                         ? "Active"
                         : "Composite Only",
         screenSpaceOutlinePass != nullptr

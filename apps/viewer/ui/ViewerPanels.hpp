@@ -84,7 +84,7 @@ public:
         const stylized::render::ForwardOpaquePass* forwardPass,
         const stylized::render::ForwardTransparentPass*
             transparentPass,
-        const stylized::render::OutlineMaskPass* outlineMaskPass,
+        stylized::render::OutlineMaskPass* outlineMaskPass,
         stylized::render::ScreenSpaceOutlinePass*
             screenSpaceOutlinePass,
         const stylized::render::PostProcessPass* postProcessPass,
