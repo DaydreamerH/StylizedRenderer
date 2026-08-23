@@ -63,9 +63,9 @@ private:
     StaticModelRenderer renderer_;
 
     graphics::ClearValue clearValue_{
-        0.06F,
-        0.07F,
+        0.20F,
         0.10F,
+        0.13F,
         1.0F
     };
 

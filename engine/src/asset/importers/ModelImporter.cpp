@@ -235,6 +235,17 @@ AssetHandle<SceneAsset> ModelImporter::import(
         return {};
     }
 
+    if (!detail::stageCameras(
+            *importedScene,
+            stagedScene))
+    {
+        std::cerr
+            << "Failed to convert model cameras: "
+            << path
+            << '\n';
+        return {};
+    }
+
     if (!detail::stageSkins(
             *importedScene,
             stagedMeshes,

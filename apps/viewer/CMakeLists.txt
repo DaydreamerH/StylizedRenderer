@@ -28,6 +28,8 @@ add_executable(stylized_viewer
     main.cpp
     camera/OrbitCameraController.hpp
     camera/OrbitCameraController.cpp
+    camera/SceneCameraController.hpp
+    camera/SceneCameraController.cpp
     ui/ViewerPanels.hpp
     ui/ViewerPanels.cpp
     ui/ViewerTheme.hpp

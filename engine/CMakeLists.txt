@@ -6,6 +6,7 @@ add_library(stylized_engine STATIC
     include/asset/AnimationAsset.hpp
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
+    include/asset/CameraAsset.hpp
     include/asset/MaterialAsset.hpp
     include/asset/MeshAsset.hpp
     include/asset/SceneAsset.hpp
@@ -66,6 +67,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/ModelImporter.cpp
     src/asset/importers/TextureImporter.cpp
     src/asset/importers/detail/AssimpAnimationImporter.cpp
+    src/asset/importers/detail/AssimpCameraImporter.cpp
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp

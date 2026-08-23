@@ -87,6 +87,10 @@ struct StagedScene
     const aiScene& importedScene,
     StagedScene& scene);
 
+[[nodiscard]] bool stageCameras(
+    const aiScene& importedScene,
+    StagedScene& scene);
+
 [[nodiscard]] bool stageSkins(
     const aiScene& importedScene,
     std::vector<StagedMesh>& meshes,

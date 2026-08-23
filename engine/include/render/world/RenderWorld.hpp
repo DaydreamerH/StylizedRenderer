@@ -95,15 +95,15 @@ struct DirectionalLightData
 struct EnvironmentLightData
 {
     glm::vec3 skyColor{
-        0.04F,
-        0.05F,
-        0.07F
+        0.075F,
+        0.045F,
+        0.065F
     };
 
     glm::vec3 groundColor{
-        0.015F,
+        0.025F,
         0.012F,
-        0.01F
+        0.020F
     };
 
     float intensity = 1.0F;

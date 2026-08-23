@@ -34,6 +34,7 @@
 #include <animation/ScenePose.hpp>
 
 #include "camera/OrbitCameraController.hpp"
+#include "camera/SceneCameraController.hpp"
 #include "ui/ViewerPanels.hpp"
 
 #include <chrono>
@@ -276,9 +277,56 @@ protected:
             cpuTimings_.morphMilliseconds,
             morphStart);
 
-        cameraController_.update(
-            window(),
-            !viewerPanels_.wantsMouseCapture());
+        const stylized::asset::SceneAsset* sceneAsset =
+            assetRegistry_.get(sceneHandle_);
+
+        if (sceneAsset == nullptr)
+        {
+            requestExit();
+            return;
+        }
+
+        if (useImportedCamera_ &&
+            selectedCameraIndex_ < sceneAsset->cameras.size())
+        {
+            std::uint32_t framebufferWidth = 0;
+            std::uint32_t framebufferHeight = 0;
+
+            window().getFramebufferSize(
+                framebufferWidth,
+                framebufferHeight);
+
+            if (framebufferHeight > 0)
+            {
+                const float aspectRatio =
+                    static_cast<float>(framebufferWidth) /
+                    static_cast<float>(framebufferHeight);
+
+                if (!camera_.setAspectRatio(aspectRatio))
+                {
+                    requestExit();
+                    return;
+                }
+            }
+
+            if (!sceneCameraController_.update(
+                    sceneAsset->cameras[selectedCameraIndex_],
+                    scenePose_,
+                    camera_))
+            {
+                std::cerr
+                    << "Failed to update imported camera.\n";
+
+                requestExit();
+                return;
+            }
+        }
+        else
+        {
+            cameraController_.update(
+                window(),
+                !viewerPanels_.wantsMouseCapture());
+        }
 
         if (window().isKeyPressed(
                 stylized::platform::Key::Escape))
@@ -349,7 +397,7 @@ protected:
             return;
         }
 
-        if (!cameraFocused_)
+        if (!cameraFocused_ && !useImportedCamera_)
         {
             stylized::math::Bounds sceneBounds;
             for (const stylized::render::RenderItem& item : renderWorld_.items)
@@ -941,6 +989,16 @@ private:
             << sceneAsset->nodes.size()
             << '\n';
 
+        useImportedCamera_ =
+            !sceneAsset->cameras.empty();
+
+        selectedCameraIndex_ = 0;
+
+        if (useImportedCamera_)
+        {
+            cameraFocused_ = true;
+        }
+
         return true;
     }
 
@@ -1217,7 +1275,7 @@ private:
             1.0F,
             1.0F
         },
-        .intensity = 2.0F
+        .intensity = 3.0F
     };
 
     ViewerPanels viewerPanels_;
@@ -1230,6 +1288,11 @@ private:
     };
 
     bool cameraFocused_ = false;
+
+    SceneCameraController sceneCameraController_;
+
+    bool useImportedCamera_ = false;
+    std::size_t selectedCameraIndex_ = 0;
 
     bool spaceKeyPressed_ = false;
 
