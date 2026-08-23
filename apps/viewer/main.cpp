@@ -158,31 +158,41 @@ protected:
             cpuTimings_.frameIntervalMilliseconds,
             static_cast<double>(deltaTime) * 1000.0);
 
+        stylized::viewer::SceneRuntimeInstance*
+            sceneInstance =
+                primarySceneInstance();
+
+        if (sceneInstance == nullptr)
+        {
+            requestExit();
+            return;
+        }
+
         const bool spaceKeyPressed =
             window().isKeyPressed(
                 stylized::platform::Key::Space);
 
         if (spaceKeyPressed &&
             !spaceKeyPressed_ &&
-            sceneInstance_->animationPlayer.clip() != nullptr)
+            sceneInstance->animationPlayer.clip() != nullptr)
         {
-            if (sceneInstance_->animationPlayer.isPlaying())
+            if (sceneInstance->animationPlayer.isPlaying())
             {
-                sceneInstance_->animationPlayer.pause();
+                sceneInstance->animationPlayer.pause();
             }
             else
             {
-                sceneInstance_->animationPlayer.play();
+                sceneInstance->animationPlayer.play();
             }
         }
 
         spaceKeyPressed_ = spaceKeyPressed;
 
-        if (sceneInstance_->animationPlayer.clip() != nullptr)
+        if (sceneInstance->animationPlayer.clip() != nullptr)
         {
             const stylized::asset::SceneAsset*
                 sceneAsset =
-                    assetRegistry_.get(sceneInstance_->sceneHandle);
+                    assetRegistry_.get(sceneInstance->sceneHandle);
 
             if (sceneAsset == nullptr)
             {
@@ -197,11 +207,11 @@ protected:
                 CpuClock::now();
 
             const bool animationUpdated =
-                sceneInstance_->animationPlayer.update(
+                sceneInstance->animationPlayer.update(
                     deltaTime,
                     *sceneAsset,
-                    sceneInstance_->scenePose,
-                    sceneInstance_->morphPose);
+                    sceneInstance->scenePose,
+                    sceneInstance->morphPose);
 
             updateCpuTiming(
                 cpuTimings_.animationMilliseconds,
@@ -220,9 +230,9 @@ protected:
                 CpuClock::now();
 
             const bool skinningUpdated =
-                sceneInstance_->skinningPalettes.update(
+                sceneInstance->skinningPalettes.update(
                     *sceneAsset,
-                    sceneInstance_->scenePose);
+                    sceneInstance->scenePose);
 
             updateCpuTiming(
                 cpuTimings_.skinningMilliseconds,
@@ -238,7 +248,9 @@ protected:
                 return;
             }
 
-            if (!applyMorphAnimation(*sceneAsset))
+            if (!applyMorphAnimation(
+                    *sceneAsset,
+                    *sceneInstance))
             {
                 std::cerr
                     << "Failed to apply Morph animation.\n";
@@ -257,7 +269,7 @@ protected:
             CpuClock::now();
 
         for (stylized::render::RuntimeMeshInstance& instance :
-             sceneInstance_->morphMeshInstances)
+             sceneInstance->morphMeshInstances)
         {
             if (instance.primitiveCount() == 0)
             {
@@ -279,7 +291,7 @@ protected:
             morphStart);
 
         const stylized::asset::SceneAsset* sceneAsset =
-            assetRegistry_.get(sceneInstance_->sceneHandle);
+            assetRegistry_.get(sceneInstance->sceneHandle);
 
         if (sceneAsset == nullptr)
         {
@@ -312,7 +324,7 @@ protected:
 
             if (!sceneCameraController_.update(
                     sceneAsset->cameras[selectedCameraIndex_],
-                    sceneInstance_->scenePose,
+                    sceneInstance->scenePose,
                     camera_))
             {
                 std::cerr
@@ -352,17 +364,18 @@ protected:
 
         if (framebufferWidth == 0 || framebufferHeight == 0) return;
 
-        if (smokeTest_ && modelPath_.empty())
+        stylized::viewer::SceneRuntimeInstance*
+            sceneInstance =
+                primarySceneInstance();
+
+        if (sceneInstance == nullptr)
         {
-            ++renderedFrameCount_;
-
-            if (renderedFrameCount_ >= 3) requestExit();
-
+            requestExit();
             return;
         }
 
         const stylized::asset::SceneAsset* sceneAsset =
-            assetRegistry_.get(sceneInstance_->sceneHandle);
+            assetRegistry_.get(sceneInstance->sceneHandle);
 
         if (sceneAsset == nullptr)
         {
@@ -375,16 +388,47 @@ protected:
         const CpuClock::time_point extractionStart =
             CpuClock::now();
 
-        const bool extracted = extractor_->extract(
-                *sceneAsset,
-                sceneInstance_->scenePose,
-                sceneInstance_->skinningPalettes,
-                sceneInstance_->morphMeshInstances,
-                assetRegistry_,
-                camera_,
-                mainLight_,
-                activeMaterialTemplateHandle_,
-                renderWorld_);
+        bool extracted = extractor_->beginFrame(
+            camera_,
+            mainLight_,
+            renderWorld_);
+
+        if (extracted)
+        {
+            for (const auto& currentInstance :
+                sceneInstances_)
+            {
+                const stylized::asset::SceneAsset*
+                    currentSceneAsset =
+                        assetRegistry_.get(
+                            currentInstance->sceneHandle);
+
+                if (currentSceneAsset == nullptr)
+                {
+                    extracted = false;
+                    break;
+                }
+
+                if (!extractor_->appendScene(
+                        *currentSceneAsset,
+                        currentInstance->scenePose,
+                        currentInstance->skinningPalettes,
+                        currentInstance->morphMeshInstances,
+                        assetRegistry_,
+                        activeMaterialTemplateHandle_,
+                        renderWorld_))
+                {
+                    extracted = false;
+                    break;
+                }
+            }
+        }
+
+        if (extracted)
+        {
+            extracted =
+                extractor_->endFrame(renderWorld_);
+        }
 
         updateCpuTiming(
             cpuTimings_.extractionMilliseconds,
@@ -489,9 +533,9 @@ protected:
             *resourceCache_,
             activeMaterialTemplateHandle_,
             sceneAsset,
-            sceneInstance_->animationPlayer,
-            sceneInstance_->skinningPalettes,
-            sceneInstance_->morphMeshInstances,
+            sceneInstance->animationPlayer,
+            sceneInstance->skinningPalettes,
+            sceneInstance->morphMeshInstances,
             renderWorld_,
             renderWorld_.renderStats.drawCalls,
             cpuTimings_,
@@ -538,7 +582,7 @@ protected:
                 std::size_t totalMorphUploads = 0;
 
                 for (const stylized::render::RuntimeMeshInstance& instance :
-                     sceneInstance_->morphMeshInstances)
+                     sceneInstance->morphMeshInstances)
                 {
                     lastMorphUploads +=
                         instance.lastUploadCount();
@@ -562,8 +606,16 @@ protected:
     void onShutdown() override
     {
         viewerPanels_.shutdown();
-        sceneInstance_->morphMeshInstances.clear();
-        sceneInstance_->morphPose.clear();
+
+        for (const auto& sceneInstance :
+             sceneInstances_)
+        {
+            sceneInstance->morphMeshInstances.clear();
+            sceneInstance->morphPose.clear();
+        }
+
+        sceneInstances_.clear();
+
         framePipeline_.reset();
         shadowPass_ = nullptr;
         forwardOpaquePass_ = nullptr;
@@ -779,16 +831,16 @@ private:
             assetRegistry_
         };
 
-        sceneInstance_ =
+        auto sceneInstance =
             std::make_unique<
                 stylized::viewer::SceneRuntimeInstance>();
 
-        sceneInstance_->sourcePath = modelPath_;
+        sceneInstance->sourcePath = modelPath_;
 
-        sceneInstance_->sceneHandle =
+        sceneInstance->sceneHandle =
             importer.import(modelPath_);
 
-        if (sceneInstance_->sceneHandle.isNull())
+        if (sceneInstance->sceneHandle.isNull())
         {
             std::cerr
                 << "Failed to import model: "
@@ -799,7 +851,7 @@ private:
         }
 
         const stylized::asset::SceneAsset* sceneAsset =
-            assetRegistry_.get(sceneInstance_->sceneHandle);
+            assetRegistry_.get(sceneInstance->sceneHandle);
 
         if (sceneAsset == nullptr ||
             !sceneAsset->isValid())
@@ -810,7 +862,7 @@ private:
             return false;
         }
 
-        if (!sceneInstance_->scenePose.initialize(*sceneAsset))
+        if (!sceneInstance->scenePose.initialize(*sceneAsset))
         {
             std::cerr
                 << "Failed to initialize scene pose.\n";
@@ -818,7 +870,7 @@ private:
             return false;
         }
 
-        if (!sceneInstance_->morphPose.initialize(*sceneAsset))
+        if (!sceneInstance->morphPose.initialize(*sceneAsset))
         {
             std::cerr
                 << "Failed to initialize scene Morph pose.\n";
@@ -826,9 +878,9 @@ private:
             return false;
         }
 
-        sceneInstance_->appliedMorphPoseVersion = 0;
+        sceneInstance->appliedMorphPoseVersion = 0;
 
-        if (!sceneInstance_->skinningPalettes.initialize(
+        if (!sceneInstance->skinningPalettes.initialize(
                 graphicsDevice(),
                 *sceneAsset,
                 assetRegistry_))
@@ -840,9 +892,9 @@ private:
             return false;
         }
 
-        if (!sceneInstance_->skinningPalettes.update(
+        if (!sceneInstance->skinningPalettes.update(
                 *sceneAsset,
-                sceneInstance_->scenePose))
+                sceneInstance->scenePose))
         {
             std::cerr
                 << "Failed to upload bind-pose "
@@ -851,8 +903,8 @@ private:
             return false;
         }
 
-        sceneInstance_->morphMeshInstances.clear();
-        sceneInstance_->morphMeshInstances.resize(
+        sceneInstance->morphMeshInstances.clear();
+        sceneInstance->morphMeshInstances.resize(
             sceneAsset->nodes.size());
 
         std::size_t morphPrimitiveCount = 0;
@@ -897,7 +949,7 @@ private:
                     assetRegistry_);
 
             if (runtimeMesh == nullptr ||
-                !sceneInstance_->morphMeshInstances[nodeIndex].initialize(
+                !sceneInstance->morphMeshInstances[nodeIndex].initialize(
                     graphicsDevice(),
                     morphComputeProgram_,
                     *meshAsset,
@@ -913,7 +965,7 @@ private:
             }
 
             morphPrimitiveCount +=
-                sceneInstance_->morphMeshInstances[nodeIndex]
+                sceneInstance->morphMeshInstances[nodeIndex]
                     .morphPrimitiveCount();
         }
 
@@ -926,7 +978,7 @@ private:
             morphPrimitiveCount > 0)
         {
             for (stylized::render::RuntimeMeshInstance& instance :
-                 sceneInstance_->morphMeshInstances)
+                 sceneInstance->morphMeshInstances)
             {
                 bool selectedTarget = false;
 
@@ -961,7 +1013,7 @@ private:
 
         std::cout
             << "Skinning palette count: "
-            << sceneInstance_->skinningPalettes.paletteCount()
+            << sceneInstance->skinningPalettes.paletteCount()
             << '\n';
 
         if (!sceneAsset->animations.empty())
@@ -970,7 +1022,7 @@ private:
                 animationClip =
                     sceneAsset->animations.front();
 
-            if (!sceneInstance_->animationPlayer.setClip(
+            if (!sceneInstance->animationPlayer.setClip(
                     &animationClip))
             {
                 std::cerr
@@ -979,8 +1031,8 @@ private:
                 return false;
             }
 
-            sceneInstance_->animationPlayer.setLooping(true);
-            sceneInstance_->animationPlayer.play();
+            sceneInstance->animationPlayer.setLooping(true);
+            sceneInstance->animationPlayer.play();
 
             std::cout
                 << "Animation selected: "
@@ -1006,35 +1058,40 @@ private:
             cameraFocused_ = true;
         }
 
+        sceneInstances_.push_back(
+            std::move(sceneInstance));
+
         return true;
     }
 
     bool applyMorphAnimation(
-        const stylized::asset::SceneAsset& sceneAsset)
+        const stylized::asset::SceneAsset& sceneAsset,
+        stylized::viewer::SceneRuntimeInstance&
+            sceneInstance)
     {
         const std::uint64_t morphPoseVersion =
-            sceneInstance_->morphPose.version();
+            sceneInstance.morphPose.version();
 
-        if (sceneInstance_->appliedMorphPoseVersion == morphPoseVersion)
+        if (sceneInstance.appliedMorphPoseVersion == morphPoseVersion)
         {
             return true;
         }
 
-        if (sceneInstance_->morphMeshInstances.size() !=
+        if (sceneInstance.morphMeshInstances.size() !=
             sceneAsset.nodes.size())
         {
             return false;
         }
 
         for (std::size_t nodeIndex = 0;
-             nodeIndex < sceneInstance_->morphMeshInstances.size();
+             nodeIndex < sceneInstance.morphMeshInstances.size();
              ++nodeIndex)
         {
             stylized::render::RuntimeMeshInstance& instance =
-                sceneInstance_->morphMeshInstances[nodeIndex];
+                sceneInstance.morphMeshInstances[nodeIndex];
 
             const std::span<const float> animatedWeights =
-                sceneInstance_->morphPose.weights(
+                sceneInstance.morphPose.weights(
                     static_cast<std::uint32_t>(nodeIndex));
 
             for (std::size_t primitiveIndex = 0;
@@ -1074,7 +1131,7 @@ private:
             }
         }
 
-        sceneInstance_->appliedMorphPoseVersion = morphPoseVersion;
+        sceneInstance.appliedMorphPoseVersion = morphPoseVersion;
 
         return true;
     }
@@ -1208,6 +1265,18 @@ private:
         return !activeMaterialTemplateHandle_.isNull();
     }
 
+    [[nodiscard]]
+    stylized::viewer::SceneRuntimeInstance*
+    primarySceneInstance() noexcept
+    {
+        if (sceneInstances_.empty())
+        {
+            return nullptr;
+        }
+
+        return sceneInstances_.front().get();
+    }
+
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
 
@@ -1215,9 +1284,10 @@ private:
 
     stylized::asset::AssetRegistry assetRegistry_;
 
-    std::unique_ptr<
-        stylized::viewer::SceneRuntimeInstance>
-        sceneInstance_;
+    std::vector<
+        std::unique_ptr<
+            stylized::viewer::SceneRuntimeInstance>>
+        sceneInstances_;
 
     std::unique_ptr<
         stylized::render::RuntimeResourceCache>
