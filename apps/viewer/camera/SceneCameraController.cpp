@@ -18,24 +18,29 @@ constexpr float directionEpsilon = 1.0e-8F;
 bool SceneCameraController::update(
     const stylized::asset::CameraAsset& cameraAsset,
     const stylized::animation::ScenePose& scenePose,
+    const glm::mat4& instanceWorldMatrix,
     stylized::scene::Camera& camera) const noexcept
 {
-    const glm::mat4* worldMatrix =
+    const glm::mat4* nodeWorldMatrix =
         scenePose.worldMatrix(cameraAsset.nodeIndex);
 
-    if (worldMatrix == nullptr)
+    if (nodeWorldMatrix == nullptr)
     {
         return false;
     }
 
+    const glm::mat4 worldMatrix =
+        instanceWorldMatrix *
+        *nodeWorldMatrix;
+
     const glm::vec3 position =
         glm::vec3(
-            *worldMatrix *
+            worldMatrix *
             glm::vec4(
                 cameraAsset.localPosition,
                 1.0F));
 
-    const glm::mat3 worldBasis{*worldMatrix};
+    const glm::mat3 worldBasis{worldMatrix};
 
     glm::vec3 forward =
         worldBasis * cameraAsset.localForward;

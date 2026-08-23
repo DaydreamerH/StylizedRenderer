@@ -68,9 +68,13 @@ public:
         const asset::SceneAsset& sceneAsset,
         const animation::ScenePose& scenePose,
         const SkinningPaletteSet& skinningPalettes,
-        std::span<const RuntimeMeshInstance> morphMeshInstances,
+        std::span<const RuntimeMeshInstance>
+            morphMeshInstances,
+        const glm::mat4& instanceWorldMatrix,
         const asset::AssetRegistry& assetRegistry,
-        asset::AssetHandle<material::MaterialTemplate> materialTemplate,
+        asset::AssetHandle<
+            material::MaterialTemplate>
+            materialTemplate,
         RenderWorld& renderWorld) const;
 
     [[nodiscard]] bool endFrame(

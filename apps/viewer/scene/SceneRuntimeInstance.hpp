@@ -11,6 +11,8 @@
 #include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
 
+#include <scene/Transform.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <vector>
@@ -29,6 +31,8 @@ struct SceneRuntimeInstance final
     : core::NonCopyable
 {
     std::filesystem::path sourcePath;
+
+    scene::Transform rootTransform;
 
     asset::AssetHandle<asset::SceneAsset>
         sceneHandle;

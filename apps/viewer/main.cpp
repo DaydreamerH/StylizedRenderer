@@ -285,6 +285,7 @@ protected:
             if (!sceneCameraController_.update(
                     sceneAsset->cameras[selectedCameraIndex_],
                     sceneInstance->scenePose,
+                    sceneInstance->rootTransform.localMatrix(),
                     camera_))
             {
                 std::cerr
@@ -374,6 +375,7 @@ protected:
                         currentInstance->scenePose,
                         currentInstance->skinningPalettes,
                         currentInstance->morphMeshInstances,
+                        currentInstance->rootTransform.localMatrix(),
                         assetRegistry_,
                         activeMaterialTemplateHandle_,
                         renderWorld_))
