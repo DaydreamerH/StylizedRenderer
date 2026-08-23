@@ -48,6 +48,7 @@ class RuntimeMeshInstance;
 class ScreenSpaceOutlinePass;
 class ShadowPass;
 class SkinningPaletteSet;
+struct DirectionalLightData;
 struct RenderWorld;
 }
 
@@ -84,6 +85,7 @@ public:
         std::span<stylized::render::RuntimeMeshInstance>
             morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,
+        stylized::render::DirectionalLightData& mainLight,
         std::size_t drawCallCount,
         const ViewerCpuTimings& cpuTimings,
         const stylized::render::FramePipeline* framePipeline,

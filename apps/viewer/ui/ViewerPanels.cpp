@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <map>
 #include <span>
 #include <string>
@@ -694,6 +695,7 @@ void ViewerPanels::draw(
     const std::span<stylized::render::RuntimeMeshInstance>
         morphMeshInstances,
     stylized::render::RenderWorld& renderWorld,
+    stylized::render::DirectionalLightData& mainLight,
     const std::size_t drawCallCount,
     const ViewerCpuTimings& cpuTimings,
     const stylized::render::FramePipeline* framePipeline,
@@ -2127,9 +2129,6 @@ void ViewerPanels::draw(
 
     ImGui::SeparatorText("Lighting");
 
-    const stylized::render::DirectionalLightData& mainLight =
-        renderWorld.mainView.mainLight;
-
     if (beginPropertyTable(
             "##LightingProperties"))
     {
@@ -2138,24 +2137,39 @@ void ViewerPanels::draw(
             &shadowsEnabled);
 
         beginPropertyRow("Direction");
-        ImGui::Text(
-            "(%.2f, %.2f, %.2f)",
-            mainLight.direction.x,
-            mainLight.direction.y,
-            mainLight.direction.z);
+        if (ImGui::DragFloat3(
+                "##Value",
+                &mainLight.direction.x,
+                0.01F,
+                -1.0F,
+                1.0F,
+                "%.2f"))
+        {
+            const float directionLengthSquared =
+                mainLight.direction.x * mainLight.direction.x +
+                mainLight.direction.y * mainLight.direction.y +
+                mainLight.direction.z * mainLight.direction.z;
+
+            if (directionLengthSquared > 1.0e-8F)
+            {
+                const float inverseLength =
+                    1.0F / std::sqrt(directionLengthSquared);
+
+                mainLight.direction *= inverseLength;
+            }
+        }
         endPropertyRow();
 
-        beginPropertyRow("Color");
-        ImGui::Text(
-            "(%.2f, %.2f, %.2f)",
-            mainLight.color.r,
-            mainLight.color.g,
-            mainLight.color.b);
-        endPropertyRow();
+        drawColorEdit3Property(
+            "Color",
+            &mainLight.color.r);
 
-        beginPropertyRow("Intensity");
-        ImGui::Text("%.2f", mainLight.intensity);
-        endPropertyRow();
+        drawSliderFloatProperty(
+            "Intensity",
+            &mainLight.intensity,
+            0.0F,
+            5.0F,
+            "%.2f");
 
         ImGui::EndTable();
     }

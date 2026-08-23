@@ -501,6 +501,7 @@ protected:
             sceneInstance->skinningPalettes,
             sceneInstance->morphMeshInstances,
             renderWorld_,
+            mainLight_,
             renderWorld_.renderStats.drawCalls,
             cpuTimings_,
             framePipeline_.get(),
@@ -1451,7 +1452,7 @@ private:
             1.0F,
             1.0F
         },
-        .intensity = 3.0F
+        .intensity = 2.0F
     };
 
     ViewerPanels viewerPanels_;
