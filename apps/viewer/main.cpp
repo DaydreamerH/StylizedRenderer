@@ -104,21 +104,21 @@ class ViewerApplication final
 public:
     ViewerApplication(
         const bool smokeTest,
-        std::filesystem::path modelPath)
+        std::vector<std::filesystem::path> modelPaths)
         : Application(makeApplicationDesc(smokeTest)),
-          smokeTest_(smokeTest),
-          modelPath_(std::move(modelPath))
+        smokeTest_(smokeTest),
+        modelPaths_(std::move(modelPaths))
     {
     }
 
 protected:
     bool onInit() override
     {
-        if (modelPath_.empty())
+        if (modelPaths_.empty())
         {
             std::cerr
                 << "Usage: stylized_viewer "
-                << "<model-file>\n";
+                << "<model-file> [additional-model-files...]\n";
 
             return false;
         }
@@ -137,9 +137,10 @@ protected:
             return false;
         }
 
-        if (!modelPath_.empty())
+        for (const std::filesystem::path& modelPath :
+            modelPaths_)
         {
-            if (!loadScene())
+            if (!loadScene(modelPath))
             {
                 return false;
             }
@@ -528,7 +529,7 @@ protected:
         viewerPanels_.beginFrame();
 
         viewerPanels_.draw(
-            modelPath_,
+            sceneInstance->sourcePath,
             assetRegistry_,
             *resourceCache_,
             activeMaterialTemplateHandle_,
@@ -825,26 +826,29 @@ private:
         return true;
     }
 
-    bool loadScene()
+    bool loadScene(const std::filesystem::path& modelPath)
     {
         stylized::asset::importers::ModelImporter importer{
             assetRegistry_
         };
 
+        const bool primaryScene =
+            sceneInstances_.empty();
+
         auto sceneInstance =
             std::make_unique<
                 stylized::viewer::SceneRuntimeInstance>();
 
-        sceneInstance->sourcePath = modelPath_;
+        sceneInstance->sourcePath = modelPath;
 
         sceneInstance->sceneHandle =
-            importer.import(modelPath_);
+            importer.import(modelPath);
 
         if (sceneInstance->sceneHandle.isNull())
         {
             std::cerr
                 << "Failed to import model: "
-                << modelPath_
+                << modelPath
                 << '\n';
 
             return false;
@@ -1048,14 +1052,17 @@ private:
             << sceneAsset->nodes.size()
             << '\n';
 
-        useImportedCamera_ =
-            !sceneAsset->cameras.empty();
-
-        selectedCameraIndex_ = 0;
-
-        if (useImportedCamera_)
+        if (primaryScene)
         {
-            cameraFocused_ = true;
+            useImportedCamera_ =
+                !sceneAsset->cameras.empty();
+
+            selectedCameraIndex_ = 0;
+
+            if (useImportedCamera_)
+            {
+                cameraFocused_ = true;
+            }
         }
 
         sceneInstances_.push_back(
@@ -1280,7 +1287,7 @@ private:
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
 
-    std::filesystem::path modelPath_;
+    std::vector<std::filesystem::path> modelPaths_;
 
     stylized::asset::AssetRegistry assetRegistry_;
 
@@ -1384,7 +1391,9 @@ int main(
     char* argv[])
 {
     bool smokeTest = false;
-    std::filesystem::path modelPath;
+
+    std::vector<std::filesystem::path>
+        modelPaths;
 
     for (int argumentIndex = 1;
          argumentIndex < argc;
@@ -1400,18 +1409,15 @@ int main(
             continue;
         }
 
-        if (modelPath.empty())
-        {
-            modelPath =
-                std::filesystem::path{
-                    argument
-                };
-        }
+        modelPaths.push_back(
+            std::filesystem::path{
+                argument
+            });
     }
 
     ViewerApplication application{
         smokeTest,
-        modelPath
+        std::move(modelPaths)
     };
 
     return application.run();
