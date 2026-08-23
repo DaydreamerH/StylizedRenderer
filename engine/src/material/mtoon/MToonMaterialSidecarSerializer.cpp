@@ -320,6 +320,7 @@ Json texturePathsToJson(
     return Json{
         {"baseColor", textures.baseColor.generic_string()},
         {"shade", textures.shade.generic_string()},
+        {"toonRamp", textures.toonRamp.generic_string()},
         {"normal", textures.normal.generic_string()},
         {"shadingShift", textures.shadingShift.generic_string()},
         {"matcap", textures.matcap.generic_string()},
@@ -411,6 +412,12 @@ bool parseTexturePaths(
             *iterator,
             "shade",
             material.textures.shade,
+            material.name,
+            error) &&
+        readTexturePath(
+            *iterator,
+            "toonRamp",
+            material.textures.toonRamp,
             material.name,
             error) &&
         readTexturePath(

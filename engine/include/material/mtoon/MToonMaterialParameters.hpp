@@ -42,6 +42,9 @@ struct MToonTextureBindings
         shadeTexture;
 
     asset::AssetHandle<asset::TextureAsset>
+        toonRampTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
         normalTexture;
 
     asset::AssetHandle<asset::TextureAsset>

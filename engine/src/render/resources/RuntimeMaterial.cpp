@@ -92,7 +92,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uEmissionTexture",
                 7
-            ))
+            ) ||
+            !shader_.setInt(
+                "uToonRampTexture",
+                8))
         {
             shader_ = {};
         }
@@ -272,6 +275,14 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& toonRampTexture =
+            parameters.textures.toonRampTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.toonRampTexture,
+                assetRegistry
+            );
+
         const graphics::Texture2D& normalTexture =
             parameters.textures.normalTexture.isNull()
             ? resourceCache.neutralNormalTexture()
@@ -305,6 +316,7 @@ bool RuntimeMaterial::bind(
             );
 
         if (!shadeTexture.isValid() ||
+            !toonRampTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
             !normalTexture.isValid() ||
             !matcapTexture.isValid() ||
@@ -436,6 +448,7 @@ bool RuntimeMaterial::bind(
         matcapTexture.bind(5);
         rimMaskTexture.bind(6);
         emissionTexture.bind(7);
+        toonRampTexture.bind(8);
 
         return true;
     }

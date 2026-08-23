@@ -340,6 +340,14 @@ bool captureMToonSidecarMaterial(
             "textures.shade",
             error) ||
         !resolveTexturePath(
+            parameters.textures.toonRampTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.toonRamp,
+            materialName,
+            "textures.toonRamp",
+            error) ||
+        !resolveTexturePath(
             parameters.textures.normalTexture,
             assets,
             sidecarDirectory,
@@ -519,6 +527,17 @@ bool applyMToonSidecarMaterial(
             parameters.textures.shadeTexture,
             source.name,
             "textures.shade",
+            error) ||
+        !restoreTexture(
+            source.textures.toonRamp,
+            asset::ColorSpace::Srgb,
+            parameters.textures.toonRampTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.toonRampTexture,
+            source.name,
+            "textures.toonRamp",
             error) ||
         !restoreTexture(
             source.textures.normal,

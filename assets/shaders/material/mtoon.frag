@@ -59,6 +59,8 @@ uniform int uMToonDebugView;
 uniform int uAlphaMaskEnabled;
 uniform float uAlphaCutoff;
 
+uniform sampler2D uToonRampTexture;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -302,8 +304,24 @@ void main()
         shadingFactor *
         shadowVisibility;
 
+    const float toonRampCoordinate =
+        1.0 - clamp(
+            visibleShadingFactor,
+            0.0,
+            1.0);
+
+    const vec3 sampledToonRamp =
+        texture(
+            uToonRampTexture,
+            vec2(0.5, toonRampCoordinate)
+        ).rgb;
+
     const vec3 directColor =
-        mix(shadeColor, litColor, visibleShadingFactor);
+        mix(
+            shadeColor,
+            litColor,
+            visibleShadingFactor
+        ) * sampledToonRamp;
 
     const float hemisphereWeight =
         clamp(

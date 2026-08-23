@@ -28,6 +28,7 @@ struct MToonSidecarTexturePaths
 {
     std::filesystem::path baseColor;
     std::filesystem::path shade;
+    std::filesystem::path toonRamp;
     std::filesystem::path normal;
     std::filesystem::path shadingShift;
     std::filesystem::path matcap;
