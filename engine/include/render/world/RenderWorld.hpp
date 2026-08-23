@@ -209,6 +209,8 @@ struct RenderWorld
 
     RenderStats renderStats;
 
+    std::uint32_t nextObjectId = 0;
+
     void clear() noexcept
     {
         items.clear();
@@ -218,6 +220,8 @@ struct RenderWorld
 
         renderStats = {};
         shadowView = {};
+
+        nextObjectId = 0;
     }
 
     [[nodiscard]] bool empty() const noexcept

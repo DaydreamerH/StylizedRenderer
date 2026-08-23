@@ -260,6 +260,12 @@ bool RenderExtractor::appendScene(
     const std::size_t nodeCount =
         sceneAsset.nodes.size();
 
+    const std::uint32_t objectIdBase =
+        renderWorld.nextObjectId;
+
+    renderWorld.nextObjectId +=
+        static_cast<std::uint32_t>(nodeCount);
+
     for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
     {
         const asset::SceneNodeAsset& node = sceneAsset.nodes[nodeIndex];
@@ -490,7 +496,9 @@ bool RenderExtractor::appendScene(
             item.world = worldMatrix;
             item.normalMatrix = normalMatrix;
 
-            item.objectId = static_cast<std::uint32_t>(nodeIndex);
+            item.objectId =
+                objectIdBase +
+                static_cast<std::uint32_t>(nodeIndex);
 
             switch (item.materialClass)
             {
