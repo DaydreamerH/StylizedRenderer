@@ -84,6 +84,15 @@ void updateCpuTiming(
         sampleMilliseconds);
 }
 
+[[nodiscard]]
+double elapsedMilliseconds(
+    const CpuClock::time_point startTime) noexcept
+{
+    return std::chrono::duration<double, std::milli>{
+        CpuClock::now() - startTime
+    }.count();
+}
+
 stylized::core::ApplicationDesc makeApplicationDesc(
     const bool smokeTest)
 {
@@ -106,8 +115,8 @@ public:
         const bool smokeTest,
         std::vector<std::filesystem::path> modelPaths)
         : Application(makeApplicationDesc(smokeTest)),
-        smokeTest_(smokeTest),
-        modelPaths_(std::move(modelPaths))
+          smokeTest_(smokeTest),
+          modelPaths_(std::move(modelPaths))
     {
     }
 
@@ -138,7 +147,7 @@ protected:
         }
 
         for (const std::filesystem::path& modelPath :
-            modelPaths_)
+             modelPaths_)
         {
             if (!loadScene(modelPath))
             {
@@ -174,122 +183,72 @@ protected:
                 stylized::platform::Key::Space);
 
         if (spaceKeyPressed &&
-            !spaceKeyPressed_ &&
-            sceneInstance->animationPlayer.clip() != nullptr)
+            !spaceKeyPressed_)
         {
-            if (sceneInstance->animationPlayer.isPlaying())
+            bool anyAnimationPlaying = false;
+
+            for (const auto& currentInstance :
+                 sceneInstances_)
             {
-                sceneInstance->animationPlayer.pause();
+                if (currentInstance->animationPlayer.clip() != nullptr &&
+                    currentInstance->animationPlayer.isPlaying())
+                {
+                    anyAnimationPlaying = true;
+                    break;
+                }
             }
-            else
+
+            for (const auto& currentInstance :
+                 sceneInstances_)
             {
-                sceneInstance->animationPlayer.play();
+                if (currentInstance->animationPlayer.clip() == nullptr)
+                {
+                    continue;
+                }
+
+                if (anyAnimationPlaying)
+                {
+                    currentInstance->animationPlayer.pause();
+                }
+                else
+                {
+                    currentInstance->animationPlayer.play();
+                }
             }
         }
 
         spaceKeyPressed_ = spaceKeyPressed;
 
-        if (sceneInstance->animationPlayer.clip() != nullptr)
+        double animationMilliseconds = 0.0;
+        double skinningMilliseconds = 0.0;
+        double morphMilliseconds = 0.0;
+
+        for (const auto& currentInstance :
+             sceneInstances_)
         {
-            const stylized::asset::SceneAsset*
-                sceneAsset =
-                    assetRegistry_.get(sceneInstance->sceneHandle);
-
-            if (sceneAsset == nullptr)
-            {
-                std::cerr
-                    << "SceneAsset is no longer available.\n";
-
-                requestExit();
-                return;
-            }
-
-            const CpuClock::time_point animationStart =
-                CpuClock::now();
-
-            const bool animationUpdated =
-                sceneInstance->animationPlayer.update(
+            if (!updateSceneInstance(
                     deltaTime,
-                    *sceneAsset,
-                    sceneInstance->scenePose,
-                    sceneInstance->morphPose);
-
-            updateCpuTiming(
-                cpuTimings_.animationMilliseconds,
-                animationStart);
-
-            if (!animationUpdated)
+                    *currentInstance,
+                    animationMilliseconds,
+                    skinningMilliseconds,
+                    morphMilliseconds))
             {
-                std::cerr
-                    << "Failed to update animation.\n";
-
-                requestExit();
-                return;
-            }
-
-            const CpuClock::time_point skinningStart =
-                CpuClock::now();
-
-            const bool skinningUpdated =
-                sceneInstance->skinningPalettes.update(
-                    *sceneAsset,
-                    sceneInstance->scenePose);
-
-            updateCpuTiming(
-                cpuTimings_.skinningMilliseconds,
-                skinningStart);
-
-            if (!skinningUpdated)
-            {
-                std::cerr
-                    << "Failed to update "
-                    << "skinning palettes.\n";
-
-                requestExit();
-                return;
-            }
-
-            if (!applyMorphAnimation(
-                    *sceneAsset,
-                    *sceneInstance))
-            {
-                std::cerr
-                    << "Failed to apply Morph animation.\n";
-
-                requestExit();
-                return;
-            }
-        }
-        else
-        {
-            cpuTimings_.animationMilliseconds = 0.0;
-            cpuTimings_.skinningMilliseconds = 0.0;
-        }
-
-        const CpuClock::time_point morphStart =
-            CpuClock::now();
-
-        for (stylized::render::RuntimeMeshInstance& instance :
-             sceneInstance->morphMeshInstances)
-        {
-            if (instance.primitiveCount() == 0)
-            {
-                continue;
-            }
-
-            if (!instance.update())
-            {
-                std::cerr
-                    << "Failed to update Morph mesh instance.\n";
-
                 requestExit();
                 return;
             }
         }
 
-        updateCpuTiming(
+        updateSmoothedTiming(
+            cpuTimings_.animationMilliseconds,
+            animationMilliseconds);
+
+        updateSmoothedTiming(
+            cpuTimings_.skinningMilliseconds,
+            skinningMilliseconds);
+
+        updateSmoothedTiming(
             cpuTimings_.morphMilliseconds,
-            morphStart);
+            morphMilliseconds);
 
         const stylized::asset::SceneAsset* sceneAsset =
             assetRegistry_.get(sceneInstance->sceneHandle);
@@ -1067,6 +1026,115 @@ private:
 
         sceneInstances_.push_back(
             std::move(sceneInstance));
+
+        return true;
+    }
+
+    bool updateSceneInstance(
+        const float deltaTime,
+        stylized::viewer::SceneRuntimeInstance&
+            sceneInstance,
+        double& animationMilliseconds,
+        double& skinningMilliseconds,
+        double& morphMilliseconds)
+    {
+        const stylized::asset::SceneAsset* sceneAsset =
+            assetRegistry_.get(
+                sceneInstance.sceneHandle);
+
+        if (sceneAsset == nullptr)
+        {
+            std::cerr
+                << "SceneAsset is no longer available: "
+                << sceneInstance.sourcePath
+                << '\n';
+
+            return false;
+        }
+
+        if (sceneInstance.animationPlayer.clip() != nullptr)
+        {
+            const CpuClock::time_point animationStart =
+                CpuClock::now();
+
+            const bool animationUpdated =
+                sceneInstance.animationPlayer.update(
+                    deltaTime,
+                    *sceneAsset,
+                    sceneInstance.scenePose,
+                    sceneInstance.morphPose);
+
+            animationMilliseconds +=
+                elapsedMilliseconds(animationStart);
+
+            if (!animationUpdated)
+            {
+                std::cerr
+                    << "Failed to update animation: "
+                    << sceneInstance.sourcePath
+                    << '\n';
+
+                return false;
+            }
+
+            if (!applyMorphAnimation(
+                    *sceneAsset,
+                    sceneInstance))
+            {
+                std::cerr
+                    << "Failed to apply Morph animation: "
+                    << sceneInstance.sourcePath
+                    << '\n';
+
+                return false;
+            }
+
+            const CpuClock::time_point skinningStart =
+                CpuClock::now();
+
+            const bool skinningUpdated =
+                sceneInstance.skinningPalettes.update(
+                    *sceneAsset,
+                    sceneInstance.scenePose);
+
+            skinningMilliseconds +=
+                elapsedMilliseconds(skinningStart);
+
+            if (!skinningUpdated)
+            {
+                std::cerr
+                    << "Failed to update skinning palettes: "
+                    << sceneInstance.sourcePath
+                    << '\n';
+
+                return false;
+            }
+        }
+
+        const CpuClock::time_point morphStart =
+            CpuClock::now();
+
+        for (stylized::render::RuntimeMeshInstance& instance :
+             sceneInstance.morphMeshInstances)
+        {
+            if (instance.primitiveCount() == 0)
+            {
+                continue;
+            }
+
+            if (!instance.update())
+            {
+                std::cerr
+                    << "Failed to update Morph mesh instance: "
+                    << sceneInstance.sourcePath
+                    << '\n';
+
+                return false;
+            }
+        }
+
+        morphMilliseconds +=
+            elapsedMilliseconds(morphStart);
 
         return true;
     }
