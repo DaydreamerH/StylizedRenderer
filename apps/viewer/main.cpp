@@ -479,25 +479,6 @@ protected:
             cpuTimings_.renderMilliseconds,
             renderStart);
 
-        ++statsPrintFrameCount_;
-
-        if (statsPrintFrameCount_ % 60 == 0)
-        {
-            const stylized::render::RenderStats& stats =
-                renderWorld_.renderStats;
-
-            std::cout
-                << "Render stats: total="
-                << stats.totalItems
-                << ", visible="
-                << stats.visibleItems
-                << ", culled="
-                << stats.culledItems
-                << ", drawCalls="
-                << stats.drawCalls
-                << '\n';
-        }
-
         if (smokeTest_)
         {
             ++renderedFrameCount_;
@@ -1164,7 +1145,6 @@ private:
 
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
-    std::uint64_t statsPrintFrameCount_ = 0;
 
     std::filesystem::path modelPath_;
 
