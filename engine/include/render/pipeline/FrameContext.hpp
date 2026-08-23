@@ -23,6 +23,7 @@ struct FrameContext
     RenderWorld* renderWorld = nullptr;
 
     graphics::RenderTexture* hdrColor = nullptr;
+    graphics::RenderTexture* ldrColor = nullptr;
     graphics::RenderTexture* normal = nullptr;
     graphics::RenderTexture* outlineMask = nullptr;
     graphics::DepthTexture* depth = nullptr;
@@ -34,6 +35,7 @@ struct FrameContext
     bool shadowsEnabled = true;
     float exposure = 1.0F;
     bool toneMappingEnabled = true;
+    bool fxaaEnabled = true;
 };
 
 } // namespace stylized::render

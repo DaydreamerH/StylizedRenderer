@@ -681,7 +681,8 @@ void ViewerPanels::draw(
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
     float& exposure,
-    bool& toneMappingEnabled)
+    bool& toneMappingEnabled,
+    bool& fxaaEnabled)
 {
     if (!initialized_)
     {
@@ -1987,6 +1988,10 @@ void ViewerPanels::draw(
         drawCheckboxProperty(
             "Tone Mapping",
             &toneMappingEnabled);
+
+        drawCheckboxProperty(
+            "FXAA",
+            &fxaaEnabled);
 
         ImGui::EndTable();
     }

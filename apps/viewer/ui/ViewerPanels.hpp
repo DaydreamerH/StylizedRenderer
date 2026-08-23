@@ -91,7 +91,8 @@ public:
         stylized::material::MaterialKind& materialKind,
         bool& shadowsEnabled,
         float& exposure,
-        bool& toneMappingEnabled);
+        bool& toneMappingEnabled,
+        bool& fxaaEnabled);
 
     void endFrame() noexcept;
     void shutdown() noexcept;

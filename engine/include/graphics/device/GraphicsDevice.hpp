@@ -31,6 +31,7 @@ public:
 
     void setViewport(const Extent2D& extent);
     void setCullMode(CullMode mode);
+    void setDepthTest(bool enabled);
     void setDepthWrite(bool enabled);
     void setAlphaBlending(bool enabled);
 

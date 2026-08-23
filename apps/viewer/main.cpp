@@ -17,6 +17,7 @@
 #include <render/renderers/StaticModelRenderer.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
 #include <render/passes/ForwardTransparentPass.hpp>
+#include <render/passes/FxaaPass.hpp>
 #include <render/pipeline/FrameContext.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ShadowPass.hpp>
@@ -394,6 +395,7 @@ protected:
         frame.exposure = exposure_;
         frame.toneMappingEnabled =
             toneMappingEnabled_;
+        frame.fxaaEnabled = fxaaEnabled_;
 
         const CpuClock::time_point pipelineStart =
             CpuClock::now();
@@ -454,7 +456,8 @@ protected:
             activeMaterialKind_,
             shadowsEnabled_,
             exposure_,
-            toneMappingEnabled_);
+            toneMappingEnabled_,
+            fxaaEnabled_);
 
         if (!updateActiveMaterialTemplate())
         {
@@ -714,6 +717,25 @@ private:
 
         if (!framePipeline_->addPass(
                 std::move(postProcessPass)))
+        {
+            return false;
+        }
+
+        auto fxaaPass =
+            std::make_unique<
+                stylized::render::FxaaPass>(
+                    graphicsDevice());
+
+        if (!fxaaPass->initialize())
+        {
+            std::cerr
+                << "Failed to initialize FxaaPass.\n";
+
+            return false;
+        }
+
+        if (!framePipeline_->addPass(
+                std::move(fxaaPass)))
         {
             return false;
         }
@@ -1190,6 +1212,7 @@ private:
     bool shadowsEnabled_ = true;
     float exposure_ = 1.0F;
     bool toneMappingEnabled_ = true;
+    bool fxaaEnabled_ = true;
 
     stylized::render::ShadowPass* shadowPass_ = nullptr;
     stylized::render::ForwardOpaquePass* forwardOpaquePass_ = nullptr;

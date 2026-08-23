@@ -1,4 +1,4 @@
-#include <render/passes/PostProcessPass.hpp>
+#include <render/passes/FxaaPass.hpp>
 
 #include <graphics/device/GraphicsCommands.hpp>
 #include <graphics/device/GraphicsDevice.hpp>
@@ -27,13 +27,13 @@ struct FullscreenVertex
 
 } // namespace
 
-PostProcessPass::PostProcessPass(
+FxaaPass::FxaaPass(
     graphics::GraphicsDevice& graphicsDevice) noexcept
     : graphicsDevice_(graphicsDevice)
 {
 }
 
-bool PostProcessPass::initialize()
+bool FxaaPass::initialize()
 {
     if (initialized_)
     {
@@ -41,15 +41,11 @@ bool PostProcessPass::initialize()
     }
 
     graphics::ShaderProgramDesc shaderDesc;
-
     shaderDesc.vertexShaderPath =
         "assets/shaders/postprocess/postprocess.vert";
-
     shaderDesc.fragmentShaderPath =
-        "assets/shaders/postprocess/postprocess.frag";
-
-    shaderDesc.debugName =
-        "Post Process";
+        "assets/shaders/postprocess/fxaa.frag";
+    shaderDesc.debugName = "FXAA";
 
     graphics::ShaderProgram newShader =
         graphicsDevice_.createShaderProgram(
@@ -91,7 +87,7 @@ bool PostProcessPass::initialize()
     vertexBufferDesc.usage =
         graphics::BufferUsage::Static;
     vertexBufferDesc.debugName =
-        "Post Process Vertex Buffer";
+        "FXAA Vertex Buffer";
 
     graphics::Buffer newVertexBuffer =
         graphicsDevice_.createBuffer(
@@ -109,7 +105,7 @@ bool PostProcessPass::initialize()
     indexBufferDesc.usage =
         graphics::BufferUsage::Static;
     indexBufferDesc.debugName =
-        "Post Process Index Buffer";
+        "FXAA Index Buffer";
 
     graphics::Buffer newIndexBuffer =
         graphicsDevice_.createBuffer(
@@ -149,26 +145,20 @@ bool PostProcessPass::initialize()
     };
 
     graphics::VertexArrayDesc vertexArrayDesc;
-
     vertexArrayDesc.vertexBuffer =
         &newVertexBuffer;
-
     vertexArrayDesc.indexBuffer =
         &newIndexBuffer;
-
     vertexArrayDesc.vertexBinding.binding = 0;
-
     vertexArrayDesc.vertexBinding.stride =
         sizeof(FullscreenVertex);
-
     vertexArrayDesc.attributes =
         std::span<
             const graphics::VertexAttributeDesc>{
                 attributes
             };
-
     vertexArrayDesc.debugName =
-        "Post Process Vertex Array";
+        "FXAA Vertex Array";
 
     graphics::VertexArray newVertexArray =
         graphicsDevice_.createVertexArray(
@@ -189,112 +179,47 @@ bool PostProcessPass::initialize()
     return true;
 }
 
-bool PostProcessPass::resize(
+bool FxaaPass::resize(
     const graphics::Extent2D extent)
 {
-    if (extent.width == 0 || extent.height == 0)
-    {
-        return false;
-    }
-
-    if (ldrColor_.isValid() &&
-        ldrColor_.extent().width == extent.width &&
-        ldrColor_.extent().height == extent.height)
-    {
-        return true;
-    }
-
-    graphics::RenderTextureDesc colorDesc;
-    colorDesc.extent = extent;
-    colorDesc.format =
-        graphics::RenderTextureFormat::RGBA8;
-    colorDesc.debugName =
-        "Post Process LDR Color";
-
-    graphics::RenderTexture newLdrColor =
-        graphicsDevice_.createRenderTexture(
-            colorDesc);
-
-    if (!newLdrColor.isValid())
-    {
-        return false;
-    }
-
-    const std::array<const graphics::RenderTexture*, 1>
-        colorTextures{
-            &newLdrColor
-        };
-
-    graphics::FramebufferDesc framebufferDesc;
-    framebufferDesc.colorTextures = colorTextures;
-    framebufferDesc.debugName =
-        "Post Process Framebuffer";
-
-    graphics::Framebuffer newFramebuffer =
-        graphicsDevice_.createFramebuffer(
-            framebufferDesc);
-
-    if (!newFramebuffer.isValid())
-    {
-        return false;
-    }
-
-    ldrColor_ = std::move(newLdrColor);
-    framebuffer_ = std::move(newFramebuffer);
-
-    return true;
+    return extent.width > 0 &&
+        extent.height > 0;
 }
 
-bool PostProcessPass::execute(
+bool FxaaPass::execute(
     FrameContext& frame)
 {
     lastDrawCallCount_ = 0;
 
     if (!initialized_ ||
-        frame.hdrColor == nullptr ||
-        !frame.hdrColor->isValid() ||
-        !ldrColor_.isValid() ||
-        !framebuffer_.isValid() ||
+        frame.ldrColor == nullptr ||
+        !frame.ldrColor->isValid() ||
         frame.framebufferSize.width == 0 ||
         frame.framebufferSize.height == 0)
     {
         return false;
     }
 
-    graphicsDevice_.bindFramebuffer(
-        &framebuffer_);
-
+    graphicsDevice_.bindFramebuffer(nullptr);
     graphicsDevice_.setViewport(
         frame.framebufferSize);
 
-    graphicsDevice_.clearColorAttachment(
-        0,
-        graphics::ClearValue{
-            0.0F,
-            0.0F,
-            0.0F,
-            1.0F
-        });
-
-    frame.hdrColor->bind(0);
+    frame.ldrColor->bind(0);
 
     if (!shader_.setInt(
-            "uHdrColor",
-            0))
-    {
-        return false;
-    }
-
-    if (!shader_.setFloat(
-            "uExposure",
-            frame.exposure))
-    {
-        return false;
-    }
-
-    if (!shader_.setInt(
-            "uToneMappingEnabled",
-            frame.toneMappingEnabled ? 1 : 0))
+            "uLdrColor",
+            0) ||
+        !shader_.setInt(
+            "uFxaaEnabled",
+            frame.fxaaEnabled ? 1 : 0) ||
+        !shader_.setVec2(
+            "uInverseScreenSize",
+            1.0F /
+                static_cast<float>(
+                    frame.framebufferSize.width),
+            1.0F /
+                static_cast<float>(
+                    frame.framebufferSize.height)))
     {
         return false;
     }
@@ -307,19 +232,12 @@ bool PostProcessPass::execute(
     graphicsDevice_.setColorAttachmentWrite(0, true);
 
     graphics::DrawIndexedCommand command;
-
-    command.shader =
-        &shader_;
-
-    command.vertexArray =
-        &vertexArray_;
-
+    command.shader = &shader_;
+    command.vertexArray = &vertexArray_;
     command.topology =
         graphics::PrimitiveTopology::Triangles;
-
     command.indexType =
         graphics::IndexType::Uint16;
-
     command.indexCount = 3;
     command.firstIndex = 0;
 
@@ -330,21 +248,20 @@ bool PostProcessPass::execute(
     graphicsDevice_.setCullMode(
         graphics::CullMode::Back);
 
-    frame.ldrColor = &ldrColor_;
-    frame.framebuffer = &framebuffer_;
+    frame.framebuffer = nullptr;
 
     lastDrawCallCount_ = 1;
 
     return true;
 }
 
-std::string_view PostProcessPass::name()
+std::string_view FxaaPass::name()
     const noexcept
 {
-    return "PostProcessPass";
+    return "FxaaPass";
 }
 
-std::size_t PostProcessPass::lastDrawCallCount()
+std::size_t FxaaPass::lastDrawCallCount()
     const noexcept
 {
     return lastDrawCallCount_;

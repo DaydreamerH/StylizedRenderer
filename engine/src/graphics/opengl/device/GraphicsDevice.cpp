@@ -114,6 +114,23 @@ void GraphicsDevice::setCullMode(const CullMode mode)
     glCullFace(toOpenGLCullFace(mode));
 }
 
+void GraphicsDevice::setDepthTest(const bool enabled)
+{
+    if (!initialized_)
+    {
+        return;
+    }
+
+    if (enabled)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+}
+
 void GraphicsDevice::setDepthWrite(const bool enabled)
 {
     if (!initialized_)
