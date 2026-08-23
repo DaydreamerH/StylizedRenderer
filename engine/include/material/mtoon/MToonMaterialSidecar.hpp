@@ -35,6 +35,7 @@ struct MToonSidecarTexturePaths
     std::filesystem::path rimMask;
     std::filesystem::path emission;
     std::filesystem::path outlineWidthMask;
+    std::filesystem::path occlusion;
 };
 
 struct MToonSidecarMaterial
@@ -76,6 +77,8 @@ struct MToonSidecarMaterial
     float outlineLightingMix = 0.0F;
 
     MToonSidecarTexturePaths textures;
+
+    float occlusionStrength = 1.0F;
 };
 
 struct MToonMaterialSidecar

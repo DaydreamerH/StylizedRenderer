@@ -329,7 +329,8 @@ Json texturePathsToJson(
         {
             "outlineWidthMask",
             textures.outlineWidthMask.generic_string()
-        }
+        },
+        {"occlusion", textures.occlusion.generic_string()}
     };
 }
 
@@ -373,7 +374,8 @@ Json materialToJson(
         {"emissionColor", toJson(material.emissionColor)},
         {"emissionStrength", material.emissionStrength},
         {"outline", outlineToJson(material)},
-        {"textures", texturePathsToJson(material.textures)}
+        {"textures", texturePathsToJson(material.textures)},
+        {"occlusionStrength", material.occlusionStrength}
     };
 }
 
@@ -454,6 +456,12 @@ bool parseTexturePaths(
             *iterator,
             "outlineWidthMask",
             material.textures.outlineWidthMask,
+            material.name,
+            error) &&
+        readTexturePath(
+            *iterator,
+            "occlusion",
+            material.textures.occlusion,
             material.name,
             error);
 }
@@ -610,6 +618,14 @@ bool parseMaterial(
             source,
             "giEqualization",
             material.giEqualization,
+            0.0F,
+            1.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "occlusionStrength",
+            material.occlusionStrength,
             0.0F,
             1.0F,
             material.name,

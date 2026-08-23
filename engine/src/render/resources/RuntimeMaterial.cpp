@@ -95,7 +95,11 @@ RuntimeMaterial::RuntimeMaterial(
             ) ||
             !shader_.setInt(
                 "uToonRampTexture",
-                8))
+                8) ||
+            !shader_.setInt(
+                "uOcclusionTexture",
+                9
+            ))
         {
             shader_ = {};
         }
@@ -315,13 +319,22 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& occlusionTexture =
+            parameters.textures.occlusionTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.occlusionTexture,
+                assetRegistry
+            );
+
         if (!shadeTexture.isValid() ||
             !toonRampTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
             !normalTexture.isValid() ||
             !matcapTexture.isValid() ||
             !rimMaskTexture.isValid() ||
-            !emissionTexture.isValid())
+            !emissionTexture.isValid() ||
+            !occlusionTexture.isValid())
         {
             return false;
         }
@@ -441,6 +454,14 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setFloat(
+            "uOcclusionStrength",
+            parameters.occlusionStrength
+        ))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);
@@ -449,6 +470,7 @@ bool RuntimeMaterial::bind(
         rimMaskTexture.bind(6);
         emissionTexture.bind(7);
         toonRampTexture.bind(8);
+        occlusionTexture.bind(9);
 
         return true;
     }

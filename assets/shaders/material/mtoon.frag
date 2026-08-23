@@ -61,6 +61,9 @@ uniform float uAlphaCutoff;
 
 uniform sampler2D uToonRampTexture;
 
+uniform sampler2D uOcclusionTexture;
+uniform float uOcclusionStrength;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -350,8 +353,21 @@ void main()
                 1.0)
             ) * max(uEnvironmentIntensity, 0.0);
 
+    const float sampledOcclusion =
+        texture(
+            uOcclusionTexture,
+            vertexTexCoord0
+        ).b;
+
+    const float occlusion =
+        mix(
+            1.0,
+            sampledOcclusion,
+            clamp(uOcclusionStrength, 0.0, 1.0)
+        );
+
     const vec3 indirectColor =
-        baseColor.rgb * environmentRadiance;
+        baseColor.rgb * environmentRadiance * occlusion;
 
     const vec3 viewNormal =
         normalize(mat3(uView) * normal);

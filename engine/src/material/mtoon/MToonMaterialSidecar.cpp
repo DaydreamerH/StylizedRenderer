@@ -323,6 +323,9 @@ bool captureMToonSidecarMaterial(
     captured.outlineLightingMix =
         parameters.outline.lightingMix;
 
+    captured.occlusionStrength =
+        parameters.occlusionStrength;
+
     if (!resolveTexturePath(
             instance.baseColorTexture,
             assets,
@@ -394,6 +397,14 @@ bool captureMToonSidecarMaterial(
             captured.textures.outlineWidthMask,
             materialName,
             "textures.outlineWidthMask",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.occlusionTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.occlusion,
+            materialName,
+            "textures.occlusion",
             error))
     {
         return false;
@@ -502,6 +513,9 @@ bool applyMToonSidecarMaterial(
     parameters.outline.lightingMix =
         source.outlineLightingMix;
 
+    parameters.occlusionStrength =
+        source.occlusionStrength;
+
     asset::importers::TextureImporter importer{
         assets
     };
@@ -604,6 +618,17 @@ bool applyMToonSidecarMaterial(
             parameters.textures.outlineWidthMaskTexture,
             source.name,
             "textures.outlineWidthMask",
+            error) ||
+        !restoreTexture(
+            source.textures.occlusion,
+            asset::ColorSpace::Linear,
+            parameters.textures.occlusionTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.occlusionTexture,
+            source.name,
+            "textures.occlusion",
             error))
     {
         return false;

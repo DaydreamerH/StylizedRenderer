@@ -61,6 +61,9 @@ struct MToonTextureBindings
 
     asset::AssetHandle<asset::TextureAsset>
         outlineWidthMaskTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        occlusionTexture;
 };
 
 struct MToonMaterialParameters
@@ -88,6 +91,8 @@ struct MToonMaterialParameters
     MToonOutlineParameters outline;
 
     MToonTextureBindings textures;
+
+    float occlusionStrength = 1.0F;
 };
 
 } // namespace stylized::material
