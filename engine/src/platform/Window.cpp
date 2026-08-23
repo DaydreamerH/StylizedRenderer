@@ -20,6 +20,9 @@ int toGlfwKey(const Key key)
     {
     case Key::Escape:
         return GLFW_KEY_ESCAPE;
+
+    case Key::Space:
+        return GLFW_KEY_SPACE;
     }
 
     return GLFW_KEY_UNKNOWN;

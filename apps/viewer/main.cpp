@@ -155,6 +155,26 @@ protected:
             cpuTimings_.frameIntervalMilliseconds,
             static_cast<double>(deltaTime) * 1000.0);
 
+        const bool spaceKeyPressed =
+            window().isKeyPressed(
+                stylized::platform::Key::Space);
+
+        if (spaceKeyPressed &&
+            !spaceKeyPressed_ &&
+            animationPlayer_.clip() != nullptr)
+        {
+            if (animationPlayer_.isPlaying())
+            {
+                animationPlayer_.pause();
+            }
+            else
+            {
+                animationPlayer_.play();
+            }
+        }
+
+        spaceKeyPressed_ = spaceKeyPressed;
+
         if (animationPlayer_.clip() != nullptr)
         {
             const stylized::asset::SceneAsset*
@@ -1207,6 +1227,8 @@ private:
     };
 
     bool cameraFocused_ = false;
+
+    bool spaceKeyPressed_ = false;
 
     stylized::animation::AnimationPlayer
         animationPlayer_;

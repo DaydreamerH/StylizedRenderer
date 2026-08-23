@@ -12,7 +12,8 @@ namespace stylized::platform
 
 enum class Key : uint8_t
 {
-    Escape
+    Escape,
+    Space
 };
 
 enum class MouseButton : uint8_t
