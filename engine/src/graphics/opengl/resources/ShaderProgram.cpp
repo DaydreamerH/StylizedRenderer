@@ -615,6 +615,18 @@ bool ShaderProgram::setVec4(
     return true;
 }
 
+bool ShaderProgram::setVec3(
+    std::string_view name,
+    const glm::vec3& value)
+{
+        return setVec3(
+        name,
+        value.r,
+        value.g,
+        value.b);
+}
+
+
 bool ShaderProgram::setVec4(
     const std::string_view name,
     const glm::vec4& value)

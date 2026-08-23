@@ -64,6 +64,11 @@ uniform sampler2D uToonRampTexture;
 uniform sampler2D uOcclusionTexture;
 uniform float uOcclusionStrength;
 
+uniform sampler2D uSpecularTexture;
+uniform vec3 uSpecularColor;
+uniform float uSpecularStrength;
+uniform float uSpecularPower;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -392,6 +397,36 @@ void main()
         ? toCamera * inversesqrt(toCameraLengthSquared)
         : normal;
 
+    const vec3 halfDirection =
+        normalize(lightDirection + viewDirection);
+
+    const float normalDotHalf =
+        max(dot(normal, halfDirection), 0.0);
+
+    const float specularLobe =
+        pow(
+            normalDotHalf,
+            max(uSpecularPower, 1.0)
+        );
+
+    const vec3 sampledSpecular =
+        texture(
+            uSpecularTexture,
+            vertexTexCoord0
+        ).rgb;
+
+    const float specularVisibility =
+        step(0.0, normalDotLight) *
+        shadowVisibility;
+
+    const vec3 specularContribution =
+        sampledSpecular *
+        uSpecularColor *
+        lightRadiance *
+        max(uSpecularStrength, 0.0) *
+        specularLobe *
+        specularVisibility;
+
     const float normalDotView =
         max(dot(normal, viewDirection), 0.0);
 
@@ -438,7 +473,8 @@ void main()
         indirectColor +
         matcapContribution +
         rimContribution +
-        emissionContribution;
+        emissionContribution +
+        specularContribution;
 
     vec3 outputColor = finalColor;
 

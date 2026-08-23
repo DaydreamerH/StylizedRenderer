@@ -99,6 +99,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uOcclusionTexture",
                 9
+            ) ||
+            !shader_.setInt(
+                "uSpecularTexture",
+                10
             ))
         {
             shader_ = {};
@@ -327,6 +331,14 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& specularTexture =
+            parameters.textures.specularTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.specularTexture,
+                assetRegistry
+            );
+
         if (!shadeTexture.isValid() ||
             !toonRampTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
@@ -334,7 +346,8 @@ bool RuntimeMaterial::bind(
             !matcapTexture.isValid() ||
             !rimMaskTexture.isValid() ||
             !emissionTexture.isValid() ||
-            !occlusionTexture.isValid())
+            !occlusionTexture.isValid() ||
+            !specularTexture.isValid())
         {
             return false;
         }
@@ -462,6 +475,19 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setVec3(
+                "uSpecularColor",
+                parameters.specularColor) ||
+            !shader_.setFloat(
+                "uSpecularStrength",
+                parameters.specularStrength) ||
+            !shader_.setFloat(
+                "uSpecularPower",
+                parameters.specularPower))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);
@@ -471,6 +497,7 @@ bool RuntimeMaterial::bind(
         emissionTexture.bind(7);
         toonRampTexture.bind(8);
         occlusionTexture.bind(9);
+        specularTexture.bind(10);
 
         return true;
     }

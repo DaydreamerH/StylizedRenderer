@@ -326,6 +326,15 @@ bool captureMToonSidecarMaterial(
     captured.occlusionStrength =
         parameters.occlusionStrength;
 
+    captured.specularColor =
+        parameters.specularColor;
+
+    captured.specularStrength =
+        parameters.specularStrength;
+
+    captured.specularPower =
+        parameters.specularPower;
+
     if (!resolveTexturePath(
             instance.baseColorTexture,
             assets,
@@ -405,6 +414,14 @@ bool captureMToonSidecarMaterial(
             captured.textures.occlusion,
             materialName,
             "textures.occlusion",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.specularTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.specular,
+            materialName,
+            "textures.specular",
             error))
     {
         return false;
@@ -515,6 +532,15 @@ bool applyMToonSidecarMaterial(
 
     parameters.occlusionStrength =
         source.occlusionStrength;
+
+    parameters.specularColor =
+        source.specularColor;
+
+    parameters.specularStrength =
+        source.specularStrength;
+
+    parameters.specularPower =
+        source.specularPower;
 
     asset::importers::TextureImporter importer{
         assets
@@ -629,6 +655,17 @@ bool applyMToonSidecarMaterial(
             parameters.textures.occlusionTexture,
             source.name,
             "textures.occlusion",
+            error) ||
+        !restoreTexture(
+            source.textures.specular,
+            asset::ColorSpace::Linear,
+            parameters.textures.specularTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.specularTexture,
+            source.name,
+            "textures.specular",
             error))
     {
         return false;

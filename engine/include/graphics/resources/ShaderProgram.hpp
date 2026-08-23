@@ -63,6 +63,8 @@ public:
 
     bool setVec4(std::string_view name, const glm::vec4& value);
 
+    bool setVec3(std::string_view name, const glm::vec3& value);
+
     bool setMat4(std::string_view name, const glm::mat4& value);
 
     bool setMat3(std::string_view name, const glm::mat3& value);

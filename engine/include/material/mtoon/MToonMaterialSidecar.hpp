@@ -36,6 +36,7 @@ struct MToonSidecarTexturePaths
     std::filesystem::path emission;
     std::filesystem::path outlineWidthMask;
     std::filesystem::path occlusion;
+    std::filesystem::path specular;
 };
 
 struct MToonSidecarMaterial
@@ -79,6 +80,10 @@ struct MToonSidecarMaterial
     MToonSidecarTexturePaths textures;
 
     float occlusionStrength = 1.0F;
+
+    glm::vec3 specularColor{1.0F};
+    float specularStrength = 1.0F;
+    float specularPower = 64.0F;
 };
 
 struct MToonMaterialSidecar

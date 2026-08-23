@@ -64,6 +64,9 @@ struct MToonTextureBindings
 
     asset::AssetHandle<asset::TextureAsset>
         occlusionTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        specularTexture;
 };
 
 struct MToonMaterialParameters
@@ -93,6 +96,10 @@ struct MToonMaterialParameters
     MToonTextureBindings textures;
 
     float occlusionStrength = 1.0F;
+
+    glm::vec3 specularColor{1.0F};
+    float specularStrength = 1.0F;
+    float specularPower = 64.0F;
 };
 
 } // namespace stylized::material

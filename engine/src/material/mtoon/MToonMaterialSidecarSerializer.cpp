@@ -330,7 +330,8 @@ Json texturePathsToJson(
             "outlineWidthMask",
             textures.outlineWidthMask.generic_string()
         },
-        {"occlusion", textures.occlusion.generic_string()}
+        {"occlusion", textures.occlusion.generic_string()},
+        {"specular", textures.specular.generic_string()},
     };
 }
 
@@ -375,7 +376,10 @@ Json materialToJson(
         {"emissionStrength", material.emissionStrength},
         {"outline", outlineToJson(material)},
         {"textures", texturePathsToJson(material.textures)},
-        {"occlusionStrength", material.occlusionStrength}
+        {"occlusionStrength", material.occlusionStrength},
+        {"specularColor", toJson(material.specularColor)},
+        {"specularStrength", material.specularStrength},
+        {"specularPower", material.specularPower}
     };
 }
 
@@ -462,6 +466,12 @@ bool parseTexturePaths(
             *iterator,
             "occlusion",
             material.textures.occlusion,
+            material.name,
+            error) &&
+        readTexturePath(
+            *iterator,
+            "specular",
+            material.textures.specular,
             material.name,
             error);
 }
@@ -628,6 +638,30 @@ bool parseMaterial(
             material.occlusionStrength,
             0.0F,
             1.0F,
+            material.name,
+            error) &&
+        readVector<3>(
+            source,
+            "specularColor",
+            &material.specularColor.x,
+            0.0F,
+            1.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "specularStrength",
+            material.specularStrength,
+            0.0F,
+            4.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "specularPower",
+            material.specularPower,
+            1.0F,
+            256.0F,
             material.name,
             error) &&
         readVector<3>(
