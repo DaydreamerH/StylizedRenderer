@@ -51,6 +51,11 @@ class SkinningPaletteSet;
 struct RenderWorld;
 }
 
+namespace stylized::scene
+{
+class Transform;
+}
+
 class ViewerPanels final : public stylized::core::NonCopyable
 {
 public:
@@ -63,7 +68,9 @@ public:
     void beginFrame() noexcept;
 
     void draw(
-        const std::filesystem::path& modelPath,
+        std::span<const std::filesystem::path> modelPaths,
+        std::size_t& selectedSceneIndex,
+        stylized::scene::Transform& rootTransform,
         stylized::asset::AssetRegistry& assets,
         stylized::render::RuntimeResourceCache& resourceCache,
         stylized::asset::AssetHandle<
@@ -104,6 +111,8 @@ private:
 
     std::string materialSidecarStatus_;
     bool materialSidecarFailed_ = false;
+    std::filesystem::path displayedModelPath_;
+    bool pendingSidecarLoad_ = true;
 
     float sidebarWidth_ = 0.0F;
     bool sidebarResizing_ = false;

@@ -19,6 +19,7 @@
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
+#include <scene/Transform.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/mtoon/MToonMaterialSidecar.hpp>
@@ -27,6 +28,9 @@
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+
+#include <glm/gtc/quaternion.hpp>
+#include <glm/trigonometric.hpp>
 
 #include <algorithm>
 #include <cfloat>
@@ -244,6 +248,27 @@ bool drawDragFloatProperty(
             minimum,
             maximum,
             format);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawDragFloat3Property(
+    const char* label,
+    glm::vec3& value,
+    const float speed,
+    const char* format)
+{
+    beginPropertyRow(label);
+
+    const bool changed =
+        ImGui::DragFloat3(
+            "##Value",
+            &value.x,
+            speed,
+            0.0F,
+            0.0F,
+            format);
+
     endPropertyRow();
     return changed;
 }
@@ -653,7 +678,9 @@ void ViewerPanels::beginFrame() noexcept
 }
 
 void ViewerPanels::draw(
-    const std::filesystem::path& modelPath,
+    const std::span<const std::filesystem::path> modelPaths,
+    std::size_t& selectedSceneIndex,
+    stylized::scene::Transform& rootTransform,
     stylized::asset::AssetRegistry& assets,
     stylized::render::RuntimeResourceCache& resourceCache,
     const stylized::asset::AssetHandle<
@@ -687,6 +714,70 @@ void ViewerPanels::draw(
     if (!initialized_)
     {
         return;
+    }
+
+    if (modelPaths.empty())
+    {
+        return;
+    }
+
+    selectedSceneIndex =
+        std::min(
+            selectedSceneIndex,
+            modelPaths.size() - 1);
+
+    const std::filesystem::path& modelPath =
+        modelPaths[selectedSceneIndex];
+
+    if (displayedModelPath_ != modelPath)
+    {
+        displayedModelPath_ = modelPath;
+        selectedMaterial_ = {};
+        materialSidecarStatus_.clear();
+        materialSidecarFailed_ = false;
+        pendingSidecarLoad_ = true;
+    }
+
+    const auto materialHandles =
+        collectMaterialHandles(
+            assets,
+            scene);
+
+    if (pendingSidecarLoad_ &&
+        materialKind ==
+            stylized::material::MaterialKind::MToon)
+    {
+        pendingSidecarLoad_ = false;
+
+        const std::filesystem::path sidecarPath =
+            makeMaterialSidecarPath(modelPath);
+
+        if (std::filesystem::exists(sidecarPath))
+        {
+            stylized::material::MToonSidecarError sidecarError;
+
+            materialSidecarFailed_ =
+                !loadMaterialSidecar(
+                    modelPath,
+                    materialHandles,
+                    materialTemplate,
+                    assets,
+                    resourceCache,
+                    sidecarError);
+
+            materialSidecarStatus_ =
+                materialSidecarFailed_
+                ? formatSidecarError(sidecarError)
+                : "Loaded: " + sidecarPath.string();
+        }
+        else
+        {
+            materialSidecarStatus_ =
+                "No sidecar: " +
+                sidecarPath.string();
+
+            materialSidecarFailed_ = false;
+        }
     }
 
     const ImGuiViewport* viewport =
@@ -845,6 +936,107 @@ void ViewerPanels::draw(
 
     if (ImGui::BeginTabItem("Scene"))
     {
+    ImGui::SeparatorText("Scene Instance");
+
+    const std::string selectedSceneName =
+        modelPath.filename().string();
+
+    if (beginPropertyTable(
+            "##SceneInstanceProperties"))
+    {
+        beginPropertyRow("Selected");
+
+        if (ImGui::BeginCombo(
+                "##Value",
+                selectedSceneName.c_str()))
+        {
+            for (std::size_t index = 0;
+                 index < modelPaths.size();
+                 ++index)
+            {
+                const std::string visibleName =
+                    modelPaths[index].filename().string();
+
+                const std::string label =
+                    visibleName +
+                    "##scene_instance_" +
+                    std::to_string(index);
+
+                const bool selected =
+                    index == selectedSceneIndex;
+
+                if (ImGui::Selectable(
+                        label.c_str(),
+                        selected))
+                {
+                    selectedSceneIndex = index;
+                }
+
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        endPropertyRow();
+
+        glm::vec3 position =
+            rootTransform.translation();
+
+        if (drawDragFloat3Property(
+                "Position",
+                position,
+                0.01F,
+                "%.3f"))
+        {
+            rootTransform.setTranslation(position);
+        }
+
+        glm::vec3 rotationDegrees =
+            glm::degrees(
+                glm::eulerAngles(
+                    rootTransform.rotation()));
+
+        if (drawDragFloat3Property(
+                "Rotation",
+                rotationDegrees,
+                0.25F,
+                "%.1f deg"))
+        {
+            const glm::quat rotation =
+                glm::quat(
+                    glm::radians(rotationDegrees));
+
+            (void)rootTransform.setRotation(rotation);
+        }
+
+        glm::vec3 scale = rootTransform.scale();
+
+        if (drawDragFloat3Property(
+                "Scale",
+                scale,
+                0.01F,
+                "%.3f"))
+        {
+            rootTransform.setScale(scale);
+        }
+
+        ImGui::EndTable();
+    }
+
+    if (ImGui::Button(
+            "Reset Transform",
+            ImVec2{-FLT_MIN, 0.0F}))
+    {
+        rootTransform.setTranslation(glm::vec3{0.0F});
+        (void)rootTransform.setRotation(
+            glm::quat{1.0F, 0.0F, 0.0F, 0.0F});
+        rootTransform.setScale(glm::vec3{1.0F});
+    }
+
     ImGui::SeparatorText("Scene Overview");
 
     if (ImGui::BeginTable(
@@ -1357,11 +1549,6 @@ void ViewerPanels::draw(
 
         ImGui::EndTable();
     }
-
-    const auto materialHandles =
-        collectMaterialHandles(
-            assets,
-            scene);
 
     const auto selectedIterator =
         std::find(

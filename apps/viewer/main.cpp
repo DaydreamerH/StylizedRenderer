@@ -327,7 +327,7 @@ protected:
 
         stylized::viewer::SceneRuntimeInstance*
             sceneInstance =
-                primarySceneInstance();
+                selectedSceneInstance();
 
         if (sceneInstance == nullptr)
         {
@@ -490,7 +490,9 @@ protected:
         viewerPanels_.beginFrame();
 
         viewerPanels_.draw(
-            sceneInstance->sourcePath,
+            std::span<const std::filesystem::path>{modelPaths_},
+            selectedSceneInstanceIndex_,
+            sceneInstance->rootTransform,
             assetRegistry_,
             *resourceCache_,
             activeMaterialTemplateHandle_,
@@ -1354,10 +1356,30 @@ private:
         return sceneInstances_.front().get();
     }
 
+    [[nodiscard]]
+    stylized::viewer::SceneRuntimeInstance*
+    selectedSceneInstance() noexcept
+    {
+        if (sceneInstances_.empty())
+        {
+            return nullptr;
+        }
+
+        selectedSceneInstanceIndex_ =
+            std::min(
+                selectedSceneInstanceIndex_,
+                sceneInstances_.size() - 1);
+
+        return sceneInstances_[
+            selectedSceneInstanceIndex_].get();
+    }
+
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
 
     std::vector<std::filesystem::path> modelPaths_;
+
+    std::size_t selectedSceneInstanceIndex_ = 0;
 
     stylized::asset::AssetRegistry assetRegistry_;
 
