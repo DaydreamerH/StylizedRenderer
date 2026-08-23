@@ -185,40 +185,80 @@ bool RenderExtractor::extract(
         materialTemplate,
     RenderWorld& renderWorld) const
 {
-    if (!scenePose.isForScene(sceneAsset) ||
-        scenePose.worldMatricesDirty() ||
-        scenePose.nodeCount() !=
-            sceneAsset.nodes.size() ||
-        morphMeshInstances.size() !=
-            sceneAsset.nodes.size())
+    return beginFrame(
+            camera,
+            mainLight,
+            renderWorld) &&
+        appendScene(
+            sceneAsset,
+            scenePose,
+            skinningPalettes,
+            morphMeshInstances,
+            assetRegistry,
+            materialTemplate,
+            renderWorld) &&
+        endFrame(renderWorld);
+
+}
+
+bool RenderExtractor::beginFrame(
+    const scene::Camera& camera,
+    const DirectionalLightData& mainLight,
+    RenderWorld& renderWorld) const
+{
+    renderWorld.clear();
+
+    renderWorld.mainView.view =
+        camera.viewMatrix();
+
+    renderWorld.mainView.projection =
+        camera.projectionMatrix();
+
+    renderWorld.mainView.viewProjection =
+        camera.viewProjectionMatrix();
+
+    renderWorld.mainView.cameraPosition =
+        camera.position();
+
+    renderWorld.mainView.nearPlane =
+        camera.nearPlane();
+
+    renderWorld.mainView.farPlane =
+        camera.farPlane();
+
+    renderWorld.mainView.frustum =
+        math::Frustum::fromViewProjection(
+            renderWorld.mainView.viewProjection);
+
+    if (!renderWorld.mainView.frustum.isValid())
     {
         return false;
     }
 
-    renderWorld.clear();
-
-    renderWorld.mainView.view = camera.viewMatrix();
-
-    renderWorld.mainView.projection = camera.projectionMatrix();
-
-    renderWorld.mainView.viewProjection = camera.viewProjectionMatrix();
-
-    renderWorld.mainView.cameraPosition = camera.position();
-
-    renderWorld.mainView.nearPlane = camera.nearPlane();
-
-    renderWorld.mainView.farPlane = camera.farPlane();
-
-    renderWorld.mainView.frustum = 
-        math::Frustum::fromViewProjection(renderWorld.mainView.viewProjection);
-    if (!renderWorld.mainView.frustum.isValid()) return false;
-
     renderWorld.mainView.mainLight = mainLight;
+
+    return true;
+}
+
+bool RenderExtractor::appendScene(
+    const asset::SceneAsset& sceneAsset,
+    const animation::ScenePose& scenePose,
+    const SkinningPaletteSet& skinningPalettes,
+    std::span<const RuntimeMeshInstance> morphMeshInstances,
+    const asset::AssetRegistry& assetRegistry,
+    asset::AssetHandle<material::MaterialTemplate> materialTemplate,
+    RenderWorld& renderWorld) const
+{
+    if (!scenePose.isForScene(sceneAsset) ||
+        scenePose.worldMatricesDirty() ||
+        scenePose.nodeCount() != sceneAsset.nodes.size() ||
+        morphMeshInstances.size() != sceneAsset.nodes.size())
+    {
+        return false;
+    }
 
     const std::size_t nodeCount =
         sceneAsset.nodes.size();
-
-    math::Bounds shadowCasterBounds;
 
     for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
     {
@@ -422,7 +462,7 @@ bool RenderExtractor::extract(
                 && item.materialClass !=
                     RenderMaterialClass::Transparent)
             {
-                shadowCasterBounds.expand(item.worldBounds);
+                renderWorld.shadowCasterBounds.expand(item.worldBounds);
 
                 ShadowRenderItem shadowItem;
                 shadowItem.primitive = &primitive;
@@ -469,22 +509,23 @@ bool RenderExtractor::extract(
 
             renderWorld.items.push_back(item);
         }
-
-    }
-
-    if (shadowCasterBounds.isValid())
-    {
-        if (!buildDirectionalShadowView(
-            shadowCasterBounds,
-            mainLight,
-            renderWorld.shadowView
-        ))
-        {
-            return false;
-        }
     }
 
     return true;
+}
+
+bool RenderExtractor::endFrame(
+    RenderWorld& renderWorld) const
+{
+    if (!renderWorld.shadowCasterBounds.isValid())
+    {
+        return true;
+    }
+
+    return buildDirectionalShadowView(
+        renderWorld.shadowCasterBounds,
+        renderWorld.mainView.mainLight,
+        renderWorld.shadowView);
 }
 
 } // namespace stylized::render

@@ -58,8 +58,27 @@ public:
             materialTemplate,
         RenderWorld& renderWorld) const;
 
+
+    [[nodiscard]] bool beginFrame(
+        const scene::Camera& camera,
+        const DirectionalLightData& mainLight,
+        RenderWorld& renderWorld) const;
+
+    [[nodiscard]] bool appendScene(
+        const asset::SceneAsset& sceneAsset,
+        const animation::ScenePose& scenePose,
+        const SkinningPaletteSet& skinningPalettes,
+        std::span<const RuntimeMeshInstance> morphMeshInstances,
+        const asset::AssetRegistry& assetRegistry,
+        asset::AssetHandle<material::MaterialTemplate> materialTemplate,
+        RenderWorld& renderWorld) const;
+
+    [[nodiscard]] bool endFrame(
+        RenderWorld& renderWorld) const;
+
 private:
     RuntimeResourceCache& resourceCache_;
+
 };
 
 } // namespace stylized::render

@@ -202,6 +202,8 @@ struct RenderWorld
     RenderView mainView;
     ShadowView shadowView;
 
+    math::Bounds shadowCasterBounds;
+
     std::vector<RenderItem> items;
     std::vector<ShadowRenderItem> shadowItems;
 
@@ -211,6 +213,8 @@ struct RenderWorld
     {
         items.clear();
         shadowItems.clear();
+
+        shadowCasterBounds = {};
 
         renderStats = {};
         shadowView = {};
