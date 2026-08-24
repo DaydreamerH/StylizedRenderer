@@ -19,6 +19,11 @@ public:
         stylized::platform::Window& window,
         bool inputEnabled = true);
 
+    // Adopt the camera's current position and target as the orbit state.
+    // This lets manual control take over immediately after another camera
+    // controller has been active.
+    void adoptCurrentView() noexcept;
+
     void focus(const stylized::math::Bounds& bounds) noexcept;
 
     void setTarget(const glm::vec3& target) noexcept;

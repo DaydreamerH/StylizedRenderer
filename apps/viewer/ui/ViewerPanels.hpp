@@ -78,6 +78,7 @@ public:
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
+        const stylized::asset::SceneAsset* cameraScene,
         stylized::animation::AnimationPlayer&
             animationPlayer,
         const stylized::render::SkinningPaletteSet&
@@ -101,7 +102,9 @@ public:
         bool& shadowsEnabled,
         float& exposure,
         bool& toneMappingEnabled,
-        bool& fxaaEnabled);
+        bool& fxaaEnabled,
+        bool& useImportedCamera,
+        std::size_t& selectedCameraIndex);
 
     void endFrame() noexcept;
     void shutdown() noexcept;

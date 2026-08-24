@@ -259,9 +259,36 @@ protected:
             return;
         }
 
-        if (useImportedCamera_ &&
-            selectedCameraIndex_ < sceneAsset->cameras.size())
+        const bool hasImportedCameras =
+            !sceneAsset->cameras.empty();
+
+        if (!hasImportedCameras)
         {
+            // A scene without camera assets can never enter imported-camera
+            // mode, including after a runtime scene selection change.
+            useImportedCamera_ = false;
+            selectedCameraIndex_ = 0;
+        }
+
+        if (cameraModeInitialized_ &&
+            previousUseImportedCamera_ != useImportedCamera_)
+        {
+            if (!useImportedCamera_)
+            {
+                // Preserve the current view when manual orbit control takes
+                // over. The hand-off is intentionally instantaneous.
+                cameraController_.adoptCurrentView();
+            }
+
+            previousUseImportedCamera_ = useImportedCamera_;
+        }
+
+        if (useImportedCamera_)
+        {
+            selectedCameraIndex_ = std::min(
+                selectedCameraIndex_,
+                sceneAsset->cameras.size() - 1);
+
             std::uint32_t framebufferWidth = 0;
             std::uint32_t framebufferHeight = 0;
 
@@ -487,6 +514,18 @@ protected:
         const CpuClock::time_point uiStart =
             CpuClock::now();
 
+        const stylized::asset::SceneAsset* cameraSceneAsset =
+            nullptr;
+
+        if (const stylized::viewer::SceneRuntimeInstance*
+                cameraSceneInstance =
+                    primarySceneInstance();
+            cameraSceneInstance != nullptr)
+        {
+            cameraSceneAsset = assetRegistry_.get(
+                cameraSceneInstance->sceneHandle);
+        }
+
         viewerPanels_.beginFrame();
 
         viewerPanels_.draw(
@@ -497,6 +536,7 @@ protected:
             *resourceCache_,
             activeMaterialTemplateHandle_,
             sceneAsset,
+            cameraSceneAsset,
             sceneInstance->animationPlayer,
             sceneInstance->skinningPalettes,
             sceneInstance->morphMeshInstances,
@@ -515,7 +555,9 @@ protected:
             shadowsEnabled_,
             exposure_,
             toneMappingEnabled_,
-            fxaaEnabled_);
+            fxaaEnabled_,
+            useImportedCamera_,
+            selectedCameraIndex_);
 
         if (!updateActiveMaterialTemplate())
         {
@@ -1022,6 +1064,9 @@ private:
                 !sceneAsset->cameras.empty();
 
             selectedCameraIndex_ = 0;
+            previousUseImportedCamera_ =
+                useImportedCamera_;
+            cameraModeInitialized_ = true;
 
             if (useImportedCamera_)
             {
@@ -1470,6 +1515,8 @@ private:
 
     bool useImportedCamera_ = false;
     std::size_t selectedCameraIndex_ = 0;
+    bool previousUseImportedCamera_ = false;
+    bool cameraModeInitialized_ = false;
 
     bool spaceKeyPressed_ = false;
 

@@ -688,6 +688,7 @@ void ViewerPanels::draw(
         stylized::material::MaterialTemplate>
         materialTemplate,
     const stylized::asset::SceneAsset* scene,
+    const stylized::asset::SceneAsset* cameraScene,
     stylized::animation::AnimationPlayer&
         animationPlayer,
     const stylized::render::SkinningPaletteSet&
@@ -711,7 +712,9 @@ void ViewerPanels::draw(
     bool& shadowsEnabled,
     float& exposure,
     bool& toneMappingEnabled,
-    bool& fxaaEnabled)
+    bool& fxaaEnabled,
+    bool& useImportedCamera,
+    std::size_t& selectedCameraIndex)
 {
     if (!initialized_)
     {
@@ -1257,6 +1260,107 @@ void ViewerPanels::draw(
             skinningPalettes.paletteCount(),
             skinningPalettes.jointMatrixCount(),
             skinningPalettes.lastUploadCount());
+    }
+
+    ImGui::SeparatorText("Camera Control");
+
+    if (cameraScene == nullptr ||
+        cameraScene->cameras.empty())
+    {
+        // Imported camera mode is not meaningful without camera assets.
+        // Keep the runtime state normalized if the loaded scene changes.
+        useImportedCamera = false;
+        selectedCameraIndex = 0;
+
+        ImGui::TextDisabled(
+            "No imported cameras; manual control only.");
+    }
+    else
+    {
+        static constexpr const char* cameraModes[] = {
+            "Manual",
+            "Imported"
+        };
+
+        int cameraMode = useImportedCamera ? 1 : 0;
+
+        selectedCameraIndex = std::min(
+            selectedCameraIndex,
+            cameraScene->cameras.size() - 1);
+
+        if (beginPropertyTable(
+                "##CameraControlProperties"))
+        {
+            if (drawComboProperty(
+                    "Mode",
+                    &cameraMode,
+                    cameraModes,
+                    2))
+            {
+                useImportedCamera = cameraMode == 1;
+            }
+
+            beginPropertyRow("Camera");
+
+            const stylized::asset::CameraAsset& selectedCamera =
+                cameraScene->cameras[selectedCameraIndex];
+
+            const std::string selectedCameraName =
+                selectedCamera.name.empty()
+                    ? "Camera " +
+                        std::to_string(selectedCameraIndex)
+                    : selectedCamera.name;
+
+            if (ImGui::BeginCombo(
+                    "##Value",
+                    selectedCameraName.c_str()))
+            {
+                for (std::size_t index = 0;
+                     index < cameraScene->cameras.size();
+                     ++index)
+                {
+                    const stylized::asset::CameraAsset& camera =
+                        cameraScene->cameras[index];
+
+                    const std::string cameraName =
+                        camera.name.empty()
+                            ? "Camera " +
+                                std::to_string(index)
+                            : camera.name;
+
+                    const std::string label =
+                        cameraName +
+                        "##imported_camera_" +
+                        std::to_string(index);
+
+                    const bool selected =
+                        index == selectedCameraIndex;
+
+                    if (ImGui::Selectable(
+                            label.c_str(),
+                            selected))
+                    {
+                        selectedCameraIndex = index;
+                    }
+
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
+            endPropertyRow();
+            ImGui::EndTable();
+        }
+
+        ImGui::TextDisabled(
+            "Imported cameras: %s",
+            cameraScene->name.empty()
+                ? "primary scene"
+                : cameraScene->name.c_str());
     }
 
     if (scene != nullptr &&

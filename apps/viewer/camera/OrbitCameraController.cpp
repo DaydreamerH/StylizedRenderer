@@ -51,8 +51,6 @@ void OrbitCameraController::update(
     previousCursorX_ = cursorX;
     previousCursorY_ = cursorY;
 
-    bool changed = false;
-
     if (inputEnabled &&
         window.isMouseButtonPressed(
             stylized::platform::MouseButton::Left))
@@ -62,7 +60,6 @@ void OrbitCameraController::update(
 
         pitch_ = std::clamp(pitch_, -pitchLimit, pitchLimit);
 
-        changed = true;
     }
 
     if (inputEnabled &&
@@ -77,7 +74,6 @@ void OrbitCameraController::update(
 
         target_ += right * (-deltaX * movementScale) + cameraUp * (deltaY * movementScale);
 
-        changed = true;
     }
 
     const double scrollDelta = window.consumeScrollDelta();
@@ -88,7 +84,6 @@ void OrbitCameraController::update(
         distance_ *= std::exp(-static_cast<float>(scrollDelta) * zoomSensitivity);
         distance_ = std::clamp(distance_, minimumDistance, maximumDistance);
 
-        changed = true;
     }
 
     uint32_t framebufferWidth = 0;
@@ -103,10 +98,40 @@ void OrbitCameraController::update(
         if (!camera_.setAspectRatio(aspectRatio)) return;
     }
 
-    if (changed)
+    // Re-apply the orbit state every manual frame.  Besides keeping the
+    // camera synchronized after an input change, this makes switching from
+    // an imported camera to manual control immediate.
+    updateCamera();
+}
+
+void OrbitCameraController::adoptCurrentView() noexcept
+{
+    const glm::vec3 offset =
+        camera_.position() - camera_.target();
+
+    const float distance =
+        glm::length(offset);
+
+    if (distance <= minimumDistance)
     {
-        updateCamera();
+        return;
     }
+
+    const glm::vec3 direction =
+        offset / distance;
+
+    target_ = camera_.target();
+    distance_ = std::clamp(
+        distance,
+        minimumDistance,
+        maximumDistance);
+    yaw_ = std::atan2(direction.x, direction.z);
+    pitch_ = std::clamp(
+        std::asin(std::clamp(direction.y, -1.0F, 1.0F)),
+        -pitchLimit,
+        pitchLimit);
+
+    hasPreviousCursor_ = false;
 }
 
 void OrbitCameraController::focus(const stylized::math::Bounds& bounds) noexcept
