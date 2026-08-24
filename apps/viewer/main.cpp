@@ -1301,18 +1301,14 @@ private:
 
         if (primaryScene)
         {
-            useImportedCamera_ =
-                !sceneAsset->cameras.empty();
+            // Imported cameras remain available for runtime switching, but
+            // manual control is the default for every newly loaded scene.
+            useImportedCamera_ = false;
 
             selectedCameraIndex_ = 0;
-            previousUseImportedCamera_ =
-                useImportedCamera_;
+            previousUseImportedCamera_ = false;
             cameraModeInitialized_ = true;
-
-            if (useImportedCamera_)
-            {
-                cameraFocused_ = true;
-            }
+            cameraFocused_ = false;
         }
 
         sceneInstances_.push_back(
