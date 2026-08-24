@@ -17,7 +17,7 @@ struct CameraAsset
     std::string name;
     std::uint32_t nodeIndex = invalidNodeIndex;
 
-    float verticalFieldOfView = 60.0F;
+    float verticalFieldOfView = 30.04F;
     float aspectRatio = 0.0F;
     float nearPlane = 0.1F;
     float farPlane = 2000.0F;

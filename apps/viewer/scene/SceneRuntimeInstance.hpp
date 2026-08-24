@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace stylized::asset
@@ -27,10 +28,19 @@ struct SceneAsset;
 namespace stylized::viewer
 {
 
+struct CameraFovSample
+{
+    float timeSeconds = 0.0F;
+    float verticalFovDegrees = 30.04F;
+};
+
 struct SceneRuntimeInstance final
     : core::NonCopyable
 {
     std::filesystem::path sourcePath;
+
+    std::string cameraFovCameraName;
+    std::vector<CameraFovSample> cameraFovSamples;
 
     scene::Transform rootTransform;
 

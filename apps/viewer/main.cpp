@@ -33,17 +33,24 @@
 #include <animation/SceneMorphPose.hpp>
 #include <animation/ScenePose.hpp>
 
+#include <nlohmann/json.hpp>
+
 #include "camera/OrbitCameraController.hpp"
 #include "camera/SceneCameraController.hpp"
 #include "ui/ViewerPanels.hpp"
 #include "scene/SceneRuntimeInstance.hpp"
 
 #include <chrono>
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -91,6 +98,211 @@ double elapsedMilliseconds(
     return std::chrono::duration<double, std::milli>{
         CpuClock::now() - startTime
     }.count();
+}
+
+[[nodiscard]]
+std::filesystem::path makeCameraFovSidecarPath(
+    const std::filesystem::path& modelPath)
+{
+    std::filesystem::path sidecarPath = modelPath;
+    sidecarPath.replace_extension(".camera.json");
+    return sidecarPath;
+}
+
+[[nodiscard]]
+bool loadCameraFovSidecar(
+    const std::filesystem::path& modelPath,
+    stylized::viewer::SceneRuntimeInstance& sceneInstance)
+{
+    sceneInstance.cameraFovCameraName.clear();
+    sceneInstance.cameraFovSamples.clear();
+
+    const std::filesystem::path sidecarPath =
+        makeCameraFovSidecarPath(modelPath);
+
+    if (!std::filesystem::exists(sidecarPath))
+    {
+        return true;
+    }
+
+    std::ifstream input(sidecarPath);
+
+    if (!input.is_open())
+    {
+        std::cerr
+            << "Failed to open camera FOV sidecar: "
+            << sidecarPath
+            << '\n';
+
+        return false;
+    }
+
+    try
+    {
+        const nlohmann::json document =
+            nlohmann::json::parse(input);
+
+        if (!document.is_object() ||
+            !document.contains("samples") ||
+            !document["samples"].is_array())
+        {
+            std::cerr
+                << "Invalid camera FOV sidecar structure: "
+                << sidecarPath
+                << '\n';
+
+            return false;
+        }
+
+        sceneInstance.cameraFovCameraName =
+            document.value("camera", std::string{});
+
+        const nlohmann::json& samples =
+            document["samples"];
+
+        sceneInstance.cameraFovSamples.reserve(
+            samples.size());
+
+        float previousTime =
+            -std::numeric_limits<float>::infinity();
+
+        for (const nlohmann::json& sample : samples)
+        {
+            if (!sample.is_object() ||
+                !sample.contains("timeSeconds") ||
+                !sample.contains("verticalFovDegrees"))
+            {
+                std::cerr
+                    << "Invalid camera FOV sample: "
+                    << sidecarPath
+                    << '\n';
+
+                return false;
+            }
+
+            const float timeSeconds =
+                sample.at("timeSeconds").get<float>();
+
+            const float verticalFovDegrees =
+                sample.at("verticalFovDegrees").get<float>();
+
+            if (!std::isfinite(timeSeconds) ||
+                !std::isfinite(verticalFovDegrees) ||
+                timeSeconds < previousTime ||
+                verticalFovDegrees < 1.0F ||
+                verticalFovDegrees > 179.0F)
+            {
+                std::cerr
+                    << "Invalid camera FOV sample values: "
+                    << sidecarPath
+                    << '\n';
+
+                return false;
+            }
+
+            sceneInstance.cameraFovSamples.push_back({
+                .timeSeconds = timeSeconds,
+                .verticalFovDegrees = verticalFovDegrees
+            });
+
+            previousTime = timeSeconds;
+        }
+
+        if (sceneInstance.cameraFovSamples.empty())
+        {
+            std::cerr
+                << "Camera FOV sidecar has no samples: "
+                << sidecarPath
+                << '\n';
+
+            return false;
+        }
+    }
+    catch (const std::exception& exception)
+    {
+        std::cerr
+            << "Failed to parse camera FOV sidecar: "
+            << sidecarPath
+            << " ("
+            << exception.what()
+            << ")\n";
+
+        return false;
+    }
+
+    std::cout
+        << "Camera FOV sidecar loaded: "
+        << sidecarPath
+        << " ("
+        << sceneInstance.cameraFovSamples.size()
+        << " samples)\n";
+
+    return true;
+}
+
+[[nodiscard]]
+float sampleCameraFov(
+    const stylized::viewer::SceneRuntimeInstance& sceneInstance,
+    const stylized::asset::CameraAsset& camera,
+    const float timeSeconds) noexcept
+{
+    if (sceneInstance.cameraFovSamples.empty() ||
+        (!sceneInstance.cameraFovCameraName.empty() &&
+         sceneInstance.cameraFovCameraName != camera.name))
+    {
+        return camera.verticalFieldOfView;
+    }
+
+    const auto& samples = sceneInstance.cameraFovSamples;
+
+    if (samples.size() == 1 ||
+        timeSeconds <= samples.front().timeSeconds)
+    {
+        return samples.front().verticalFovDegrees;
+    }
+
+    if (timeSeconds >= samples.back().timeSeconds)
+    {
+        return samples.back().verticalFovDegrees;
+    }
+
+    const auto rightIterator =
+        std::lower_bound(
+            samples.begin(),
+            samples.end(),
+            timeSeconds,
+            [](const stylized::viewer::CameraFovSample& sample,
+               const float time)
+            {
+                return sample.timeSeconds < time;
+            });
+
+    if (rightIterator == samples.begin() ||
+        rightIterator == samples.end())
+    {
+        return camera.verticalFieldOfView;
+    }
+
+    const auto leftIterator = rightIterator - 1;
+    const float interval =
+        rightIterator->timeSeconds -
+        leftIterator->timeSeconds;
+
+    if (interval <= 1.0e-6F)
+    {
+        return rightIterator->verticalFovDegrees;
+    }
+
+    const float factor = std::clamp(
+        (timeSeconds - leftIterator->timeSeconds) /
+            interval,
+        0.0F,
+        1.0F);
+
+    return leftIterator->verticalFovDegrees +
+        (rightIterator->verticalFovDegrees -
+            leftIterator->verticalFovDegrees) *
+        factor;
 }
 
 stylized::core::ApplicationDesc makeApplicationDesc(
@@ -317,6 +529,28 @@ protected:
             {
                 std::cerr
                     << "Failed to update imported camera.\n";
+
+                requestExit();
+                return;
+            }
+
+            const stylized::asset::CameraAsset& cameraAsset =
+                sceneAsset->cameras[selectedCameraIndex_];
+
+            const float verticalFieldOfView =
+                sampleCameraFov(
+                    *sceneInstance,
+                    cameraAsset,
+                    sceneInstance->animationPlayer.currentTime());
+
+            if (!camera_.setPerspective(
+                    verticalFieldOfView,
+                    camera_.aspectRatio(),
+                    camera_.nearPlane(),
+                    camera_.farPlane()))
+            {
+                std::cerr
+                    << "Failed to update imported camera FOV.\n";
 
                 requestExit();
                 return;
@@ -846,6 +1080,13 @@ private:
                 stylized::viewer::SceneRuntimeInstance>();
 
         sceneInstance->sourcePath = modelPath;
+
+        if (!loadCameraFovSidecar(
+                modelPath,
+                *sceneInstance))
+        {
+            return false;
+        }
 
         sceneInstance->sceneHandle =
             importer.import(modelPath);

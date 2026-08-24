@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include <glm/common.hpp>
@@ -41,10 +42,26 @@ template<typename Key>
         iterator - keys.begin());
 }
 
+[[nodiscard]] bool isCameraNode(
+    const asset::SceneAsset& sceneAsset,
+    const std::uint32_t nodeIndex) noexcept
+{
+    for (const asset::CameraAsset& camera : sceneAsset.cameras)
+    {
+        if (camera.nodeIndex == nodeIndex)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 [[nodiscard]] glm::vec3 sampleVectorTrack(
     const std::vector<asset::VectorAnimationKey>& keys,
     const float timeSeconds,
-    const glm::vec3& fallback) noexcept
+    const glm::vec3& fallback,
+    const float maximumInterpolationDelta) noexcept
 {
     if (keys.empty())
     {
@@ -77,6 +94,15 @@ template<typename Key>
     const asset::VectorAnimationKey& right =
         keys[rightIndex];
 
+    if (std::isfinite(maximumInterpolationDelta) &&
+        glm::length(right.value - left.value) >
+            maximumInterpolationDelta)
+    {
+        return right.timeSeconds <= timeSeconds
+            ? right.value
+            : left.value;
+    }
+
     const float interval =
         right.timeSeconds -
         left.timeSeconds;
@@ -102,7 +128,8 @@ template<typename Key>
     const std::vector<
         asset::QuaternionAnimationKey>& keys,
     const float timeSeconds,
-    const glm::quat& fallback) noexcept
+    const glm::quat& fallback,
+    const float maximumInterpolationAngleRadians) noexcept
 {
     if (keys.empty())
     {
@@ -134,6 +161,24 @@ template<typename Key>
 
     const asset::QuaternionAnimationKey& right =
         keys[rightIndex];
+
+    const float rotationDot = std::abs(
+        glm::dot(
+            glm::normalize(left.value),
+            glm::normalize(right.value)));
+
+    const float rotationAngle =
+        2.0F *
+        std::acos(
+            std::clamp(rotationDot, 0.0F, 1.0F));
+
+    if (std::isfinite(maximumInterpolationAngleRadians) &&
+        rotationAngle > maximumInterpolationAngleRadians)
+    {
+        return right.timeSeconds <= timeSeconds
+            ? right.value
+            : left.value;
+    }
 
     const float interval =
         right.timeSeconds -
@@ -411,7 +456,7 @@ bool AnimationPlayer::update(
         resetPoseOnNextSample_ = false;
     }
 
-    if (!sample(pose, morphPose))
+    if (!sample(sceneAsset, pose, morphPose))
     {
         return false;
     }
@@ -447,7 +492,25 @@ float AnimationPlayer::playbackSpeed() const noexcept
     return playbackSpeed_;
 }
 
+void AnimationPlayer::setCameraInterpolationThresholds(
+    const CameraInterpolationThresholds& thresholds) noexcept
+{
+    cameraInterpolationThresholds_.translation =
+        std::max(thresholds.translation, 0.0F);
+    cameraInterpolationThresholds_.rotationDegrees =
+        std::max(thresholds.rotationDegrees, 0.0F);
+    cameraInterpolationThresholds_.scale =
+        std::max(thresholds.scale, 0.0F);
+}
+
+const CameraInterpolationThresholds&
+AnimationPlayer::cameraInterpolationThresholds() const noexcept
+{
+    return cameraInterpolationThresholds_;
+}
+
 bool AnimationPlayer::sample(
+    const asset::SceneAsset& sceneAsset,
     ScenePose& pose,
     SceneMorphPose& morphPose) noexcept
 {
@@ -472,13 +535,35 @@ bool AnimationPlayer::sample(
         scene::Transform sampledTransform =
             *currentTransform;
 
+        const bool isCameraChannel =
+            isCameraNode(
+                sceneAsset,
+                channel.nodeIndex);
+
+        const float vectorInterpolationDelta =
+            isCameraChannel
+                ? cameraInterpolationThresholds_.translation
+                : std::numeric_limits<float>::infinity();
+
+        const float rotationInterpolationAngleRadians =
+            isCameraChannel
+                ? glm::radians(
+                    cameraInterpolationThresholds_.rotationDegrees)
+                : std::numeric_limits<float>::infinity();
+
+        const float scaleInterpolationDelta =
+            isCameraChannel
+                ? cameraInterpolationThresholds_.scale
+                : std::numeric_limits<float>::infinity();
+
         if (!channel.translations.empty())
         {
             sampledTransform.setTranslation(
                 sampleVectorTrack(
                     channel.translations,
                     currentTime_,
-                    currentTransform->translation()));
+                    currentTransform->translation(),
+                    vectorInterpolationDelta));
         }
 
         if (!channel.rotations.empty())
@@ -487,7 +572,8 @@ bool AnimationPlayer::sample(
                     sampleRotationTrack(
                         channel.rotations,
                         currentTime_,
-                        currentTransform->rotation())))
+                        currentTransform->rotation(),
+                        rotationInterpolationAngleRadians)))
             {
                 return false;
             }
@@ -499,7 +585,8 @@ bool AnimationPlayer::sample(
                 sampleVectorTrack(
                     channel.scales,
                     currentTime_,
-                    currentTransform->scale()));
+                    currentTransform->scale(),
+                    scaleInterpolationDelta));
         }
 
         if (!pose.setLocalTransform(

@@ -30,7 +30,7 @@ public:
     [[nodiscard]] glm::mat4 viewProjectionMatrix() const noexcept;
 
 private:
-    float verticalFieldOfView_ = 60.0F;
+    float verticalFieldOfView_ = 30.04F;
     float aspectRatio_ = 16.0F / 9.0F;
     float nearPlane_ = 0.1F;
     float farPlane_ = 2000.0F;

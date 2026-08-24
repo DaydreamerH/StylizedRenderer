@@ -41,6 +41,7 @@ target_link_libraries(stylized_viewer
     PRIVATE
         stylized_engine
         stylized_imgui
+        nlohmann_json::nlohmann_json
 )
 
 target_compile_definitions(stylized_viewer
