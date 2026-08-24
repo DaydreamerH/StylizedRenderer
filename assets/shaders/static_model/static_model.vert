@@ -11,6 +11,8 @@ layout(location = 0) out vec3 vertexNormal;
 layout(location = 1) out vec2 vertexTexCoord0;
 layout(location = 2) out vec3 vertexWorldPosition;
 layout(location = 3) out vec4 vertexWorldTangent;
+layout(location = 4) out vec3 vertexSphereNormal;
+layout(location = 5) out float vertexSphereWeight;
 
 layout(std430, binding = 0)
 readonly buffer SkinningPaletteBuffer
@@ -25,6 +27,8 @@ uniform mat3 uNormalMatrix;
 uniform bool uSkinningEnabled;
 uniform bool uSphericalFaceNormalEnabled;
 uniform vec3 uSphericalFaceNormalCenter;
+uniform float uSphericalFaceNormalRadius;
+uniform float uSphericalFaceNormalSoftness;
 uniform float uSphericalFaceNormalBlend;
 
 mat4 calculateSkinningMatrix()
@@ -45,6 +49,8 @@ void main()
     vec3 localPosition = inPosition;
     vec3 localNormal = inNormal;
     vec3 localTangent = inTangent.xyz;
+    vec3 localSphereNormal = localNormal;
+    float sphereWeight = 0.0;
 
     if (uSphericalFaceNormalEnabled)
     {
@@ -64,15 +70,32 @@ void main()
                 inversesqrt(
                     directionLengthSquared);
 
-            localNormal =
-                normalize(
-                    mix(
-                        inNormal,
-                        sphericalNormal,
-                        clamp(
-                            uSphericalFaceNormalBlend,
-                            0.0,
-                            1.0)));
+            const float sphereDistance =
+                sqrt(directionLengthSquared);
+
+            const float sphereSurfaceDistance =
+                abs(
+                    sphereDistance -
+                    max(
+                        uSphericalFaceNormalRadius,
+                        0.0001));
+
+            const float sphereSoftness =
+                max(
+                    uSphericalFaceNormalSoftness,
+                    0.0001);
+
+            localSphereNormal = sphericalNormal;
+
+            sphereWeight =
+                clamp(
+                    uSphericalFaceNormalBlend,
+                    0.0,
+                    1.0) *
+                (1.0 - smoothstep(
+                    0.0,
+                    sphereSoftness,
+                    sphereSurfaceDistance));
         }
     }
 
@@ -94,6 +117,10 @@ void main()
             skinningDirectionMatrix *
             localNormal;
 
+        localSphereNormal =
+            skinningDirectionMatrix *
+            localSphereNormal;
+
         localTangent =
             skinningDirectionMatrix *
             inTangent.xyz;
@@ -107,6 +134,11 @@ void main()
         normalize(
             uNormalMatrix *
             localNormal);
+
+    const vec3 worldSphereNormal =
+        normalize(
+            uNormalMatrix *
+            localSphereNormal);
 
     const vec3 transformedTangent =
         mat3(uModel) *
@@ -165,6 +197,12 @@ void main()
         vec4(
             worldTangent,
             tangentSign);
+
+    vertexSphereNormal =
+        worldSphereNormal;
+
+    vertexSphereWeight =
+        sphereWeight;
 
     gl_Position =
         uViewProjection *

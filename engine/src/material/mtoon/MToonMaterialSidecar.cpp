@@ -290,6 +290,12 @@ bool captureMToonSidecarMaterial(
     captured.sphericalFaceNormalCenter =
         parameters.sphericalFaceNormalCenter;
 
+    captured.sphericalFaceNormalRadius =
+        parameters.sphericalFaceNormalRadius;
+
+    captured.sphericalFaceNormalSoftness =
+        parameters.sphericalFaceNormalSoftness;
+
     captured.sphericalFaceNormalBlend =
         parameters.sphericalFaceNormalBlend;
 
@@ -508,6 +514,12 @@ bool applyMToonSidecarMaterial(
 
     parameters.sphericalFaceNormalCenter =
         source.sphericalFaceNormalCenter;
+
+    parameters.sphericalFaceNormalRadius =
+        source.sphericalFaceNormalRadius;
+
+    parameters.sphericalFaceNormalSoftness =
+        source.sphericalFaceNormalSoftness;
 
     parameters.sphericalFaceNormalBlend =
         source.sphericalFaceNormalBlend;

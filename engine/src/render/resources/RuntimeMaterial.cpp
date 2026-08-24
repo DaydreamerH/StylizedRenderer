@@ -411,6 +411,12 @@ bool RuntimeMaterial::bind(
                 "uSphericalFaceNormalCenter",
                 parameters.sphericalFaceNormalCenter) ||
             !shader_.setFloat(
+                "uSphericalFaceNormalRadius",
+                parameters.sphericalFaceNormalRadius) ||
+            !shader_.setFloat(
+                "uSphericalFaceNormalSoftness",
+                parameters.sphericalFaceNormalSoftness) ||
+            !shader_.setFloat(
                 "uSphericalFaceNormalBlend",
                 parameters.sphericalFaceNormalBlend))
         {

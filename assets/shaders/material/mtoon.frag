@@ -4,6 +4,8 @@ layout(location = 0) in vec3 vertexNormal;
 layout(location = 1) in vec2 vertexTexCoord0;
 layout(location = 2) in vec3 vertexWorldPosition;
 layout(location = 3) in vec4 vertexWorldTangent;
+layout(location = 4) in vec3 vertexSphereNormal;
+layout(location = 5) in float vertexSphereWeight;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outNormal;
@@ -281,11 +283,23 @@ void main()
         calculateSurfaceNormal(
             geometricNormal);
 
+    // Keep the physical surface normal for shadows and secondary lighting.
+    // The sphere only stabilizes the MToon direct-light threshold on the face.
+    const vec3 toonLightingNormal =
+        normalize(
+            mix(
+                normal,
+                vertexSphereNormal,
+                clamp(
+                    vertexSphereWeight,
+                    0.0,
+                    1.0)));
+
     const vec3 lightDirection =
         normalize(-uLightDirection);
 
     const float normalDotLight =
-        dot(normal, lightDirection);
+        dot(toonLightingNormal, lightDirection);
 
     const float shadingToony =
         clamp(uShadingToony, 0.0, 1.0);

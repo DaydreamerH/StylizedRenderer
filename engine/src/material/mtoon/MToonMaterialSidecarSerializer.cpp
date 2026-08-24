@@ -378,6 +378,14 @@ Json materialToJson(
             toJson(material.sphericalFaceNormalCenter)
         },
         {
+            "sphericalFaceNormalRadius",
+            material.sphericalFaceNormalRadius
+        },
+        {
+            "sphericalFaceNormalSoftness",
+            material.sphericalFaceNormalSoftness
+        },
+        {
             "sphericalFaceNormalBlend",
             material.sphericalFaceNormalBlend
         },
@@ -659,6 +667,22 @@ bool parseMaterial(
             "sphericalFaceNormalCenter",
             &material.sphericalFaceNormalCenter.x,
             -1000000.0F,
+            1000000.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "sphericalFaceNormalRadius",
+            material.sphericalFaceNormalRadius,
+            0.0001F,
+            1000000.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "sphericalFaceNormalSoftness",
+            material.sphericalFaceNormalSoftness,
+            0.0F,
             1000000.0F,
             material.name,
             error) &&

@@ -83,6 +83,8 @@ struct MToonMaterialParameters
 
     bool sphericalFaceNormalEnabled = false;
     glm::vec3 sphericalFaceNormalCenter{0.0F};
+    float sphericalFaceNormalRadius = 0.06F;
+    float sphericalFaceNormalSoftness = 0.015F;
     float sphericalFaceNormalBlend = 1.0F;
 
     glm::vec3 matcapColor{1.0F};

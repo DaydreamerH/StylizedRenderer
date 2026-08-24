@@ -1879,6 +1879,20 @@ void ViewerPanels::draw(
                             "%.4f");
 
                         drawSliderFloatProperty(
+                            "Sphere Radius",
+                            &parameters.sphericalFaceNormalRadius,
+                            0.001F,
+                            1.0F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
+                            "Sphere Softness",
+                            &parameters.sphericalFaceNormalSoftness,
+                            0.0F,
+                            0.25F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
                             "Sphere Blend",
                             &parameters.sphericalFaceNormalBlend,
                             0.0F,
