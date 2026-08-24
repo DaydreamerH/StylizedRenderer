@@ -1860,11 +1860,22 @@ void ViewerPanels::draw(
                         "%.3f");
 
                     drawSliderFloatProperty(
+                        "Surface Offset",
+                        &parameters.surfaceOffset,
+                        -0.01F,
+                        0.01F,
+                        "%.5f");
+
+                    drawSliderFloatProperty(
                         "Shadow Influence",
                         &parameters.shadowNormalInfluence,
                         0.0F,
                         1.0F,
                         "%.3f");
+
+                    drawCheckboxProperty(
+                        "Receive System Shadow",
+                        &parameters.receiveShadow);
 
                     drawCheckboxProperty(
                         "Use Shadow Cutoff",

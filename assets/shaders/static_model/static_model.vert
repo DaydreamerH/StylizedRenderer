@@ -23,6 +23,7 @@ readonly buffer SkinningPaletteBuffer
 uniform mat4 uModel;
 uniform mat4 uViewProjection;
 uniform mat3 uNormalMatrix;
+uniform float uSurfaceOffset;
 
 uniform bool uSkinningEnabled;
 uniform bool uSphericalFaceNormalEnabled;
@@ -126,7 +127,7 @@ void main()
             inTangent.xyz;
     }
 
-    const vec4 worldPosition =
+    const vec4 unoffsetWorldPosition =
         uModel *
         vec4(localPosition, 1.0);
 
@@ -134,6 +135,16 @@ void main()
         normalize(
             uNormalMatrix *
             localNormal);
+
+    // Some authored detail layers deliberately share their base surface.
+    // Move only the configured layer along its geometric normal to resolve
+    // depth conflicts while retaining normal depth testing against the rest
+    // of the scene.
+    const vec4 worldPosition =
+        vec4(
+            unoffsetWorldPosition.xyz +
+            worldNormal * uSurfaceOffset,
+            1.0);
 
     const vec3 worldSphereNormal =
         normalize(

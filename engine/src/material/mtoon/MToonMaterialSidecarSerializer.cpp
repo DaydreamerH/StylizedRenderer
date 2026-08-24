@@ -365,9 +365,14 @@ Json materialToJson(
         },
         {"shadingToony", material.shadingToony},
         {"normalScale", material.normalScale},
+        {"surfaceOffset", material.surfaceOffset},
         {
             "shadowNormalInfluence",
             material.shadowNormalInfluence
+        },
+        {
+            "receiveShadow",
+            material.receiveShadow
         },
         {
             "shadowCutoffEnabled",
@@ -658,10 +663,24 @@ bool parseMaterial(
             error) &&
         readFloat(
             source,
+            "surfaceOffset",
+            material.surfaceOffset,
+            -0.01F,
+            0.01F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
             "shadowNormalInfluence",
             material.shadowNormalInfluence,
             0.0F,
             1.0F,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "receiveShadow",
+            material.receiveShadow,
             material.name,
             error) &&
         readBool(

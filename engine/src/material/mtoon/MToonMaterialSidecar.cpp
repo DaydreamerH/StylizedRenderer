@@ -281,8 +281,14 @@ bool captureMToonSidecarMaterial(
     captured.normalScale =
         parameters.normalScale;
 
+    captured.surfaceOffset =
+        parameters.surfaceOffset;
+
     captured.shadowNormalInfluence =
         parameters.shadowNormalInfluence;
+
+    captured.receiveShadow =
+        parameters.receiveShadow;
 
     captured.shadowCutoffEnabled =
         parameters.shadowCutoffEnabled;
@@ -512,8 +518,14 @@ bool applyMToonSidecarMaterial(
     parameters.normalScale =
         source.normalScale;
 
+    parameters.surfaceOffset =
+        source.surfaceOffset;
+
     parameters.shadowNormalInfluence =
         source.shadowNormalInfluence;
+
+    parameters.receiveShadow =
+        source.receiveShadow;
 
     parameters.shadowCutoffEnabled =
         source.shadowCutoffEnabled;

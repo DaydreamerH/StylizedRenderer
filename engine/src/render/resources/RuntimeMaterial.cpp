@@ -398,6 +398,13 @@ bool RuntimeMaterial::bind(
         }
 
         if (!shader_.setFloat(
+                "uSurfaceOffset",
+                parameters.surfaceOffset))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
                 "uShadowNormalInfluence",
                 parameters.shadowNormalInfluence))
         {

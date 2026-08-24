@@ -304,8 +304,14 @@ bool StaticModelRenderer::render(
                 }
             }
 
+            const bool materialReceivesShadow =
+                materialKind != material::MaterialKind::MToon ||
+                !materialInstance.mtoonParameters.has_value() ||
+                materialInstance.mtoonParameters->receiveShadow;
+
             const bool shadowEnabled =
                 shadowMapAvailable &&
+                materialReceivesShadow &&
                 hasFlag(
                     item.flags,
                     RenderItemFlags::ReceiveShadow);
