@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <string_view>
 
 struct GLFWwindow;
 
@@ -78,7 +79,8 @@ public:
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
-        const stylized::asset::SceneAsset* cameraScene,
+        std::string_view sceneCameraName,
+        bool sceneCameraAvailable,
         stylized::animation::AnimationPlayer&
             animationPlayer,
         const stylized::render::SkinningPaletteSet&
@@ -103,8 +105,7 @@ public:
         float& exposure,
         bool& toneMappingEnabled,
         bool& fxaaEnabled,
-        bool& useImportedCamera,
-        std::size_t& selectedCameraIndex);
+        bool& useSceneCamera);
 
     void endFrame() noexcept;
     void shutdown() noexcept;

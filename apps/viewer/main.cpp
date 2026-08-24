@@ -36,7 +36,6 @@
 #include <nlohmann/json.hpp>
 
 #include "camera/OrbitCameraController.hpp"
-#include "camera/SceneCameraController.hpp"
 #include "ui/ViewerPanels.hpp"
 #include "scene/SceneRuntimeInstance.hpp"
 
@@ -49,11 +48,17 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <glm/gtc/quaternion.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace
 {
@@ -100,40 +105,77 @@ double elapsedMilliseconds(
     }.count();
 }
 
-[[nodiscard]]
-std::filesystem::path makeCameraFovSidecarPath(
-    const std::filesystem::path& modelPath)
+struct CameraJsonKeyframe
 {
-    std::filesystem::path sidecarPath = modelPath;
-    sidecarPath.replace_extension(".camera.json");
-    return sidecarPath;
+    int frame = 0;
+    float timeFromStartSeconds = 0.0F;
+    glm::vec3 translation{0.0F};
+    glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
+    float verticalFieldOfView = 30.04F;
+    std::string interpolation;
+};
+
+struct CameraJsonTrack
+{
+    std::filesystem::path sourcePath;
+    std::string cameraName;
+    std::string coordinateSystem;
+    float fps = 0.0F;
+    int frameStart = 0;
+    int frameEnd = 0;
+    float durationSeconds = 0.0F;
+    float nearPlane = 0.1F;
+    float farPlane = 2000.0F;
+    std::vector<CameraJsonKeyframe> keyframes;
+};
+
+enum class CameraJsonRotationOrder
+{
+    Xyzw,
+    Wxyz
+};
+
+[[nodiscard]]
+bool finiteVector(const glm::vec3& value) noexcept
+{
+    return std::isfinite(value.x) &&
+        std::isfinite(value.y) &&
+        std::isfinite(value.z);
 }
 
 [[nodiscard]]
-bool loadCameraFovSidecar(
-    const std::filesystem::path& modelPath,
-    stylized::viewer::SceneRuntimeInstance& sceneInstance)
+bool finiteQuaternion(const glm::quat& value) noexcept
 {
-    sceneInstance.cameraFovCameraName.clear();
-    sceneInstance.cameraFovSamples.clear();
+    return std::isfinite(value.w) &&
+        std::isfinite(value.x) &&
+        std::isfinite(value.y) &&
+        std::isfinite(value.z);
+}
 
-    const std::filesystem::path sidecarPath =
-        makeCameraFovSidecarPath(modelPath);
+[[nodiscard]]
+bool loadCameraJson(
+    const std::filesystem::path& jsonPath,
+    CameraJsonTrack& track)
+{
+    track = {};
+    track.sourcePath = jsonPath;
 
-    if (!std::filesystem::exists(sidecarPath))
+    if (!std::filesystem::exists(jsonPath))
     {
-        return true;
+        std::cerr
+            << "Camera JSON does not exist: "
+            << jsonPath
+            << '\n';
+        return false;
     }
 
-    std::ifstream input(sidecarPath);
-
+    std::ifstream input(jsonPath);
     if (!input.is_open())
     {
         std::cerr
-            << "Failed to open camera FOV sidecar: "
-            << sidecarPath
+            << "Failed to open camera JSON: "
+            << jsonPath
             << '\n';
-
         return false;
     }
 
@@ -143,166 +185,307 @@ bool loadCameraFovSidecar(
             nlohmann::json::parse(input);
 
         if (!document.is_object() ||
-            !document.contains("samples") ||
-            !document["samples"].is_array())
+            document.value("version", 0) != 2 ||
+            document.value("coordinateSystem", std::string{}) !=
+                "gltf-y-up" ||
+            !document.contains("rotationOrder") ||
+            !document["rotationOrder"].is_string() ||
+            !document.contains("camera") ||
+            !document["camera"].is_string() ||
+            !document.contains("keyframes") ||
+            !document["keyframes"].is_array())
         {
-            std::cerr
-                << "Invalid camera FOV sidecar structure: "
-                << sidecarPath
-                << '\n';
-
-            return false;
+            throw std::runtime_error(
+                "camera JSON must be version 2 gltf-y-up with "
+                "a rotationOrder and keyframes");
         }
 
-        sceneInstance.cameraFovCameraName =
-            document.value("camera", std::string{});
+        const std::string rotationOrder =
+            document.at("rotationOrder").get<std::string>();
 
-        const nlohmann::json& samples =
-            document["samples"];
+        CameraJsonRotationOrder parsedRotationOrder;
 
-        sceneInstance.cameraFovSamples.reserve(
-            samples.size());
+        if (rotationOrder == "xyzw")
+        {
+            parsedRotationOrder =
+                CameraJsonRotationOrder::Xyzw;
+        }
+        else if (rotationOrder == "wxyz")
+        {
+            parsedRotationOrder =
+                CameraJsonRotationOrder::Wxyz;
+        }
+        else
+        {
+            throw std::runtime_error(
+                "camera JSON rotationOrder must be xyzw or wxyz");
+        }
 
+        track.cameraName =
+            document.at("camera").get<std::string>();
+        track.coordinateSystem =
+            document.at("coordinateSystem").get<std::string>();
+        track.fps = document.at("fps").get<float>();
+        track.frameStart = document.at("frameStart").get<int>();
+        track.frameEnd = document.at("frameEnd").get<int>();
+        track.durationSeconds =
+            document.at("durationSeconds").get<float>();
+        track.nearPlane = document.at("nearPlane").get<float>();
+        track.farPlane = document.at("farPlane").get<float>();
+
+        if (track.cameraName.empty() ||
+            !std::isfinite(track.fps) ||
+            track.fps <= 0.0F ||
+            track.frameStart > track.frameEnd ||
+            !std::isfinite(track.durationSeconds) ||
+            track.durationSeconds < 0.0F ||
+            !std::isfinite(track.nearPlane) ||
+            !std::isfinite(track.farPlane) ||
+            track.nearPlane <= 0.0F ||
+            track.farPlane <= track.nearPlane)
+        {
+            throw std::runtime_error(
+                "invalid camera timeline or projection values");
+        }
+
+        const nlohmann::json& keyframes =
+            document.at("keyframes");
+
+        if (keyframes.empty())
+        {
+            throw std::runtime_error(
+                "camera JSON has no keyframes");
+        }
+
+        track.keyframes.reserve(keyframes.size());
+
+        int previousFrame =
+            std::numeric_limits<int>::min();
         float previousTime =
             -std::numeric_limits<float>::infinity();
 
-        for (const nlohmann::json& sample : samples)
+        for (const nlohmann::json& source : keyframes)
         {
-            if (!sample.is_object() ||
-                !sample.contains("timeSeconds") ||
-                !sample.contains("verticalFovDegrees"))
+            if (!source.is_object() ||
+                !source.contains("frame") ||
+                !source.contains("timeFromStartSeconds") ||
+                !source.contains("translation") ||
+                !source.contains("rotation") ||
+                !source.contains("verticalFovDegrees") ||
+                !source.contains("interpolation") ||
+                !source["translation"].is_array() ||
+                source["translation"].size() != 3 ||
+                !source["rotation"].is_array() ||
+                source["rotation"].size() != 4)
             {
-                std::cerr
-                    << "Invalid camera FOV sample: "
-                    << sidecarPath
-                    << '\n';
-
-                return false;
+                throw std::runtime_error(
+                    "invalid camera keyframe structure");
             }
 
-            const float timeSeconds =
-                sample.at("timeSeconds").get<float>();
+            CameraJsonKeyframe keyframe;
+            keyframe.frame = source.at("frame").get<int>();
+            keyframe.timeFromStartSeconds =
+                source.at("timeFromStartSeconds").get<float>();
+            keyframe.translation = {
+                source["translation"][0].get<float>(),
+                source["translation"][1].get<float>(),
+                source["translation"][2].get<float>()};
 
-            const float verticalFovDegrees =
-                sample.at("verticalFovDegrees").get<float>();
+            const glm::vec4 sourceRotation{
+                source["rotation"][0].get<float>(),
+                source["rotation"][1].get<float>(),
+                source["rotation"][2].get<float>(),
+                source["rotation"][3].get<float>()};
 
-            if (!std::isfinite(timeSeconds) ||
-                !std::isfinite(verticalFovDegrees) ||
-                timeSeconds < previousTime ||
-                verticalFovDegrees < 1.0F ||
-                verticalFovDegrees > 179.0F)
+            keyframe.rotation =
+                parsedRotationOrder ==
+                        CameraJsonRotationOrder::Xyzw
+                    ? glm::quat{
+                        sourceRotation.w,
+                        sourceRotation.x,
+                        sourceRotation.y,
+                        sourceRotation.z}
+                    : glm::quat{
+                        sourceRotation.x,
+                        sourceRotation.y,
+                        sourceRotation.z,
+                        sourceRotation.w};
+
+            keyframe.verticalFieldOfView =
+                source.at("verticalFovDegrees").get<float>();
+            keyframe.interpolation =
+                source.at("interpolation").get<std::string>();
+
+            if ((keyframe.interpolation != "LINEAR" &&
+                 keyframe.interpolation != "STEP") ||
+                !std::isfinite(keyframe.timeFromStartSeconds) ||
+                keyframe.frame <= previousFrame ||
+                keyframe.timeFromStartSeconds <= previousTime ||
+                !finiteVector(keyframe.translation) ||
+                !finiteQuaternion(keyframe.rotation) ||
+                glm::dot(
+                    keyframe.rotation,
+                    keyframe.rotation) <= 1.0e-8F ||
+                keyframe.verticalFieldOfView < 1.0F ||
+                keyframe.verticalFieldOfView > 179.0F)
             {
-                std::cerr
-                    << "Invalid camera FOV sample values: "
-                    << sidecarPath
-                    << '\n';
-
-                return false;
+                throw std::runtime_error(
+                    "invalid camera keyframe values");
             }
 
-            sceneInstance.cameraFovSamples.push_back({
-                .timeSeconds = timeSeconds,
-                .verticalFovDegrees = verticalFovDegrees
-            });
+            keyframe.rotation = glm::normalize(
+                keyframe.rotation);
 
-            previousTime = timeSeconds;
+            track.keyframes.push_back(keyframe);
+            previousFrame = keyframe.frame;
+            previousTime = keyframe.timeFromStartSeconds;
         }
 
-        if (sceneInstance.cameraFovSamples.empty())
+        if (track.keyframes.front().frame != track.frameStart ||
+            track.keyframes.back().frame != track.frameEnd ||
+            std::abs(
+                track.keyframes.front().timeFromStartSeconds) >
+                1.0e-4F ||
+            std::abs(
+                track.keyframes.back().timeFromStartSeconds -
+                track.durationSeconds) > 1.0e-4F)
         {
-            std::cerr
-                << "Camera FOV sidecar has no samples: "
-                << sidecarPath
-                << '\n';
-
-            return false;
+            throw std::runtime_error(
+                "camera keyframes do not cover frameStart/frameEnd");
         }
     }
     catch (const std::exception& exception)
     {
         std::cerr
-            << "Failed to parse camera FOV sidecar: "
-            << sidecarPath
+            << "Failed to parse camera JSON: "
+            << jsonPath
             << " ("
             << exception.what()
             << ")\n";
-
         return false;
     }
 
     std::cout
-        << "Camera FOV sidecar loaded: "
-        << sidecarPath
+        << "Camera JSON loaded: "
+        << jsonPath
         << " ("
-        << sceneInstance.cameraFovSamples.size()
-        << " samples)\n";
+        << track.keyframes.size()
+        << " keyframes, frames "
+        << track.frameStart
+        << ".."
+        << track.frameEnd
+        << ")\n";
 
     return true;
 }
 
 [[nodiscard]]
-float sampleCameraFov(
-    const stylized::viewer::SceneRuntimeInstance& sceneInstance,
-    const stylized::asset::CameraAsset& camera,
-    const float timeSeconds) noexcept
+bool updateCameraFromJson(
+    const CameraJsonTrack& track,
+    const float timeSeconds,
+    const glm::mat4& rootMatrix,
+    stylized::scene::Camera& camera) noexcept
 {
-    if (sceneInstance.cameraFovSamples.empty() ||
-        (!sceneInstance.cameraFovCameraName.empty() &&
-         sceneInstance.cameraFovCameraName != camera.name))
+    const auto& keyframes = track.keyframes;
+    const CameraJsonKeyframe* left = &keyframes.front();
+    const CameraJsonKeyframe* right = left;
+    float factor = 0.0F;
+
+    if (keyframes.size() > 1 &&
+        timeSeconds > keyframes.front().timeFromStartSeconds &&
+        timeSeconds < keyframes.back().timeFromStartSeconds)
     {
-        return camera.verticalFieldOfView;
-    }
-
-    const auto& samples = sceneInstance.cameraFovSamples;
-
-    if (samples.size() == 1 ||
-        timeSeconds <= samples.front().timeSeconds)
-    {
-        return samples.front().verticalFovDegrees;
-    }
-
-    if (timeSeconds >= samples.back().timeSeconds)
-    {
-        return samples.back().verticalFovDegrees;
-    }
-
-    const auto rightIterator =
-        std::lower_bound(
-            samples.begin(),
-            samples.end(),
+        const auto rightIterator = std::lower_bound(
+            keyframes.begin(),
+            keyframes.end(),
             timeSeconds,
-            [](const stylized::viewer::CameraFovSample& sample,
+            [](const CameraJsonKeyframe& keyframe,
                const float time)
             {
-                return sample.timeSeconds < time;
+                return keyframe.timeFromStartSeconds < time;
             });
 
-    if (rightIterator == samples.begin() ||
-        rightIterator == samples.end())
+        if (rightIterator != keyframes.end())
+        {
+            right = &*rightIterator;
+            left = &*(rightIterator - 1);
+
+            const float interval =
+                right->timeFromStartSeconds -
+                left->timeFromStartSeconds;
+
+            if (interval > 1.0e-6F)
+            {
+                factor = std::clamp(
+                    (timeSeconds -
+                        left->timeFromStartSeconds) /
+                        interval,
+                    0.0F,
+                    1.0F);
+            }
+        }
+    }
+    else if (timeSeconds >= keyframes.back().timeFromStartSeconds)
     {
-        return camera.verticalFieldOfView;
+        left = &keyframes.back();
+        right = left;
     }
 
-    const auto leftIterator = rightIterator - 1;
-    const float interval =
-        rightIterator->timeSeconds -
-        leftIterator->timeSeconds;
+    glm::vec3 translation = left->translation;
+    glm::quat rotation = left->rotation;
+    float verticalFieldOfView = left->verticalFieldOfView;
 
-    if (interval <= 1.0e-6F)
+    if (left != right && left->interpolation == "LINEAR")
     {
-        return rightIterator->verticalFovDegrees;
+        translation = glm::mix(
+            left->translation,
+            right->translation,
+            factor);
+
+        glm::quat rightRotation = right->rotation;
+        if (glm::dot(rotation, rightRotation) < 0.0F)
+        {
+            rightRotation = -rightRotation;
+        }
+
+        rotation = glm::normalize(glm::slerp(
+            rotation,
+            rightRotation,
+            factor));
+
+        verticalFieldOfView = std::lerp(
+            left->verticalFieldOfView,
+            right->verticalFieldOfView,
+            factor);
     }
 
-    const float factor = std::clamp(
-        (timeSeconds - leftIterator->timeSeconds) /
-            interval,
-        0.0F,
-        1.0F);
+    const glm::vec3 position = glm::vec3(
+        rootMatrix *
+        glm::vec4(translation, 1.0F));
 
-    return leftIterator->verticalFovDegrees +
-        (rightIterator->verticalFovDegrees -
-            leftIterator->verticalFovDegrees) *
-        factor;
+    const glm::mat3 rootBasis{rootMatrix};
+    glm::vec3 forward =
+        rootBasis *
+        (rotation * glm::vec3{0.0F, 0.0F, -1.0F});
+    glm::vec3 up =
+        rootBasis *
+        (rotation * glm::vec3{0.0F, 1.0F, 0.0F});
+
+    if (glm::dot(forward, forward) <= 1.0e-8F ||
+        glm::dot(up, up) <= 1.0e-8F)
+    {
+        return false;
+    }
+
+    forward = glm::normalize(forward);
+    up = glm::normalize(up);
+
+    return camera.setPerspective(
+               verticalFieldOfView,
+               camera.aspectRatio(),
+               track.nearPlane,
+               track.farPlane) &&
+        camera.setView(position, position + forward, up);
 }
 
 stylized::core::ApplicationDesc makeApplicationDesc(
@@ -325,10 +508,12 @@ class ViewerApplication final
 public:
     ViewerApplication(
         const bool smokeTest,
-        std::vector<std::filesystem::path> modelPaths)
+        std::vector<std::filesystem::path> modelPaths,
+        std::filesystem::path cameraJsonPath)
         : Application(makeApplicationDesc(smokeTest)),
           smokeTest_(smokeTest),
-          modelPaths_(std::move(modelPaths))
+          modelPaths_(std::move(modelPaths)),
+          cameraJsonPath_(std::move(cameraJsonPath))
     {
     }
 
@@ -339,7 +524,8 @@ protected:
         {
             std::cerr
                 << "Usage: stylized_viewer "
-                << "<model-file> [additional-model-files...]\n";
+                << "<model-file> [additional-model-files...] "
+                << "[--camera-json camera.json]\n";
 
             return false;
         }
@@ -365,6 +551,12 @@ protected:
             {
                 return false;
             }
+        }
+
+        if (!cameraJsonPath_.empty() &&
+            !loadCameraTrack())
+        {
+            return false;
         }
 
         return true;
@@ -427,6 +619,7 @@ protected:
                     currentInstance->animationPlayer.play();
                 }
             }
+
         }
 
         spaceKeyPressed_ = spaceKeyPressed;
@@ -462,45 +655,15 @@ protected:
             cpuTimings_.morphMilliseconds,
             morphMilliseconds);
 
-        const stylized::asset::SceneAsset* sceneAsset =
-            assetRegistry_.get(sceneInstance->sceneHandle);
-
-        if (sceneAsset == nullptr)
+        if (!cameraTrack_.has_value())
         {
-            requestExit();
-            return;
+            // A scene camera exists only when an independent JSON track was
+            // supplied. Character GLB cameras are deliberately ignored.
+            useSceneCamera_ = false;
         }
 
-        const bool hasImportedCameras =
-            !sceneAsset->cameras.empty();
-
-        if (!hasImportedCameras)
+        if (cameraTrack_.has_value())
         {
-            // A scene without camera assets can never enter imported-camera
-            // mode, including after a runtime scene selection change.
-            useImportedCamera_ = false;
-            selectedCameraIndex_ = 0;
-        }
-
-        if (cameraModeInitialized_ &&
-            previousUseImportedCamera_ != useImportedCamera_)
-        {
-            if (!useImportedCamera_)
-            {
-                // Preserve the current view when manual orbit control takes
-                // over. The hand-off is intentionally instantaneous.
-                cameraController_.adoptCurrentView();
-            }
-
-            previousUseImportedCamera_ = useImportedCamera_;
-        }
-
-        if (useImportedCamera_)
-        {
-            selectedCameraIndex_ = std::min(
-                selectedCameraIndex_,
-                sceneAsset->cameras.size() - 1);
-
             std::uint32_t framebufferWidth = 0;
             std::uint32_t framebufferHeight = 0;
 
@@ -514,49 +677,34 @@ protected:
                     static_cast<float>(framebufferWidth) /
                     static_cast<float>(framebufferHeight);
 
-                if (!camera_.setAspectRatio(aspectRatio))
+                if (!sceneCamera_.setAspectRatio(aspectRatio))
                 {
                     requestExit();
                     return;
                 }
             }
 
-            if (!sceneCameraController_.update(
-                    sceneAsset->cameras[selectedCameraIndex_],
-                    sceneInstance->scenePose,
-                    sceneInstance->rootTransform.localMatrix(),
-                    camera_))
+            if (cameraTrack_->durationSeconds > 0.0F)
             {
-                std::cerr
-                    << "Failed to update imported camera.\n";
-
-                requestExit();
-                return;
+                cameraTrackTimeSeconds_ = std::fmod(
+                    cameraTrackTimeSeconds_ + deltaTime,
+                    cameraTrack_->durationSeconds);
             }
 
-            const stylized::asset::CameraAsset& cameraAsset =
-                sceneAsset->cameras[selectedCameraIndex_];
-
-            const float verticalFieldOfView =
-                sampleCameraFov(
-                    *sceneInstance,
-                    cameraAsset,
-                    sceneInstance->animationPlayer.currentTime());
-
-            if (!camera_.setPerspective(
-                    verticalFieldOfView,
-                    camera_.aspectRatio(),
-                    camera_.nearPlane(),
-                    camera_.farPlane()))
+            if (!updateCameraFromJson(
+                    *cameraTrack_,
+                    cameraTrackTimeSeconds_,
+                    sceneInstance->rootTransform.localMatrix(),
+                    sceneCamera_))
             {
                 std::cerr
-                    << "Failed to update imported camera FOV.\n";
-
+                    << "Failed to update scene camera from JSON.\n";
                 requestExit();
                 return;
             }
         }
-        else
+
+        if (!useSceneCamera_)
         {
             cameraController_.update(
                 window(),
@@ -611,7 +759,7 @@ protected:
             CpuClock::now();
 
         bool extracted = extractor_->beginFrame(
-            camera_,
+            activeCamera(),
             mainLight_,
             renderWorld_);
 
@@ -665,7 +813,7 @@ protected:
             return;
         }
 
-        if (!cameraFocused_ && !useImportedCamera_)
+        if (!cameraFocused_ && !useSceneCamera_)
         {
             stylized::math::Bounds sceneBounds;
             for (const stylized::render::RenderItem& item : renderWorld_.items)
@@ -748,18 +896,6 @@ protected:
         const CpuClock::time_point uiStart =
             CpuClock::now();
 
-        const stylized::asset::SceneAsset* cameraSceneAsset =
-            nullptr;
-
-        if (const stylized::viewer::SceneRuntimeInstance*
-                cameraSceneInstance =
-                    primarySceneInstance();
-            cameraSceneInstance != nullptr)
-        {
-            cameraSceneAsset = assetRegistry_.get(
-                cameraSceneInstance->sceneHandle);
-        }
-
         viewerPanels_.beginFrame();
 
         viewerPanels_.draw(
@@ -770,7 +906,10 @@ protected:
             *resourceCache_,
             activeMaterialTemplateHandle_,
             sceneAsset,
-            cameraSceneAsset,
+            cameraTrack_.has_value()
+                ? std::string_view(cameraTrack_->cameraName)
+                : std::string_view{},
+            cameraTrack_.has_value(),
             sceneInstance->animationPlayer,
             sceneInstance->skinningPalettes,
             sceneInstance->morphMeshInstances,
@@ -790,8 +929,7 @@ protected:
             exposure_,
             toneMappingEnabled_,
             fxaaEnabled_,
-            useImportedCamera_,
-            selectedCameraIndex_);
+            useSceneCamera_);
 
         if (!updateActiveMaterialTemplate())
         {
@@ -1081,13 +1219,6 @@ private:
 
         sceneInstance->sourcePath = modelPath;
 
-        if (!loadCameraFovSidecar(
-                modelPath,
-                *sceneInstance))
-        {
-            return false;
-        }
-
         sceneInstance->sceneHandle =
             importer.import(modelPath);
 
@@ -1301,18 +1432,31 @@ private:
 
         if (primaryScene)
         {
-            // Imported cameras remain available for runtime switching, but
-            // manual control is the default for every newly loaded scene.
-            useImportedCamera_ = false;
+            // Scene cameras are supplied only through the independent camera
+            // input. Loading a character GLB never changes camera state.
+            useSceneCamera_ = false;
 
-            selectedCameraIndex_ = 0;
-            previousUseImportedCamera_ = false;
-            cameraModeInitialized_ = true;
             cameraFocused_ = false;
         }
 
         sceneInstances_.push_back(
             std::move(sceneInstance));
+
+        return true;
+    }
+
+    bool loadCameraTrack()
+    {
+        CameraJsonTrack track;
+
+        if (!loadCameraJson(cameraJsonPath_, track))
+        {
+            return false;
+        }
+
+        cameraTrack_ = std::move(track);
+        cameraTrackTimeSeconds_ = 0.0F;
+        useSceneCamera_ = false;
 
         return true;
     }
@@ -1657,10 +1801,21 @@ private:
             selectedSceneInstanceIndex_].get();
     }
 
+    [[nodiscard]]
+    const stylized::scene::Camera& activeCamera() const noexcept
+    {
+        return useSceneCamera_
+            ? sceneCamera_
+            : controlCamera_;
+    }
+
     bool smokeTest_ = false;
     int renderedFrameCount_ = 0;
 
     std::vector<std::filesystem::path> modelPaths_;
+    std::filesystem::path cameraJsonPath_;
+    std::optional<CameraJsonTrack> cameraTrack_;
+    float cameraTrackTimeSeconds_ = 0.0F;
 
     std::size_t selectedSceneInstanceIndex_ = 0;
 
@@ -1741,19 +1896,15 @@ private:
 
     ViewerCpuTimings cpuTimings_;
 
-    stylized::scene::Camera camera_;
+    stylized::scene::Camera controlCamera_;
     OrbitCameraController cameraController_{
-        camera_
+        controlCamera_
     };
 
     bool cameraFocused_ = false;
 
-    SceneCameraController sceneCameraController_;
-
-    bool useImportedCamera_ = false;
-    std::size_t selectedCameraIndex_ = 0;
-    bool previousUseImportedCamera_ = false;
-    bool cameraModeInitialized_ = false;
+    stylized::scene::Camera sceneCamera_;
+    bool useSceneCamera_ = false;
 
     bool spaceKeyPressed_ = false;
 
@@ -1772,6 +1923,8 @@ int main(
     std::vector<std::filesystem::path>
         modelPaths;
 
+    std::filesystem::path cameraJsonPath;
+
     for (int argumentIndex = 1;
          argumentIndex < argc;
          ++argumentIndex)
@@ -1786,6 +1939,35 @@ int main(
             continue;
         }
 
+        if (argument == "--camera-glb")
+        {
+            std::cerr
+                << "--camera-glb is no longer supported; "
+                << "use --camera-json.\n";
+            return 1;
+        }
+
+        if (argument == "--camera-json")
+        {
+            if (argumentIndex + 1 >= argc)
+            {
+                std::cerr
+                    << argument
+                    << " requires a file path.\n";
+
+                return 1;
+            }
+
+            const std::filesystem::path value =
+                std::filesystem::path{
+                    argv[++argumentIndex]
+                };
+
+            cameraJsonPath = value;
+
+            continue;
+        }
+
         modelPaths.push_back(
             std::filesystem::path{
                 argument
@@ -1794,7 +1976,8 @@ int main(
 
     ViewerApplication application{
         smokeTest,
-        std::move(modelPaths)
+        std::move(modelPaths),
+        std::move(cameraJsonPath)
     };
 
     return application.run();

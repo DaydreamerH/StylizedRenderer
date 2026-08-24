@@ -688,7 +688,8 @@ void ViewerPanels::draw(
         stylized::material::MaterialTemplate>
         materialTemplate,
     const stylized::asset::SceneAsset* scene,
-    const stylized::asset::SceneAsset* cameraScene,
+    const std::string_view sceneCameraName,
+    const bool sceneCameraAvailable,
     stylized::animation::AnimationPlayer&
         animationPlayer,
     const stylized::render::SkinningPaletteSet&
@@ -713,8 +714,7 @@ void ViewerPanels::draw(
     float& exposure,
     bool& toneMappingEnabled,
     bool& fxaaEnabled,
-    bool& useImportedCamera,
-    std::size_t& selectedCameraIndex)
+    bool& useSceneCamera)
 {
     if (!initialized_)
     {
@@ -1264,29 +1264,21 @@ void ViewerPanels::draw(
 
     ImGui::SeparatorText("Camera Control");
 
-    if (cameraScene == nullptr ||
-        cameraScene->cameras.empty())
+    if (!sceneCameraAvailable)
     {
-        // Imported camera mode is not meaningful without camera assets.
-        // Keep the runtime state normalized if the loaded scene changes.
-        useImportedCamera = false;
-        selectedCameraIndex = 0;
+        useSceneCamera = false;
 
         ImGui::TextDisabled(
-            "No imported cameras; manual control only.");
+            "No scene camera JSON; manual control only.");
     }
     else
     {
         static constexpr const char* cameraModes[] = {
             "Manual",
-            "Imported"
+            "Scene"
         };
 
-        int cameraMode = useImportedCamera ? 1 : 0;
-
-        selectedCameraIndex = std::min(
-            selectedCameraIndex,
-            cameraScene->cameras.size() - 1);
+        int cameraMode = useSceneCamera ? 1 : 0;
 
         if (beginPropertyTable(
                 "##CameraControlProperties"))
@@ -1297,70 +1289,22 @@ void ViewerPanels::draw(
                     cameraModes,
                     2))
             {
-                useImportedCamera = cameraMode == 1;
+                useSceneCamera = cameraMode == 1;
             }
 
             beginPropertyRow("Camera");
-
-            const stylized::asset::CameraAsset& selectedCamera =
-                cameraScene->cameras[selectedCameraIndex];
-
-            const std::string selectedCameraName =
-                selectedCamera.name.empty()
-                    ? "Camera " +
-                        std::to_string(selectedCameraIndex)
-                    : selectedCamera.name;
-
-            if (ImGui::BeginCombo(
-                    "##Value",
-                    selectedCameraName.c_str()))
-            {
-                for (std::size_t index = 0;
-                     index < cameraScene->cameras.size();
-                     ++index)
-                {
-                    const stylized::asset::CameraAsset& camera =
-                        cameraScene->cameras[index];
-
-                    const std::string cameraName =
-                        camera.name.empty()
-                            ? "Camera " +
-                                std::to_string(index)
-                            : camera.name;
-
-                    const std::string label =
-                        cameraName +
-                        "##imported_camera_" +
-                        std::to_string(index);
-
-                    const bool selected =
-                        index == selectedCameraIndex;
-
-                    if (ImGui::Selectable(
-                            label.c_str(),
-                            selected))
-                    {
-                        selectedCameraIndex = index;
-                    }
-
-                    if (selected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-
-                ImGui::EndCombo();
-            }
+            const std::string cameraLabel =
+                sceneCameraName.empty()
+                    ? "Unnamed JSON camera"
+                    : std::string(sceneCameraName);
+            ImGui::TextUnformatted(cameraLabel.c_str());
 
             endPropertyRow();
             ImGui::EndTable();
         }
 
         ImGui::TextDisabled(
-            "Imported cameras: %s",
-            cameraScene->name.empty()
-                ? "primary scene"
-                : cameraScene->name.c_str());
+            "Scene camera source: JSON");
     }
 
     if (scene != nullptr &&
