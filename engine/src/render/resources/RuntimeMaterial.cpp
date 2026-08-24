@@ -404,6 +404,20 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setFloat(
+                "uShadowCutoff",
+                parameters.shadowCutoff))
+        {
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uShadowCutoffEnabled",
+                parameters.shadowCutoffEnabled ? 1 : 0))
+        {
+            return false;
+        }
+
         if (!shader_.setInt(
                 "uSphericalFaceNormalEnabled",
                 parameters.sphericalFaceNormalEnabled ? 1 : 0) ||

@@ -19,6 +19,8 @@
       "shadingToony": 0.6,
       "normalScale": 0,
       "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.35,
       "sphericalFaceNormalEnabled": true,
       "sphericalFaceNormalCenter": [
         0.001662,
@@ -890,6 +892,8 @@
       "shadingToony": 0.84,
       "normalScale": 0,
       "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
       "sphericalFaceNormalEnabled": false,
       "sphericalFaceNormalCenter": [
         0,
@@ -969,6 +973,8 @@
       "shadingToony": 0.84,
       "normalScale": 0,
       "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
       "sphericalFaceNormalEnabled": false,
       "sphericalFaceNormalCenter": [
         0,
@@ -1048,6 +1054,8 @@
       "shadingToony": 0.84,
       "normalScale": 0,
       "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
       "sphericalFaceNormalEnabled": false,
       "sphericalFaceNormalCenter": [
         0,

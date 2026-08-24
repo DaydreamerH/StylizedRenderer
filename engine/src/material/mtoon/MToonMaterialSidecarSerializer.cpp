@@ -370,6 +370,14 @@ Json materialToJson(
             material.shadowNormalInfluence
         },
         {
+            "shadowCutoffEnabled",
+            material.shadowCutoffEnabled
+        },
+        {
+            "shadowCutoff",
+            material.shadowCutoff
+        },
+        {
             "sphericalFaceNormalEnabled",
             material.sphericalFaceNormalEnabled
         },
@@ -652,6 +660,20 @@ bool parseMaterial(
             source,
             "shadowNormalInfluence",
             material.shadowNormalInfluence,
+            0.0F,
+            1.0F,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "shadowCutoffEnabled",
+            material.shadowCutoffEnabled,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "shadowCutoff",
+            material.shadowCutoff,
             0.0F,
             1.0F,
             material.name,

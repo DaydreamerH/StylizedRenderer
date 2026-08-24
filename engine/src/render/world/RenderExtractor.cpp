@@ -37,9 +37,8 @@ namespace
 constexpr float minimumShadowRadius = 1.0e-5F;
 constexpr float minimumDirectionLength = 1.0e-6F;
 
-constexpr float shadowNearPlaneScale = 0.01F;
 constexpr float shadowEyeDistanceScale = 2.0F;
-constexpr float shadowFarMarginScale = 2.0F;
+constexpr float shadowProjectionMarginScale = 0.02F;
 
 [[nodiscard]] float maximumLinearScale(
     const std::vector<glm::mat4>& matrices) noexcept
@@ -135,26 +134,117 @@ bool buildDirectionalShadowView(
         ? glm::vec3{1.F, 0.F, 0.F}
         : glm::vec3{0.F, 1.F, 0.F};
 
-    const float nearPlane = std::max(
-        radius * shadowNearPlaneScale,
-        minimumShadowRadius
-    );
-
-    const float farPlane =
-        eyeDistance + radius * shadowFarMarginScale;
-
     const glm::mat4 view =
         glm::lookAtRH(
             lightPosition,
             center,
             up);
 
+    // A bounding sphere produces a square shadow projection with substantial
+    // unused area for most character poses.  Fit the orthographic projection
+    // to the caster bounds in light space so the available shadow texels are
+    // concentrated on the actual geometry.
+    const math::Bounds lightSpaceBounds =
+        bounds.transformed(view);
+
+    if (!lightSpaceBounds.isValid())
+    {
+        return false;
+    }
+
+    const glm::vec3 lightSpaceMinimum =
+        lightSpaceBounds.minimum();
+
+    const glm::vec3 lightSpaceMaximum =
+        lightSpaceBounds.maximum();
+
+    if (!std::isfinite(lightSpaceMinimum.x) ||
+        !std::isfinite(lightSpaceMinimum.y) ||
+        !std::isfinite(lightSpaceMinimum.z) ||
+        !std::isfinite(lightSpaceMaximum.x) ||
+        !std::isfinite(lightSpaceMaximum.y) ||
+        !std::isfinite(lightSpaceMaximum.z))
+    {
+        return false;
+    }
+
+    const float projectionMargin = std::max(
+        radius * shadowProjectionMarginScale,
+        minimumShadowRadius);
+
+    float left =
+        lightSpaceMinimum.x - projectionMargin;
+
+    float right =
+        lightSpaceMaximum.x + projectionMargin;
+
+    float bottom =
+        lightSpaceMinimum.y - projectionMargin;
+
+    float top =
+        lightSpaceMaximum.y + projectionMargin;
+
+    // Snap the light-space centre to shadow-map texels.  The projection stays
+    // tight, while small pose changes no longer translate every shadow edge by
+    // a fractional texel between frames.
+    if (destination.extent.width > 0 &&
+        destination.extent.height > 0)
+    {
+        const float projectionWidth = right - left;
+        const float projectionHeight = top - bottom;
+
+        const float texelWidth =
+            projectionWidth /
+            static_cast<float>(destination.extent.width);
+
+        const float texelHeight =
+            projectionHeight /
+            static_cast<float>(destination.extent.height);
+
+        if (std::isfinite(texelWidth) &&
+            std::isfinite(texelHeight) &&
+            texelWidth > 0.0F &&
+            texelHeight > 0.0F)
+        {
+            const float snappedCenterX =
+                std::round((left + right) * 0.5F / texelWidth) *
+                texelWidth;
+
+            const float snappedCenterY =
+                std::round((bottom + top) * 0.5F / texelHeight) *
+                texelHeight;
+
+            left = snappedCenterX - projectionWidth * 0.5F;
+            right = snappedCenterX + projectionWidth * 0.5F;
+            bottom = snappedCenterY - projectionHeight * 0.5F;
+            top = snappedCenterY + projectionHeight * 0.5F;
+        }
+    }
+
+    // OpenGL right-handed view space looks down -Z.  Keep the near and far
+    // planes just outside the complete light-space caster volume.
+    const float nearPlane = std::max(
+        -lightSpaceMaximum.z - projectionMargin,
+        minimumShadowRadius);
+
+    const float farPlane =
+        -lightSpaceMinimum.z + projectionMargin;
+
+    if (!(left < right) ||
+        !(bottom < top) ||
+        !(nearPlane < farPlane) ||
+        !std::isfinite(nearPlane) ||
+        !std::isfinite(farPlane))
+    {
+        return false;
+    }
+
     const glm::mat4 projection =
         glm::orthoRH_NO(
-            -radius,
-            radius,
-            -radius,
-            radius,
+            left,
+            right,
+            bottom,
+            top,
             nearPlane,
             farPlane);
 

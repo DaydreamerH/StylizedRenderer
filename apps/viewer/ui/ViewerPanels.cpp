@@ -1867,6 +1867,20 @@ void ViewerPanels::draw(
                         "%.3f");
 
                     drawCheckboxProperty(
+                        "Use Shadow Cutoff",
+                        &parameters.shadowCutoffEnabled);
+
+                    if (parameters.shadowCutoffEnabled)
+                    {
+                        drawSliderFloatProperty(
+                            "Shadow Cutoff",
+                            &parameters.shadowCutoff,
+                            0.05F,
+                            0.95F,
+                            "%.3f");
+                    }
+
+                    drawCheckboxProperty(
                         "Spherical Face Normal",
                         &parameters.sphericalFaceNormalEnabled);
 

@@ -35,6 +35,8 @@ uniform sampler2DShadow uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
 uniform float uShadowNormalInfluence;
+uniform int uShadowCutoffEnabled;
+uniform float uShadowCutoff;
 
 uniform sampler2D uNormalTexture;
 uniform float uNormalScale;
@@ -228,16 +230,20 @@ float calculateShadowVisibility(
 
     float visibility = 0.0;
 
-    const float weights[3] =
+    const float weights[5] =
         float[](
             1.0,
+            2.0,
+            3.0,
             2.0,
             1.0
         );
 
-    for (int offsetY = -1; offsetY <= 1; offsetY++)
+    // A 5x5 separable tent filter hides individual shadow-map texels while
+    // retaining a noticeably crisper transition than a broad box filter.
+    for (int offsetY = -2; offsetY <= 2; offsetY++)
     {
-        for (int offsetX = -1; offsetX <= 1; offsetX++)
+        for (int offsetX = -2; offsetX <= 2; offsetX++)
         {
             const vec2 sampleCoordinate =
                 shadowCoordinate.xy +
@@ -245,8 +251,8 @@ float calculateShadowVisibility(
                 texelSize;
 
             const float sampleWeight =
-                weights[offsetX + 1] *
-                weights[offsetY + 1];
+                weights[offsetX + 2] *
+                weights[offsetY + 2];
 
             visibility +=
                 texture(
@@ -258,7 +264,7 @@ float calculateShadowVisibility(
         }
     }
 
-    return visibility / 16.0;
+    return visibility / 81.0;
 }
 
 void main()
@@ -367,14 +373,31 @@ void main()
         shadowVisibility +
         normalDetail * shadowNormalDetailStrength;
 
-    const float shadowDelta =
-        fwidth(perturbedShadowVisibility);
+    float shadowMask =
+        clamp(
+            perturbedShadowVisibility,
+            0.0,
+            1.0);
 
-    const float shadowMask =
-        smoothstep(
-            0.15 - shadowDelta,
-            0.85 + shadowDelta,
-            perturbedShadowVisibility);
+    if (uShadowCutoffEnabled != 0)
+    {
+        const float shadowCutoff =
+            clamp(
+                uShadowCutoff,
+                0.0,
+                1.0);
+
+        const float shadowAntiAliasWidth =
+            max(
+                fwidth(perturbedShadowVisibility),
+                0.015);
+
+        shadowMask =
+            smoothstep(
+                shadowCutoff - shadowAntiAliasWidth,
+                shadowCutoff + shadowAntiAliasWidth,
+                perturbedShadowVisibility);
+    }
 
     const float toonRampCoordinate =
         1.0 - clamp(

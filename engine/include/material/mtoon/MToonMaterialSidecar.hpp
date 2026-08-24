@@ -53,6 +53,8 @@ struct MToonSidecarMaterial
 
     float normalScale = 1.0F;
     float shadowNormalInfluence = 0.0F;
+    bool shadowCutoffEnabled = false;
+    float shadowCutoff = 0.5F;
 
     bool sphericalFaceNormalEnabled = false;
     glm::vec3 sphericalFaceNormalCenter{0.0F};
