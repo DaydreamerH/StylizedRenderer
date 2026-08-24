@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include <glm/geometric.hpp>
+#include <glm/matrix.hpp>
 
 namespace stylized::render
 {
@@ -101,6 +102,25 @@ bool StaticModelRenderer::render(
             item.runtimeMaterial == nullptr)
         {
             continue;
+        }
+
+        if (hasFlag(
+                item.flags,
+                RenderItemFlags::DoubleSided))
+        {
+            graphicsDevice_.setCullMode(
+                graphics::CullMode::None);
+        }
+        else
+        {
+            const bool windingFlipped =
+                glm::determinant(
+                    glm::mat3(item.world)) < 0.0F;
+
+            graphicsDevice_.setCullMode(
+                windingFlipped
+                    ? graphics::CullMode::Front
+                    : graphics::CullMode::Back);
         }
 
         RuntimeMaterial& runtimeMaterial =
@@ -329,6 +349,9 @@ bool StaticModelRenderer::render(
 
         ++lastDrawCallCount_;
     }
+
+    graphicsDevice_.setCullMode(
+        graphics::CullMode::Back);
 
     return true;
 }
