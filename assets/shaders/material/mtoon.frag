@@ -32,6 +32,7 @@ uniform float uGiEqualization;
 uniform sampler2DShadow uShadowMap;
 uniform mat4 uLightViewProjection;
 uniform int uShadowEnabled;
+uniform float uShadowNormalInfluence;
 
 uniform sampler2D uNormalTexture;
 uniform float uNormalScale;
@@ -169,7 +170,14 @@ float calculateShadowVisibility(
     const vec3 detailNormal =
         surfaceNormal - geometricNormal;
 
-    const float shadowNormalOffsetStrength = 0.008;
+    const float shadowNormalInfluence =
+        clamp(
+            uShadowNormalInfluence,
+            0.0,
+            1.0);
+
+    const float shadowNormalOffsetStrength =
+        0.008 * shadowNormalInfluence;
 
     const vec3 perturbedWorldPosition =
         worldPosition +
@@ -334,7 +342,12 @@ void main()
         dot(normal, lightDirection) -
         dot(geometricNormal, lightDirection);
 
-    const float shadowNormalDetailStrength = 0.15;
+    const float shadowNormalDetailStrength =
+        0.15 *
+        clamp(
+            uShadowNormalInfluence,
+            0.0,
+            1.0);
 
     const float perturbedShadowVisibility =
         shadowVisibility +
@@ -343,18 +356,15 @@ void main()
     const float shadowDelta =
         fwidth(perturbedShadowVisibility);
 
-    const float smoothShadow =
+    const float shadowMask =
         smoothstep(
-            0.5 - shadowDelta - 0.03,
-            0.5 + shadowDelta + 0.03,
+            0.15 - shadowDelta,
+            0.85 + shadowDelta,
             perturbedShadowVisibility);
-
-    const float combinedShadingFactor =
-        shadingFactor * smoothShadow;
 
     const float toonRampCoordinate =
         1.0 - clamp(
-            combinedShadingFactor,
+            shadingFactor,
             0.0,
             1.0);
 
@@ -364,12 +374,26 @@ void main()
             vec2(0.5, toonRampCoordinate)
         ).rgb;
 
-    const vec3 directColor =
+    const vec3 toonColor =
         mix(
             shadeColor,
             litColor,
-            combinedShadingFactor) *
+            shadingFactor) *
         sampledToonRamp;
+
+    const vec3 castShadowRamp =
+        texture(
+            uToonRampTexture,
+            vec2(0.5, 1.0)).rgb;
+
+    const vec3 castShadowColor =
+        shadeColor * castShadowRamp;
+
+    const vec3 directColor =
+        mix(
+            castShadowColor,
+            toonColor,
+            shadowMask);
 
     const float hemisphereWeight =
         clamp(
@@ -486,7 +510,7 @@ void main()
     const vec3 rimLighting =
         mix(
             vec3(1.0),
-            lightRadiance * smoothShadow,
+            lightRadiance * shadowMask,
             clamp(
                 uRimLightingMix,
                 0.0,
@@ -529,7 +553,7 @@ void main()
         break;
 
     case 3:
-        outputColor = vec3(smoothShadow);
+        outputColor = vec3(shadowMask);
         break;
 
     case 4:

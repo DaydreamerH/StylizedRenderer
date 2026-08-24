@@ -365,6 +365,10 @@ Json materialToJson(
         },
         {"shadingToony", material.shadingToony},
         {"normalScale", material.normalScale},
+        {
+            "shadowNormalInfluence",
+            material.shadowNormalInfluence
+        },
         {"giEqualization", material.giEqualization},
         {"matcapColor", toJson(material.matcapColor)},
         {"matcapStrength", material.matcapStrength},
@@ -622,6 +626,14 @@ bool parseMaterial(
             material.normalScale,
             0.0F,
             2.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "shadowNormalInfluence",
+            material.shadowNormalInfluence,
+            0.0F,
+            1.0F,
             material.name,
             error) &&
         readFloat(

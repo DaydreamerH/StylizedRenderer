@@ -398,6 +398,13 @@ bool RuntimeMaterial::bind(
         }
 
         if (!shader_.setFloat(
+                "uShadowNormalInfluence",
+                parameters.shadowNormalInfluence))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
             "uGiEqualization",
             parameters.giEqualization
         ))

@@ -281,6 +281,9 @@ bool captureMToonSidecarMaterial(
     captured.normalScale =
         parameters.normalScale;
 
+    captured.shadowNormalInfluence =
+        parameters.shadowNormalInfluence;
+
     captured.giEqualization =
         parameters.giEqualization;
 
@@ -487,6 +490,9 @@ bool applyMToonSidecarMaterial(
 
     parameters.normalScale =
         source.normalScale;
+
+    parameters.shadowNormalInfluence =
+        source.shadowNormalInfluence;
 
     parameters.giEqualization =
         source.giEqualization;

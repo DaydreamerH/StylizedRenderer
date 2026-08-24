@@ -79,6 +79,7 @@ struct MToonMaterialParameters
     float giEqualization = 0.9F;
 
     float normalScale = 1.0F;
+    float shadowNormalInfluence = 0.0F;
 
     glm::vec3 matcapColor{1.0F};
     float matcapStrength = 0.0F;

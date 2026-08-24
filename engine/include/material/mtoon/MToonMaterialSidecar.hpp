@@ -52,6 +52,7 @@ struct MToonSidecarMaterial
     float shadingToony = 0.9F;
 
     float normalScale = 1.0F;
+    float shadowNormalInfluence = 0.0F;
 
     float giEqualization = 0.9F;
 

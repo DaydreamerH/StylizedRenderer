@@ -1811,6 +1811,13 @@ void ViewerPanels::draw(
                         2.0F,
                         "%.3f");
 
+                    drawSliderFloatProperty(
+                        "Shadow Influence",
+                        &parameters.shadowNormalInfluence,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
+
                     drawTextureStatus(
                         "Texture",
                         parameters.textures.normalTexture,
