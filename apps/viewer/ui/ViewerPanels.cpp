@@ -1818,6 +1818,26 @@ void ViewerPanels::draw(
                         1.0F,
                         "%.3f");
 
+                    drawCheckboxProperty(
+                        "Spherical Face Normal",
+                        &parameters.sphericalFaceNormalEnabled);
+
+                    if (parameters.sphericalFaceNormalEnabled)
+                    {
+                        drawDragFloat3Property(
+                            "Sphere Center",
+                            parameters.sphericalFaceNormalCenter,
+                            0.001F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
+                            "Sphere Blend",
+                            &parameters.sphericalFaceNormalBlend,
+                            0.0F,
+                            1.0F,
+                            "%.3f");
+                    }
+
                     drawTextureStatus(
                         "Texture",
                         parameters.textures.normalTexture,

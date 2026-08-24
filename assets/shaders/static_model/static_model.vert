@@ -23,6 +23,9 @@ uniform mat4 uViewProjection;
 uniform mat3 uNormalMatrix;
 
 uniform bool uSkinningEnabled;
+uniform bool uSphericalFaceNormalEnabled;
+uniform vec3 uSphericalFaceNormalCenter;
+uniform float uSphericalFaceNormalBlend;
 
 mat4 calculateSkinningMatrix()
 {
@@ -43,6 +46,36 @@ void main()
     vec3 localNormal = inNormal;
     vec3 localTangent = inTangent.xyz;
 
+    if (uSphericalFaceNormalEnabled)
+    {
+        const vec3 sphereDirection =
+            inPosition -
+            uSphericalFaceNormalCenter;
+
+        const float directionLengthSquared =
+            dot(
+                sphereDirection,
+                sphereDirection);
+
+        if (directionLengthSquared > 1.0e-8)
+        {
+            const vec3 sphericalNormal =
+                sphereDirection *
+                inversesqrt(
+                    directionLengthSquared);
+
+            localNormal =
+                normalize(
+                    mix(
+                        inNormal,
+                        sphericalNormal,
+                        clamp(
+                            uSphericalFaceNormalBlend,
+                            0.0,
+                            1.0)));
+        }
+    }
+
     if (uSkinningEnabled)
     {
         const mat4 skinningMatrix =
@@ -59,7 +92,7 @@ void main()
 
         localNormal =
             skinningDirectionMatrix *
-            inNormal;
+            localNormal;
 
         localTangent =
             skinningDirectionMatrix *

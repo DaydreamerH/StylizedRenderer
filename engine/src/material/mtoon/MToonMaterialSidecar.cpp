@@ -284,6 +284,15 @@ bool captureMToonSidecarMaterial(
     captured.shadowNormalInfluence =
         parameters.shadowNormalInfluence;
 
+    captured.sphericalFaceNormalEnabled =
+        parameters.sphericalFaceNormalEnabled;
+
+    captured.sphericalFaceNormalCenter =
+        parameters.sphericalFaceNormalCenter;
+
+    captured.sphericalFaceNormalBlend =
+        parameters.sphericalFaceNormalBlend;
+
     captured.giEqualization =
         parameters.giEqualization;
 
@@ -493,6 +502,15 @@ bool applyMToonSidecarMaterial(
 
     parameters.shadowNormalInfluence =
         source.shadowNormalInfluence;
+
+    parameters.sphericalFaceNormalEnabled =
+        source.sphericalFaceNormalEnabled;
+
+    parameters.sphericalFaceNormalCenter =
+        source.sphericalFaceNormalCenter;
+
+    parameters.sphericalFaceNormalBlend =
+        source.sphericalFaceNormalBlend;
 
     parameters.giEqualization =
         source.giEqualization;

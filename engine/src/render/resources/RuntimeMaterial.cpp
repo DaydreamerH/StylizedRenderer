@@ -404,6 +404,19 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setInt(
+                "uSphericalFaceNormalEnabled",
+                parameters.sphericalFaceNormalEnabled ? 1 : 0) ||
+            !shader_.setVec3(
+                "uSphericalFaceNormalCenter",
+                parameters.sphericalFaceNormalCenter) ||
+            !shader_.setFloat(
+                "uSphericalFaceNormalBlend",
+                parameters.sphericalFaceNormalBlend))
+        {
+            return false;
+        }
+
         if (!shader_.setFloat(
             "uGiEqualization",
             parameters.giEqualization

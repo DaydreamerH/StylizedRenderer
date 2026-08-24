@@ -81,6 +81,10 @@ struct MToonMaterialParameters
     float normalScale = 1.0F;
     float shadowNormalInfluence = 0.0F;
 
+    bool sphericalFaceNormalEnabled = false;
+    glm::vec3 sphericalFaceNormalCenter{0.0F};
+    float sphericalFaceNormalBlend = 1.0F;
+
     glm::vec3 matcapColor{1.0F};
     float matcapStrength = 0.0F;
 

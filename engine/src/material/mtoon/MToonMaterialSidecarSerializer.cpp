@@ -369,6 +369,18 @@ Json materialToJson(
             "shadowNormalInfluence",
             material.shadowNormalInfluence
         },
+        {
+            "sphericalFaceNormalEnabled",
+            material.sphericalFaceNormalEnabled
+        },
+        {
+            "sphericalFaceNormalCenter",
+            toJson(material.sphericalFaceNormalCenter)
+        },
+        {
+            "sphericalFaceNormalBlend",
+            material.sphericalFaceNormalBlend
+        },
         {"giEqualization", material.giEqualization},
         {"matcapColor", toJson(material.matcapColor)},
         {"matcapStrength", material.matcapStrength},
@@ -632,6 +644,28 @@ bool parseMaterial(
             source,
             "shadowNormalInfluence",
             material.shadowNormalInfluence,
+            0.0F,
+            1.0F,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "sphericalFaceNormalEnabled",
+            material.sphericalFaceNormalEnabled,
+            material.name,
+            error) &&
+        readVector<3>(
+            source,
+            "sphericalFaceNormalCenter",
+            &material.sphericalFaceNormalCenter.x,
+            -1000000.0F,
+            1000000.0F,
+            material.name,
+            error) &&
+        readFloat(
+            source,
+            "sphericalFaceNormalBlend",
+            material.sphericalFaceNormalBlend,
             0.0F,
             1.0F,
             material.name,
