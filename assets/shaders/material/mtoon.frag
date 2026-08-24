@@ -157,15 +157,27 @@ vec3 calculateSurfaceNormal(const vec3 geometricNormal)
 float calculateShadowVisibility(
     const vec3 worldPosition,
     const vec3 geometricNormal,
+    const vec3 surfaceNormal,
     const vec3 lightDirection
 )
 {
     if (uShadowEnabled == 0)
+    {
         return 1.0;
+    }
+
+    const vec3 detailNormal =
+        surfaceNormal - geometricNormal;
+
+    const float shadowNormalOffsetStrength = 0.008;
+
+    const vec3 perturbedWorldPosition =
+        worldPosition +
+        detailNormal * shadowNormalOffsetStrength;
 
     const vec4 lightClipPosition =
         uLightViewProjection *
-            vec4(worldPosition, 1.0);
+            vec4(perturbedWorldPosition, 1.0);
 
     const vec3 lightNdcPosition =
         lightClipPosition.xyz /
@@ -186,7 +198,7 @@ float calculateShadowVisibility(
 
     const float normalDotLight =
         max(
-            dot(geometricNormal, lightDirection),
+            dot(surfaceNormal, lightDirection),
             0.0);
 
     const float bias =
@@ -227,10 +239,12 @@ float calculateShadowVisibility(
                 weights[offsetY + 1];
 
             visibility +=
-                texture(uShadowMap,
+                texture(
+                    uShadowMap,
                     vec3(
-                        sampleCoordinate, currentDepth
-                    )) * sampleWeight;
+                        sampleCoordinate,
+                        currentDepth)) *
+                sampleWeight;
         }
     }
 
@@ -281,11 +295,18 @@ void main()
         sampledShadingShift *
         uShadingShiftTextureScale;
 
-    const float shadingFactor =
-        clamp(
-            (normalDotLight + finalShadingShift) / transitionWidth,
-            0.0,
-            1.0);
+    const float threshold = -finalShadingShift;
+
+    const float halfWidth = transitionWidth * 0.5;
+
+    const float delta = fwidth(normalDotLight);
+
+    const float aaWidth = max(halfWidth, delta);
+
+    const float shadingFactor = smoothstep(
+        threshold - aaWidth,
+        threshold + aaWidth,
+        normalDotLight);
 
     const vec3 lightRadiance =
         uLightColor * max(uLightIntensity, 0.0);
@@ -301,20 +322,39 @@ void main()
 
     const vec3 shadeColor =
         shadeSurfaceColor * lightRadiance;
-    
+
     const float shadowVisibility =
         calculateShadowVisibility(
             vertexWorldPosition,
             geometricNormal,
+            normal,
             lightDirection);
 
-    const float visibleShadingFactor =
-        shadingFactor *
-        shadowVisibility;
+    const float normalDetail =
+        dot(normal, lightDirection) -
+        dot(geometricNormal, lightDirection);
+
+    const float shadowNormalDetailStrength = 0.15;
+
+    const float perturbedShadowVisibility =
+        shadowVisibility +
+        normalDetail * shadowNormalDetailStrength;
+
+    const float shadowDelta =
+        fwidth(perturbedShadowVisibility);
+
+    const float smoothShadow =
+        smoothstep(
+            0.5 - shadowDelta - 0.03,
+            0.5 + shadowDelta + 0.03,
+            perturbedShadowVisibility);
+
+    const float combinedShadingFactor =
+        shadingFactor * smoothShadow;
 
     const float toonRampCoordinate =
         1.0 - clamp(
-            visibleShadingFactor,
+            combinedShadingFactor,
             0.0,
             1.0);
 
@@ -328,8 +368,8 @@ void main()
         mix(
             shadeColor,
             litColor,
-            visibleShadingFactor
-        ) * sampledToonRamp;
+            combinedShadingFactor) *
+        sampledToonRamp;
 
     const float hemisphereWeight =
         clamp(
@@ -446,7 +486,7 @@ void main()
     const vec3 rimLighting =
         mix(
             vec3(1.0),
-            lightRadiance * visibleShadingFactor,
+            lightRadiance * smoothShadow,
             clamp(
                 uRimLightingMix,
                 0.0,
@@ -489,7 +529,7 @@ void main()
         break;
 
     case 3:
-        outputColor = vec3(visibleShadingFactor);
+        outputColor = vec3(smoothShadow);
         break;
 
     case 4:
