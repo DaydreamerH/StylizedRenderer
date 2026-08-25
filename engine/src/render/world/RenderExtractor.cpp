@@ -599,26 +599,26 @@ bool RenderExtractor::appendScene(
             // The material-ID render target is RGB8. Reserve zero for the
             // clear/background value so a material/background edge remains
             // distinguishable even for primitives with no source material.
-            // The 24-bit code is split 12+12: high = Mesh (outline group),
-            // low = Material. Same Mesh -> same high bits -> the screen-space
-            // outline pass skips every edge inside one mesh.
-            constexpr std::uint64_t outlineGroupMask =
-                0x00000FFFull;
+            // Bits 0-11 identify the source material. Bits 12-20 are reserved
+            // for an explicit outline group, and bits 21-23 carry group/self
+            // policy flags. Primitive and mesh identities are intentionally
+            // absent: one material controls its own internal edge policy.
+            constexpr std::uint64_t outlineMaterialMask =
+                0x00000FFFULL;
+            constexpr std::uint32_t detectSelfDepthBit =
+                1U << 22U;
+            constexpr std::uint32_t detectSelfNormalBit =
+                1U << 23U;
 
-            const std::uint32_t meshGroup =
-                static_cast<std::uint32_t>(
-                    node.mesh.id().value %
-                    outlineGroupMask);
-
-            const std::uint32_t materialSlot =
+            const std::uint32_t materialIdentity =
                 static_cast<std::uint32_t>(
                     sourceMaterialHandle.id().value %
-                    outlineGroupMask);
+                    outlineMaterialMask);
 
             item.outlineMaterialId =
-                ((meshGroup << 12U) |
-                 materialSlot) |
-                1U;
+                materialIdentity |
+                detectSelfDepthBit |
+                detectSelfNormalBit;
 
             switch (item.materialClass)
             {

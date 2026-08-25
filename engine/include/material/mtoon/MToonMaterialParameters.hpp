@@ -77,6 +77,9 @@ struct MToonMaterialParameters
     // internal overlap edges without merging their rendering parameters.
     std::string outlineGroup;
 
+    bool outlineDetectSelfDepth = true;
+    bool outlineDetectSelfNormal = true;
+
     glm::vec3 shadeColor{0.1F};
 
     float shadingShift = 0.0F;

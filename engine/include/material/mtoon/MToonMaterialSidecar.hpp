@@ -47,6 +47,9 @@ struct MToonSidecarMaterial
     // Empty preserves the default per-source-material behavior.
     std::string outlineGroup;
 
+    bool outlineDetectSelfDepth = true;
+    bool outlineDetectSelfNormal = true;
+
     glm::vec4 baseColorFactor{1.0F};
 
     glm::vec3 shadeColor{0.1F};

@@ -265,6 +265,10 @@ bool captureMToonSidecarMaterial(
     captured.name = materialName;
     captured.outlineGroup =
         parameters.outlineGroup;
+    captured.outlineDetectSelfDepth =
+        parameters.outlineDetectSelfDepth;
+    captured.outlineDetectSelfNormal =
+        parameters.outlineDetectSelfNormal;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -504,6 +508,10 @@ bool applyMToonSidecarMaterial(
 
     parameters.outlineGroup =
         source.outlineGroup;
+    parameters.outlineDetectSelfDepth =
+        source.outlineDetectSelfDepth;
+    parameters.outlineDetectSelfNormal =
+        source.outlineDetectSelfNormal;
 
     applied.baseColorFactor =
         source.baseColorFactor;

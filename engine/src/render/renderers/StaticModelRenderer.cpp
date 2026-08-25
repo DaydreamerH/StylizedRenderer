@@ -205,14 +205,42 @@ bool StaticModelRenderer::render(
         std::uint32_t outlineMaterialIdValue =
             item.outlineMaterialId;
 
-        if (materialInstance.mtoonParameters.has_value() &&
-            !materialInstance.mtoonParameters
-                ->outlineGroup.empty())
+        constexpr std::uint32_t groupMask = 0x1FFU;
+        constexpr std::uint32_t groupShift = 12U;
+        constexpr std::uint32_t groupBitsMask =
+            groupMask << groupShift;
+        constexpr std::uint32_t explicitGroupBit =
+            1U << 21U;
+        constexpr std::uint32_t detectSelfDepthBit =
+            1U << 22U;
+        constexpr std::uint32_t detectSelfNormalBit =
+            1U << 23U;
+
+        if (materialInstance.mtoonParameters.has_value())
         {
+            const material::MToonMaterialParameters& parameters =
+                *materialInstance.mtoonParameters;
+
+            if (!parameters.outlineGroup.empty())
+            {
+                const std::uint32_t groupId =
+                    outlineGroupId(parameters.outlineGroup) & groupMask;
+
+                outlineMaterialIdValue =
+                    (outlineMaterialIdValue & ~groupBitsMask) |
+                    (groupId << groupShift) |
+                    explicitGroupBit;
+            }
+
             outlineMaterialIdValue =
-                outlineGroupId(
-                    materialInstance.mtoonParameters
-                        ->outlineGroup);
+                parameters.outlineDetectSelfDepth
+                    ? outlineMaterialIdValue | detectSelfDepthBit
+                    : outlineMaterialIdValue & ~detectSelfDepthBit;
+
+            outlineMaterialIdValue =
+                parameters.outlineDetectSelfNormal
+                    ? outlineMaterialIdValue | detectSelfNormalBit
+                    : outlineMaterialIdValue & ~detectSelfNormalBit;
         }
 
         const glm::vec3 outlineMaterialId =

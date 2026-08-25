@@ -2065,6 +2065,14 @@ void ViewerPanels::draw(
                         "Enabled",
                         &parameters.outline.enabled);
 
+                    drawCheckboxProperty(
+                        "Detect Self Depth",
+                        &parameters.outlineDetectSelfDepth);
+
+                    drawCheckboxProperty(
+                        "Detect Self Normal",
+                        &parameters.outlineDetectSelfNormal);
+
                     if (drawComboProperty(
                             "Width Mode",
                             &widthMode,

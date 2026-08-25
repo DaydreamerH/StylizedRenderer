@@ -60,7 +60,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.62,
         "color": [
@@ -297,7 +297,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.38,
         "color": [
@@ -935,7 +935,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.76,
         "color": [
@@ -1016,7 +1016,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.76,
         "color": [
@@ -1038,7 +1038,10 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
-      }
+      },
+      "outlineGroup": "hair",
+      "outlineDetectSelfDepth": false,
+      "outlineDetectSelfNormal": false
     },
     {
       "name": "HairB__stylized_gltf",
@@ -1097,7 +1100,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.76,
         "color": [
@@ -1119,7 +1122,10 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
-      }
+      },
+      "outlineGroup": "hair",
+      "outlineDetectSelfDepth": false,
+      "outlineDetectSelfNormal": false
     },
     {
       "name": "发饰__stylized_gltf",
@@ -1176,7 +1182,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -1255,7 +1261,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1277,7 +1283,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-身体P1__stylized_gltf",
@@ -1334,7 +1341,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1356,7 +1363,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-上身P1__stylized_gltf",
@@ -1413,7 +1421,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1435,7 +1443,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-下身P1-1__stylized_gltf",
@@ -1492,7 +1501,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1514,7 +1523,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-腿P1__stylized_gltf",
@@ -1571,7 +1581,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1593,7 +1603,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-腿P3__stylized_gltf",
@@ -1650,7 +1661,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1672,7 +1683,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-手臂__stylized_gltf",
@@ -1729,7 +1741,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1751,7 +1763,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "皮肤-脚P1__stylized_gltf",
@@ -1808,7 +1821,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.64,
         "color": [
@@ -1830,7 +1843,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "脚趾甲-P1__stylized_gltf",
@@ -1966,7 +1980,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2045,7 +2059,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2124,7 +2138,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2203,7 +2217,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2225,7 +2239,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "丝袜-P3__stylized_gltf",
@@ -2282,7 +2297,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2304,7 +2319,8 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_FaelynnSSR0101_slg_P3_body1_rmo.png",
         "specular": ""
-      }
+      },
+      "outlineGroup": "body"
     },
     {
       "name": "创可贴-P1-1__stylized_gltf",
@@ -2361,7 +2377,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2440,7 +2456,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [
@@ -2519,7 +2535,7 @@
       ],
       "emissionStrength": 1,
       "outline": {
-        "enabled": true,
+        "enabled": false,
         "widthMode": "screen",
         "width": 0.68,
         "color": [

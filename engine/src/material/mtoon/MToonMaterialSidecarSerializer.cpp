@@ -469,6 +469,16 @@ Json materialToJson(
             material.outlineGroup;
     }
 
+    if (!material.outlineDetectSelfDepth)
+    {
+        result["outlineDetectSelfDepth"] = false;
+    }
+
+    if (!material.outlineDetectSelfNormal)
+    {
+        result["outlineDetectSelfNormal"] = false;
+    }
+
     return result;
 }
 
@@ -669,6 +679,18 @@ bool parseMaterial(
             source,
             "outlineGroup",
             material.outlineGroup,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "outlineDetectSelfDepth",
+            material.outlineDetectSelfDepth,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "outlineDetectSelfNormal",
+            material.outlineDetectSelfNormal,
             material.name,
             error) &&
         readVector<4>(

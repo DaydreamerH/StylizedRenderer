@@ -37,23 +37,46 @@ vec4 sampleMaterialId(const vec2 textureCoordinate)
         0);
 }
 
-// The 24-bit outline ID is split 12+12: high = outline group (mesh), low =
-// material slot. A->A is the same material; A vs B is the same group with a
-// different material slot.
-ivec3 decodeOutlineMaterialId(const vec4 value)
+uint decodeOutlineId(const vec4 value)
 {
-    return ivec3(
-        round(value.rgb * 255.0));
+    const uvec3 bytes =
+        uvec3(round(value.rgb * 255.0));
+
+    return bytes.x |
+        (bytes.y << 8U) |
+        (bytes.z << 16U);
 }
 
-int outlineGroupOf(const ivec3 id)
+const uint MATERIAL_MASK = 0xFFFU;
+const uint GROUP_MASK = 0x1FFU;
+const uint GROUP_SHIFT = 12U;
+const uint EXPLICIT_GROUP_BIT = 1U << 21U;
+const uint DETECT_SELF_DEPTH_BIT = 1U << 22U;
+const uint DETECT_SELF_NORMAL_BIT = 1U << 23U;
+
+uint materialOf(const uint id)
 {
-    return (id.z << 4) | (id.y >> 4);
+    return id & MATERIAL_MASK;
 }
 
-int materialSlotOf(const ivec3 id)
+bool hasExplicitGroup(const uint id)
 {
-    return ((id.y & 0xF) << 8) | id.x;
+    return (id & EXPLICIT_GROUP_BIT) != 0U;
+}
+
+uint outlineGroupOf(const uint id)
+{
+    return (id >> GROUP_SHIFT) & GROUP_MASK;
+}
+
+bool detectsSelfDepth(const uint id)
+{
+    return (id & DETECT_SELF_DEPTH_BIT) != 0U;
+}
+
+bool detectsSelfNormal(const uint id)
+{
+    return (id & DETECT_SELF_NORMAL_BIT) != 0U;
 }
 
 bool belongsToSameOutlineGroup(
@@ -66,11 +89,17 @@ bool belongsToSameOutlineGroup(
         return false;
     }
 
-    // Same outline group (same mesh): A, B and C are all in the same group.
-    return outlineGroupOf(
-        decodeOutlineMaterialId(centerMaterialId)) ==
-        outlineGroupOf(
-            decodeOutlineMaterialId(neighborMaterialId));
+    const uint centerId = decodeOutlineId(centerMaterialId);
+    const uint neighborId = decodeOutlineId(neighborMaterialId);
+
+    if (hasExplicitGroup(centerId) != hasExplicitGroup(neighborId))
+    {
+        return false;
+    }
+
+    return hasExplicitGroup(centerId)
+        ? outlineGroupOf(centerId) == outlineGroupOf(neighborId)
+        : materialOf(centerId) == materialOf(neighborId);
 }
 
 bool belongsToSameMaterial(
@@ -83,13 +112,10 @@ bool belongsToSameMaterial(
         return false;
     }
 
-    // Identical 24-bit code: A vs A (same slot within the same group).
-    return all(
-        lessThanEqual(
-            abs(
-                decodeOutlineMaterialId(centerMaterialId) -
-                decodeOutlineMaterialId(neighborMaterialId)),
-            ivec3(0)));
+    return materialOf(
+        decodeOutlineId(centerMaterialId)) ==
+        materialOf(
+            decodeOutlineId(neighborMaterialId));
 }
 
 bool materialIdComesFirst(
@@ -212,13 +238,17 @@ float calculateDepthEdge(const vec2 textureCoordinate)
             const vec4 neighborMaterialId =
                 sampleMaterialId(sampleCoordinate);
 
+            const uint centerOutlineId =
+                decodeOutlineId(centerMaterialId);
+
             if (belongsToSameMaterial(
                     centerMaterialId,
-                    neighborMaterialId))
+                    neighborMaterialId) &&
+                !detectsSelfDepth(centerOutlineId))
             {
-                // A vs A: a depth step inside the same material of the same
-                // mesh (self occlusion) is not an outline boundary. Only the
-                // same-group-but-different-slot (A vs B) case keeps checking.
+                // This material disables outlines caused by its own depth
+                // discontinuities. Object/background silhouettes still pass
+                // because the background has no valid material identity.
                 continue;
             }
 
@@ -303,13 +333,24 @@ float calculateNormalEdge(const vec2 textureCoordinate)
             const vec4 neighborMaterialId =
                 sampleMaterialId(sampleCoordinate);
 
-            if (belongsToSameOutlineGroup(
+            const uint centerOutlineId =
+                decodeOutlineId(centerMaterialId);
+
+            if (belongsToSameMaterial(
                     centerMaterialId,
                     neighborMaterialId))
             {
-                // Hair cards in one outline group may still occlude each
-                // other. Their depth edge is retained above, while their
-                // normal-only discontinuities are what create sparse dots.
+                if (!detectsSelfNormal(centerOutlineId))
+                {
+                    continue;
+                }
+            }
+            else if (belongsToSameOutlineGroup(
+                         centerMaterialId,
+                         neighborMaterialId))
+            {
+                // Different materials in one explicit group retain their
+                // depth edge above, but suppress normal-only discontinuities.
                 continue;
             }
 
