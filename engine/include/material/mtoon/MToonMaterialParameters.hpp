@@ -5,7 +5,6 @@
 #include <glm/vec3.hpp>
 
 #include <cstdint>
-#include <string>
 
 namespace stylized::asset
 {
@@ -72,14 +71,6 @@ struct MToonTextureBindings
 
 struct MToonMaterialParameters
 {
-    // Materials in the same non-empty group share one screen-outline ID.
-    // This allows separately exported hair materials to suppress their
-    // internal overlap edges without merging their rendering parameters.
-    std::string outlineGroup;
-
-    bool outlineDetectSelfDepth = true;
-    bool outlineDetectSelfNormal = true;
-
     glm::vec3 shadeColor{0.1F};
 
     float shadingShift = 0.0F;

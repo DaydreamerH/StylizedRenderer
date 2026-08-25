@@ -264,11 +264,11 @@ bool captureMToonSidecarMaterial(
 
     captured.name = materialName;
     captured.outlineGroup =
-        parameters.outlineGroup;
+        instance.screenOutline.group;
     captured.outlineDetectSelfDepth =
-        parameters.outlineDetectSelfDepth;
+        instance.screenOutline.detectSelfDepth;
     captured.outlineDetectSelfNormal =
-        parameters.outlineDetectSelfNormal;
+        instance.screenOutline.detectSelfNormal;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -506,11 +506,11 @@ bool applyMToonSidecarMaterial(
     MToonMaterialParameters& parameters =
         applied.mtoonParameters.value();
 
-    parameters.outlineGroup =
+    applied.screenOutline.group =
         source.outlineGroup;
-    parameters.outlineDetectSelfDepth =
+    applied.screenOutline.detectSelfDepth =
         source.outlineDetectSelfDepth;
-    parameters.outlineDetectSelfNormal =
+    applied.screenOutline.detectSelfNormal =
         source.outlineDetectSelfNormal;
 
     applied.baseColorFactor =

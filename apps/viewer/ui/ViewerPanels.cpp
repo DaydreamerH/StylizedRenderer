@@ -2067,11 +2067,13 @@ void ViewerPanels::draw(
 
                     drawCheckboxProperty(
                         "Detect Self Depth",
-                        &parameters.outlineDetectSelfDepth);
+                        &materialInstance
+                            ->screenOutline.detectSelfDepth);
 
                     drawCheckboxProperty(
                         "Detect Self Normal",
-                        &parameters.outlineDetectSelfNormal);
+                        &materialInstance
+                            ->screenOutline.detectSelfNormal);
 
                     if (drawComboProperty(
                             "Width Mode",

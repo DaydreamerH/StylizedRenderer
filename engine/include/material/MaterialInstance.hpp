@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asset/AssetHandle.hpp>
+#include <material/ScreenOutlineMaterialParameters.hpp>
 #include <material/MaterialTemplate.hpp>
 #include <material/mtoon/MToonMaterialParameters.hpp>
 
@@ -29,6 +30,8 @@ struct MaterialInstance
     float roughness = 1.F;
 
     asset::AssetHandle<asset::TextureAsset> baseColorTexture;
+
+    ScreenOutlineMaterialParameters screenOutline;
 
     std::optional<MToonMaterialParameters> mtoonParameters;
 

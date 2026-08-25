@@ -216,32 +216,29 @@ bool StaticModelRenderer::render(
         constexpr std::uint32_t detectSelfNormalBit =
             1U << 23U;
 
-        if (materialInstance.mtoonParameters.has_value())
+        const material::ScreenOutlineMaterialParameters& parameters =
+            materialInstance.screenOutline;
+
+        if (!parameters.group.empty())
         {
-            const material::MToonMaterialParameters& parameters =
-                *materialInstance.mtoonParameters;
-
-            if (!parameters.outlineGroup.empty())
-            {
-                const std::uint32_t groupId =
-                    outlineGroupId(parameters.outlineGroup) & groupMask;
-
-                outlineMaterialIdValue =
-                    (outlineMaterialIdValue & ~groupBitsMask) |
-                    (groupId << groupShift) |
-                    explicitGroupBit;
-            }
+            const std::uint32_t groupId =
+                outlineGroupId(parameters.group) & groupMask;
 
             outlineMaterialIdValue =
-                parameters.outlineDetectSelfDepth
-                    ? outlineMaterialIdValue | detectSelfDepthBit
-                    : outlineMaterialIdValue & ~detectSelfDepthBit;
-
-            outlineMaterialIdValue =
-                parameters.outlineDetectSelfNormal
-                    ? outlineMaterialIdValue | detectSelfNormalBit
-                    : outlineMaterialIdValue & ~detectSelfNormalBit;
+                (outlineMaterialIdValue & ~groupBitsMask) |
+                (groupId << groupShift) |
+                explicitGroupBit;
         }
+
+        outlineMaterialIdValue =
+            parameters.detectSelfDepth
+                ? outlineMaterialIdValue | detectSelfDepthBit
+                : outlineMaterialIdValue & ~detectSelfDepthBit;
+
+        outlineMaterialIdValue =
+            parameters.detectSelfNormal
+                ? outlineMaterialIdValue | detectSelfNormalBit
+                : outlineMaterialIdValue & ~detectSelfNormalBit;
 
         const glm::vec3 outlineMaterialId =
             encodeOutlineMaterialId(
