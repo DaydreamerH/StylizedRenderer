@@ -531,6 +531,10 @@ Json materialToJson(
             material.shadowNormalInfluence
         },
         {
+            "castShadow",
+            material.castShadow
+        },
+        {
             "receiveShadow",
             material.receiveShadow
         },
@@ -914,6 +918,12 @@ bool parseMaterial(
             material.shadowNormalInfluence,
             0.0F,
             1.0F,
+            material.name,
+            error) &&
+        readBool(
+            source,
+            "castShadow",
+            material.castShadow,
             material.name,
             error) &&
         readBool(

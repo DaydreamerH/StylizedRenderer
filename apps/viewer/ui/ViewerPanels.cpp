@@ -2015,6 +2015,10 @@ void ViewerPanels::draw(
                         "%.3f");
 
                     drawCheckboxProperty(
+                        "Cast System Shadow",
+                        &parameters.castShadow);
+
+                    drawCheckboxProperty(
                         "Receive System Shadow",
                         &parameters.receiveShadow);
 

@@ -63,9 +63,11 @@ private:
     StaticModelRenderer renderer_;
 
     graphics::ClearValue clearValue_{
-        0.20F,
-        0.10F,
-        0.13F,
+        // Produces display RGB 213 with the default exposure, exponential
+        // tone mapping and 2.2 gamma correction.
+        1.117945F,
+        1.117945F,
+        1.117945F,
         1.0F
     };
 

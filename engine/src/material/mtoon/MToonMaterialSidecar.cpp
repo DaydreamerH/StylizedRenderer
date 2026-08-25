@@ -308,6 +308,9 @@ bool captureMToonSidecarMaterial(
     captured.shadowNormalInfluence =
         parameters.shadowNormalInfluence;
 
+    captured.castShadow =
+        parameters.castShadow;
+
     captured.receiveShadow =
         parameters.receiveShadow;
 
@@ -565,6 +568,9 @@ bool applyMToonSidecarMaterial(
 
     parameters.shadowNormalInfluence =
         source.shadowNormalInfluence;
+
+    parameters.castShadow =
+        source.castShadow;
 
     parameters.receiveShadow =
         source.receiveShadow;

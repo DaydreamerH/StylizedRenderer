@@ -595,6 +595,15 @@ bool RenderExtractor::appendScene(
             if (item.runtimeMaterial == nullptr)
                 return false;
 
+            if (item.materialInstance->mtoonParameters.has_value() &&
+                !item.materialInstance->mtoonParameters->castShadow)
+            {
+                item.flags = static_cast<RenderItemFlags>(
+                    static_cast<std::uint32_t>(item.flags) &
+                    ~static_cast<std::uint32_t>(
+                        RenderItemFlags::CastShadow));
+            }
+
             const asset::MaterialAsset* sourceMaterial =
                 assetRegistry.get(sourceMaterialHandle);
 

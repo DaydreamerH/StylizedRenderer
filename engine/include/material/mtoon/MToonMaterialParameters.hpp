@@ -81,6 +81,7 @@ struct MToonMaterialParameters
     float normalScale = 1.0F;
     float surfaceOffset = 0.0F;
     float shadowNormalInfluence = 0.0F;
+    bool castShadow = true;
     bool receiveShadow = true;
     bool shadowCutoffEnabled = false;
     float shadowCutoff = 0.5F;
