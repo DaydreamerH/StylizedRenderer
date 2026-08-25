@@ -1761,50 +1761,72 @@ void ViewerPanels::draw(
                 materialTemplate,
                 assets);
 
-        if (materialInstance != nullptr &&
-            ImGui::CollapsingHeader(
-                "Screen Outline",
-                ImGuiTreeNodeFlags_DefaultOpen))
+        if (materialInstance != nullptr)
         {
-            stylized::material::ScreenOutlineMaterialParameters& outline =
-                materialInstance->screenOutline;
+            bool resetFailed = false;
 
-            if (beginPropertyTable(
-                    "##MaterialScreenOutlineProperties"))
+            if (ImGui::Button(
+                    "Reset Selected Material",
+                    ImVec2{
+                        ImGui::GetContentRegionAvail().x,
+                        0.0F}))
             {
-                drawCheckboxProperty(
-                    "Enabled",
-                    &outline.enabled);
-                drawCheckboxProperty(
-                    "Depth Enabled",
-                    &outline.depthEnabled);
-                drawCheckboxProperty(
-                    "Normal Enabled",
-                    &outline.normalEnabled);
-                drawCheckboxProperty(
-                    "Detect Self Depth",
-                    &outline.detectSelfDepth);
-                drawCheckboxProperty(
-                    "Detect Self Normal",
-                    &outline.detectSelfNormal);
+                resetFailed =
+                    !resourceCache.resetMaterialInstance(
+                        selectedMaterial_,
+                        materialTemplate,
+                        assets);
+            }
 
-                std::array<char, 129> groupBuffer{};
-                std::memcpy(
-                    groupBuffer.data(),
-                    outline.group.data(),
-                    std::min(
-                        outline.group.size(),
-                        groupBuffer.size() - 1U));
+            if (resetFailed)
+            {
+                ImGui::TextColored(
+                    ImVec4{1.0F, 0.3F, 0.3F, 1.0F},
+                    "Failed to reset selected material.");
+            }
 
-                beginPropertyRow("Group");
-                if (ImGui::InputText(
-                        "##Value",
-                        groupBuffer.data(),
-                        groupBuffer.size()))
+            if (ImGui::CollapsingHeader(
+                    "Screen Outline"))
+            {
+                stylized::material::ScreenOutlineMaterialParameters& outline =
+                    materialInstance->screenOutline;
+
+                if (beginPropertyTable(
+                        "##MaterialScreenOutlineProperties"))
                 {
-                    outline.group = groupBuffer.data();
-                }
-                endPropertyRow();
+                    drawCheckboxProperty(
+                        "Enabled",
+                        &outline.enabled);
+                    drawCheckboxProperty(
+                        "Depth Enabled",
+                        &outline.depthEnabled);
+                    drawCheckboxProperty(
+                        "Normal Enabled",
+                        &outline.normalEnabled);
+                    drawCheckboxProperty(
+                        "Detect Self Depth",
+                        &outline.detectSelfDepth);
+                    drawCheckboxProperty(
+                        "Detect Self Normal",
+                        &outline.detectSelfNormal);
+
+                    std::array<char, 129> groupBuffer{};
+                    std::memcpy(
+                        groupBuffer.data(),
+                        outline.group.data(),
+                        std::min(
+                            outline.group.size(),
+                            groupBuffer.size() - 1U));
+
+                    beginPropertyRow("Group");
+                    if (ImGui::InputText(
+                            "##Value",
+                            groupBuffer.data(),
+                            groupBuffer.size()))
+                    {
+                        outline.group = groupBuffer.data();
+                    }
+                    endPropertyRow();
 
                 bool widthOverride =
                     outline.screenWidth.has_value();
@@ -1887,7 +1909,8 @@ void ViewerPanels::draw(
                         &outline.color->x);
                 }
 
-                ImGui::EndTable();
+                    ImGui::EndTable();
+                }
             }
         }
     }
@@ -1905,34 +1928,11 @@ void ViewerPanels::draw(
         if (materialInstance != nullptr &&
             materialInstance->mtoonParameters.has_value())
         {
-            bool resetFailed = false;
-
-            if (ImGui::Button(
-                    "Reset Selected Material",
-                    ImVec2{
-                        ImGui::GetContentRegionAvail().x,
-                        0.0F}))
-            {
-                resetFailed =
-                    !resourceCache.resetMaterialInstance(
-                        selectedMaterial_,
-                        materialTemplate,
-                        assets);
-            }
-
-            if (resetFailed)
-            {
-                ImGui::TextColored(
-                    ImVec4{1.0F, 0.3F, 0.3F, 1.0F},
-                    "Failed to reset selected material.");
-            }
-
             stylized::material::MToonMaterialParameters& parameters =
                 materialInstance->mtoonParameters.value();
 
             if (ImGui::CollapsingHeader(
-                    "Base / Shade",
-                    ImGuiTreeNodeFlags_DefaultOpen))
+                    "Base / Shade"))
             {
                 if (beginPropertyTable(
                         "##BaseShadeProperties"))
@@ -2247,11 +2247,17 @@ void ViewerPanels::draw(
         constexpr const char* debugViews[] = {
             "Final",
             "Surface Normal",
-            "Linear Depth",
-            "Shell Outline Mask",
-            "Screen Edge",
-            "Combined Outline"
-        };
+                "Linear Depth",
+                "Shell Outline Mask",
+                "Screen Edge",
+                "Combined Outline",
+                "Depth Edge",
+                "Normal Edge",
+                "Policy Index",
+                "Group ID",
+                "Effective Depth Threshold",
+                "Effective Normal Threshold"
+            };
 
         int mode =
             static_cast<int>(settings.mode);

@@ -387,12 +387,23 @@ float calculateNormalEdge(const vec2 textureCoordinate)
 
 void main()
 {
-    const float coverage =
-        uScreenOutlineEnabled == 0
-        ? 0.0
-        : max(
-            calculateDepthEdge(vertexTextureCoordinate),
-            calculateNormalEdge(vertexTextureCoordinate));
+    float depthCoverage = 0.0;
+    float normalCoverage = 0.0;
 
-    outColor = vec4(vec3(coverage), 1.0);
+    if (uScreenOutlineEnabled != 0)
+    {
+        depthCoverage =
+            calculateDepthEdge(vertexTextureCoordinate);
+        normalCoverage =
+            calculateNormalEdge(vertexTextureCoordinate);
+    }
+
+    const float coverage =
+        max(depthCoverage, normalCoverage);
+
+    outColor = vec4(
+        coverage,
+        depthCoverage,
+        normalCoverage,
+        1.0);
 }
