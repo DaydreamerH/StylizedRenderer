@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "materials": [
     {
       "name": "Face__stylized_gltf",
@@ -82,6 +82,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -161,6 +168,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -240,6 +254,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -319,6 +340,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -398,6 +426,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -477,6 +512,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -556,6 +598,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -637,6 +686,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -717,6 +773,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -797,6 +860,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -876,6 +946,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -957,6 +1034,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -1039,9 +1123,14 @@
         "occlusion": "",
         "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
       },
-      "outlineGroup": "hair",
-      "outlineDetectSelfDepth": false,
-      "outlineDetectSelfNormal": false
+      "screenOutline": {
+        "group": "hair",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": false,
+        "detectSelfNormal": false
+      }
     },
     {
       "name": "HairB__stylized_gltf",
@@ -1123,9 +1212,14 @@
         "occlusion": "",
         "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
       },
-      "outlineGroup": "hair",
-      "outlineDetectSelfDepth": false,
-      "outlineDetectSelfNormal": false
+      "screenOutline": {
+        "group": "hair",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": false,
+        "detectSelfNormal": false
+      }
     },
     {
       "name": "发饰__stylized_gltf",
@@ -1204,6 +1298,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr01_slg_cloth_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -1284,7 +1385,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-身体P1__stylized_gltf",
@@ -1364,7 +1472,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-上身P1__stylized_gltf",
@@ -1444,7 +1559,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-下身P1-1__stylized_gltf",
@@ -1524,7 +1646,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-腿P1__stylized_gltf",
@@ -1604,7 +1733,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-腿P3__stylized_gltf",
@@ -1684,7 +1820,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-手臂__stylized_gltf",
@@ -1764,7 +1907,14 @@
         "occlusion": "normalmap/body_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "皮肤-脚P1__stylized_gltf",
@@ -1844,7 +1994,14 @@
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "脚趾甲-P1__stylized_gltf",
@@ -1923,6 +2080,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2002,6 +2166,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_hip_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2081,6 +2252,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_cloth_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2160,6 +2338,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_cloth_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2240,7 +2425,14 @@
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "丝袜-P3__stylized_gltf",
@@ -2320,7 +2512,14 @@
         "occlusion": "normalmap/c_FaelynnSSR0101_slg_P3_body1_rmo.png",
         "specular": ""
       },
-      "outlineGroup": "body"
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
     },
     {
       "name": "创可贴-P1-1__stylized_gltf",
@@ -2399,6 +2598,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_hip_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2478,6 +2684,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2557,6 +2770,13 @@
         "outlineWidthMask": "",
         "occlusion": "normalmap/c_faelynnssr01_slg_cloth_rmo_05_21_2026.png",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2636,6 +2856,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     },
     {
@@ -2715,6 +2942,13 @@
         "outlineWidthMask": "",
         "occlusion": "",
         "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
       }
     }
   ]

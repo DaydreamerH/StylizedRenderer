@@ -269,6 +269,20 @@ bool captureMToonSidecarMaterial(
         instance.screenOutline.detectSelfDepth;
     captured.outlineDetectSelfNormal =
         instance.screenOutline.detectSelfNormal;
+    captured.screenOutlineEnabled =
+        instance.screenOutline.enabled;
+    captured.screenOutlineDepthEnabled =
+        instance.screenOutline.depthEnabled;
+    captured.screenOutlineNormalEnabled =
+        instance.screenOutline.normalEnabled;
+    captured.screenOutlineWidth =
+        instance.screenOutline.screenWidth;
+    captured.screenOutlineDepthThreshold =
+        instance.screenOutline.depthThreshold;
+    captured.screenOutlineNormalThreshold =
+        instance.screenOutline.normalThreshold;
+    captured.screenOutlineColor =
+        instance.screenOutline.color;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -512,6 +526,20 @@ bool applyMToonSidecarMaterial(
         source.outlineDetectSelfDepth;
     applied.screenOutline.detectSelfNormal =
         source.outlineDetectSelfNormal;
+    applied.screenOutline.enabled =
+        source.screenOutlineEnabled;
+    applied.screenOutline.depthEnabled =
+        source.screenOutlineDepthEnabled;
+    applied.screenOutline.normalEnabled =
+        source.screenOutlineNormalEnabled;
+    applied.screenOutline.screenWidth =
+        source.screenOutlineWidth;
+    applied.screenOutline.depthThreshold =
+        source.screenOutlineDepthThreshold;
+    applied.screenOutline.normalThreshold =
+        source.screenOutlineNormalThreshold;
+    applied.screenOutline.color =
+        source.screenOutlineColor;
 
     applied.baseColorFactor =
         source.baseColorFactor;

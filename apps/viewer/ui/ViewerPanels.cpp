@@ -33,8 +33,10 @@
 #include <glm/trigonometric.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <span>
 #include <string>
@@ -1751,6 +1753,145 @@ void ViewerPanels::draw(
         }
     }
 
+    if (!selectedMaterial_.isNull())
+    {
+        stylized::material::MaterialInstance* materialInstance =
+            resourceCache.getOrCreateMaterialInstance(
+                selectedMaterial_,
+                materialTemplate,
+                assets);
+
+        if (materialInstance != nullptr &&
+            ImGui::CollapsingHeader(
+                "Screen Outline",
+                ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            stylized::material::ScreenOutlineMaterialParameters& outline =
+                materialInstance->screenOutline;
+
+            if (beginPropertyTable(
+                    "##MaterialScreenOutlineProperties"))
+            {
+                drawCheckboxProperty(
+                    "Enabled",
+                    &outline.enabled);
+                drawCheckboxProperty(
+                    "Depth Enabled",
+                    &outline.depthEnabled);
+                drawCheckboxProperty(
+                    "Normal Enabled",
+                    &outline.normalEnabled);
+                drawCheckboxProperty(
+                    "Detect Self Depth",
+                    &outline.detectSelfDepth);
+                drawCheckboxProperty(
+                    "Detect Self Normal",
+                    &outline.detectSelfNormal);
+
+                std::array<char, 129> groupBuffer{};
+                std::memcpy(
+                    groupBuffer.data(),
+                    outline.group.data(),
+                    std::min(
+                        outline.group.size(),
+                        groupBuffer.size() - 1U));
+
+                beginPropertyRow("Group");
+                if (ImGui::InputText(
+                        "##Value",
+                        groupBuffer.data(),
+                        groupBuffer.size()))
+                {
+                    outline.group = groupBuffer.data();
+                }
+                endPropertyRow();
+
+                bool widthOverride =
+                    outline.screenWidth.has_value();
+                if (drawCheckboxProperty(
+                        "Override Width",
+                        &widthOverride))
+                {
+                    if (widthOverride)
+                        outline.screenWidth = 1.0F;
+                    else
+                        outline.screenWidth.reset();
+                }
+                if (outline.screenWidth.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Width",
+                        &*outline.screenWidth,
+                        1.0F,
+                        8.0F,
+                        "%.2f");
+                }
+
+                bool depthOverride =
+                    outline.depthThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Depth Threshold",
+                        &depthOverride))
+                {
+                    if (depthOverride)
+                        outline.depthThreshold = 0.01F;
+                    else
+                        outline.depthThreshold.reset();
+                }
+                if (outline.depthThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Depth Threshold",
+                        &*outline.depthThreshold,
+                        0.0001F,
+                        0.1F,
+                        "%.4f");
+                }
+
+                bool normalOverride =
+                    outline.normalThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Normal Threshold",
+                        &normalOverride))
+                {
+                    if (normalOverride)
+                        outline.normalThreshold = 0.2F;
+                    else
+                        outline.normalThreshold.reset();
+                }
+                if (outline.normalThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Normal Threshold",
+                        &*outline.normalThreshold,
+                        0.001F,
+                        1.0F,
+                        "%.3f");
+                }
+
+                bool colorOverride =
+                    outline.color.has_value();
+                if (drawCheckboxProperty(
+                        "Override Color",
+                        &colorOverride))
+                {
+                    if (colorOverride)
+                        outline.color = glm::vec3{0.0F};
+                    else
+                        outline.color.reset();
+                }
+                if (outline.color.has_value())
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &outline.color->x);
+                }
+
+                ImGui::EndTable();
+            }
+        }
+    }
+
     if (materialKind ==
             stylized::material::MaterialKind::MToon &&
         !selectedMaterial_.isNull())
@@ -2064,16 +2205,6 @@ void ViewerPanels::draw(
                     drawCheckboxProperty(
                         "Enabled",
                         &parameters.outline.enabled);
-
-                    drawCheckboxProperty(
-                        "Detect Self Depth",
-                        &materialInstance
-                            ->screenOutline.detectSelfDepth);
-
-                    drawCheckboxProperty(
-                        "Detect Self Normal",
-                        &materialInstance
-                            ->screenOutline.detectSelfNormal);
 
                     if (drawComboProperty(
                             "Width Mode",
