@@ -178,6 +178,11 @@ struct RenderItem
 
     std::uint32_t objectId = 0;
 
+    // Compact source-material identity written into the opaque G-buffer.
+    // Screen-space outlines use it to ignore discontinuities inside one
+    // material, such as overlapping hair cards.
+    std::uint32_t outlineMaterialId = 0;
+
     RenderMaterialClass materialClass = 
         RenderMaterialClass::Opaque;
     

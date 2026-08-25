@@ -263,6 +263,8 @@ bool captureMToonSidecarMaterial(
     MToonSidecarMaterial captured;
 
     captured.name = materialName;
+    captured.outlineGroup =
+        parameters.outlineGroup;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -499,6 +501,9 @@ bool applyMToonSidecarMaterial(
 
     MToonMaterialParameters& parameters =
         applied.mtoonParameters.value();
+
+    parameters.outlineGroup =
+        source.outlineGroup;
 
     applied.baseColorFactor =
         source.baseColorFactor;

@@ -596,6 +596,30 @@ bool RenderExtractor::appendScene(
                 objectIdBase +
                 static_cast<std::uint32_t>(nodeIndex);
 
+            // The material-ID render target is RGB8. Reserve zero for the
+            // clear/background value so a material/background edge remains
+            // distinguishable even for primitives with no source material.
+            // The 24-bit code is split 12+12: high = Mesh (outline group),
+            // low = Material. Same Mesh -> same high bits -> the screen-space
+            // outline pass skips every edge inside one mesh.
+            constexpr std::uint64_t outlineGroupMask =
+                0x00000FFFull;
+
+            const std::uint32_t meshGroup =
+                static_cast<std::uint32_t>(
+                    node.mesh.id().value %
+                    outlineGroupMask);
+
+            const std::uint32_t materialSlot =
+                static_cast<std::uint32_t>(
+                    sourceMaterialHandle.id().value %
+                    outlineGroupMask);
+
+            item.outlineMaterialId =
+                ((meshGroup << 12U) |
+                 materialSlot) |
+                1U;
+
             switch (item.materialClass)
             {
             case RenderMaterialClass::Opaque:

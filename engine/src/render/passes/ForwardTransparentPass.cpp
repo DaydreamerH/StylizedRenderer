@@ -84,11 +84,19 @@ bool ForwardTransparentPass::execute(
         1,
         false);
 
+    graphicsDevice_.setColorAttachmentWrite(
+        2,
+        false);
+
     const auto restoreState =
         [this, &frame]()
         {
             graphicsDevice_.setColorAttachmentWrite(
                 1,
+                true);
+
+            graphicsDevice_.setColorAttachmentWrite(
+                2,
                 true);
 
             graphicsDevice_.setAlphaBlending(false);

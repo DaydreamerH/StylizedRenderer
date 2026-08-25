@@ -43,6 +43,10 @@ struct MToonSidecarMaterial
 {
     std::string name;
 
+    // Optional shared identity used only by the global screen outline.
+    // Empty preserves the default per-source-material behavior.
+    std::string outlineGroup;
+
     glm::vec4 baseColorFactor{1.0F};
 
     glm::vec3 shadeColor{0.1F};

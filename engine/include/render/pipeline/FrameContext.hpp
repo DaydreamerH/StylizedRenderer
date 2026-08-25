@@ -25,6 +25,7 @@ struct FrameContext
     graphics::RenderTexture* hdrColor = nullptr;
     graphics::RenderTexture* ldrColor = nullptr;
     graphics::RenderTexture* normal = nullptr;
+    graphics::RenderTexture* materialId = nullptr;
     graphics::RenderTexture* outlineMask = nullptr;
     graphics::DepthTexture* depth = nullptr;
     graphics::Framebuffer* framebuffer = nullptr;

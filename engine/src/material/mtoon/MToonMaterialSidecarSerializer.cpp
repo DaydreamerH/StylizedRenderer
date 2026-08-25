@@ -131,6 +131,50 @@ bool readBool(
     return true;
 }
 
+bool readString(
+    const Json& source,
+    const char* field,
+    std::string& destination,
+    const std::string& materialName,
+    MToonSidecarError& error)
+{
+    const auto iterator =
+        source.find(field);
+
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_string())
+    {
+        setError(
+            error,
+            materialName,
+            field,
+            "Expected a string.");
+
+        return false;
+    }
+
+    const std::string& value =
+        iterator->get_ref<const std::string&>();
+
+    if (value.size() > 128U)
+    {
+        setError(
+            error,
+            materialName,
+            field,
+            "String exceeds 128 characters.");
+
+        return false;
+    }
+
+    destination = value;
+    return true;
+}
+
 template<std::size_t ComponentCount>
 bool readVector(
     const Json& source,
@@ -354,7 +398,7 @@ Json outlineToJson(
 Json materialToJson(
     const MToonSidecarMaterial& material)
 {
-    return Json{
+    Json result{
         {"name", material.name},
         {"baseColorFactor", toJson(material.baseColorFactor)},
         {"shadeColor", toJson(material.shadeColor)},
@@ -418,6 +462,14 @@ Json materialToJson(
         {"specularStrength", material.specularStrength},
         {"specularPower", material.specularPower}
     };
+
+    if (!material.outlineGroup.empty())
+    {
+        result["outlineGroup"] =
+            material.outlineGroup;
+    }
+
+    return result;
 }
 
 bool parseTexturePaths(
@@ -613,6 +665,12 @@ bool parseMaterial(
         nameIterator->get<std::string>();
 
     return
+        readString(
+            source,
+            "outlineGroup",
+            material.outlineGroup,
+            material.name,
+            error) &&
         readVector<4>(
             source,
             "baseColorFactor",

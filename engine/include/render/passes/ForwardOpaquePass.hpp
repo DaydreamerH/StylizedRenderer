@@ -75,6 +75,7 @@ private:
 
     graphics::RenderTexture hdrColor_;
     graphics::RenderTexture normal_;
+    graphics::RenderTexture materialId_;
     graphics::DepthTexture depth_;
     graphics::Framebuffer framebuffer_;
 

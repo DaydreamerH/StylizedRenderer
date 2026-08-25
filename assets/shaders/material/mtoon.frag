@@ -9,6 +9,7 @@ layout(location = 5) in float vertexSphereWeight;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outMaterialId;
 
 uniform sampler2D uBaseColorTexture;
 uniform vec4 uBaseColorFactor;
@@ -63,6 +64,7 @@ uniform int uMToonDebugView;
 
 uniform int uAlphaMaskEnabled;
 uniform float uAlphaCutoff;
+uniform vec3 uOutlineMaterialId;
 
 uniform sampler2D uToonRampTexture;
 
@@ -610,5 +612,10 @@ void main()
     }
 
     outColor = vec4(outputColor, baseColor.a);
-    outNormal = vec4(normal * 0.5 + 0.5, 1.0);
+    // Screen-space outlines need stable shape information. The MToon surface
+    // normal includes normal-map detail, which turns fabric and hair texture
+    // into isolated, view-dependent edge pixels. Keep it for lighting above,
+    // but store only the interpolated geometric normal in the G-buffer.
+    outNormal = vec4(geometricNormal * 0.5 + 0.5, 1.0);
+    outMaterialId = vec4(uOutlineMaterialId, 1.0);
 }

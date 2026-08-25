@@ -69,6 +69,7 @@ private:
     graphics::GraphicsDevice& graphicsDevice_;
 
     graphics::ShaderProgram shader_;
+    graphics::ShaderProgram edgeShader_;
 
     graphics::Buffer vertexBuffer_;
     graphics::Buffer indexBuffer_;
@@ -76,6 +77,9 @@ private:
 
     graphics::RenderTexture outlinedHdrColor_;
     graphics::Framebuffer framebuffer_;
+
+    graphics::RenderTexture screenEdgeMask_;
+    graphics::Framebuffer screenEdgeFramebuffer_;
 
     graphics::Extent2D extent_{};
 

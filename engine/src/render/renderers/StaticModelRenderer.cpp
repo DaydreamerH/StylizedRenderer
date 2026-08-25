@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <algorithm>
+#include <string_view>
 
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
@@ -24,6 +25,43 @@ namespace stylized::render
 namespace
 {
     constexpr std::uint32_t skinningPaletteBinding = 0;
+
+    glm::vec3 encodeOutlineMaterialId(
+        const std::uint32_t materialId) noexcept
+    {
+        constexpr float inverseByte =
+            1.0F / 255.0F;
+
+        return glm::vec3{
+            static_cast<float>(
+                materialId & 0xFFU) * inverseByte,
+            static_cast<float>(
+                (materialId >> 8U) & 0xFFU) * inverseByte,
+            static_cast<float>(
+                (materialId >> 16U) & 0xFFU) * inverseByte
+        };
+    }
+
+    std::uint32_t outlineGroupId(
+        const std::string_view group) noexcept
+    {
+        std::uint32_t hash =
+            2166136261U;
+
+        for (const unsigned char character : group)
+        {
+            hash ^= character;
+            hash *= 16777619U;
+        }
+
+        const std::uint32_t compactHash =
+            (hash ^ (hash >> 24U)) &
+            0x00FFFFFFU;
+
+        return compactHash == 0U
+            ? 1U
+            : compactHash;
+    }
 } // namespace
 
 
@@ -160,6 +198,32 @@ bool StaticModelRenderer::render(
         if (!shader->setFloat(
                 "uAlphaCutoff",
                 materialInstance.alphaCutoff))
+        {
+            return false;
+        }
+
+        std::uint32_t outlineMaterialIdValue =
+            item.outlineMaterialId;
+
+        if (materialInstance.mtoonParameters.has_value() &&
+            !materialInstance.mtoonParameters
+                ->outlineGroup.empty())
+        {
+            outlineMaterialIdValue =
+                outlineGroupId(
+                    materialInstance.mtoonParameters
+                        ->outlineGroup);
+        }
+
+        const glm::vec3 outlineMaterialId =
+            encodeOutlineMaterialId(
+                outlineMaterialIdValue);
+
+        if (!shader->setVec3(
+                "uOutlineMaterialId",
+                outlineMaterialId.x,
+                outlineMaterialId.y,
+                outlineMaterialId.z))
         {
             return false;
         }
