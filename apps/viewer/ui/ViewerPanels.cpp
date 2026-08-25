@@ -33,8 +33,10 @@
 #include <glm/trigonometric.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <span>
 #include <string>
@@ -1751,9 +1753,7 @@ void ViewerPanels::draw(
         }
     }
 
-    if (materialKind ==
-            stylized::material::MaterialKind::MToon &&
-        !selectedMaterial_.isNull())
+    if (!selectedMaterial_.isNull())
     {
         stylized::material::MaterialInstance* materialInstance =
             resourceCache.getOrCreateMaterialInstance(
@@ -1761,8 +1761,7 @@ void ViewerPanels::draw(
                 materialTemplate,
                 assets);
 
-        if (materialInstance != nullptr &&
-            materialInstance->mtoonParameters.has_value())
+        if (materialInstance != nullptr)
         {
             bool resetFailed = false;
 
@@ -1786,12 +1785,154 @@ void ViewerPanels::draw(
                     "Failed to reset selected material.");
             }
 
+            if (ImGui::CollapsingHeader(
+                    "Screen Outline"))
+            {
+                stylized::material::ScreenOutlineMaterialParameters& outline =
+                    materialInstance->screenOutline;
+
+                if (beginPropertyTable(
+                        "##MaterialScreenOutlineProperties"))
+                {
+                    drawCheckboxProperty(
+                        "Enabled",
+                        &outline.enabled);
+                    drawCheckboxProperty(
+                        "Depth Enabled",
+                        &outline.depthEnabled);
+                    drawCheckboxProperty(
+                        "Normal Enabled",
+                        &outline.normalEnabled);
+                    drawCheckboxProperty(
+                        "Detect Self Depth",
+                        &outline.detectSelfDepth);
+                    drawCheckboxProperty(
+                        "Detect Self Normal",
+                        &outline.detectSelfNormal);
+
+                    std::array<char, 129> groupBuffer{};
+                    std::memcpy(
+                        groupBuffer.data(),
+                        outline.group.data(),
+                        std::min(
+                            outline.group.size(),
+                            groupBuffer.size() - 1U));
+
+                    beginPropertyRow("Group");
+                    if (ImGui::InputText(
+                            "##Value",
+                            groupBuffer.data(),
+                            groupBuffer.size()))
+                    {
+                        outline.group = groupBuffer.data();
+                    }
+                    endPropertyRow();
+
+                bool widthOverride =
+                    outline.screenWidth.has_value();
+                if (drawCheckboxProperty(
+                        "Override Width",
+                        &widthOverride))
+                {
+                    if (widthOverride)
+                        outline.screenWidth = 1.0F;
+                    else
+                        outline.screenWidth.reset();
+                }
+                if (outline.screenWidth.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Width",
+                        &*outline.screenWidth,
+                        1.0F,
+                        8.0F,
+                        "%.2f");
+                }
+
+                bool depthOverride =
+                    outline.depthThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Depth Threshold",
+                        &depthOverride))
+                {
+                    if (depthOverride)
+                        outline.depthThreshold = 0.01F;
+                    else
+                        outline.depthThreshold.reset();
+                }
+                if (outline.depthThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Depth Threshold",
+                        &*outline.depthThreshold,
+                        0.0001F,
+                        0.1F,
+                        "%.4f");
+                }
+
+                bool normalOverride =
+                    outline.normalThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Normal Threshold",
+                        &normalOverride))
+                {
+                    if (normalOverride)
+                        outline.normalThreshold = 0.2F;
+                    else
+                        outline.normalThreshold.reset();
+                }
+                if (outline.normalThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Normal Threshold",
+                        &*outline.normalThreshold,
+                        0.001F,
+                        1.0F,
+                        "%.3f");
+                }
+
+                bool colorOverride =
+                    outline.color.has_value();
+                if (drawCheckboxProperty(
+                        "Override Color",
+                        &colorOverride))
+                {
+                    if (colorOverride)
+                        outline.color = glm::vec3{0.0F};
+                    else
+                        outline.color.reset();
+                }
+                if (outline.color.has_value())
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &outline.color->x);
+                }
+
+                    ImGui::EndTable();
+                }
+            }
+        }
+    }
+
+    if (materialKind ==
+            stylized::material::MaterialKind::MToon &&
+        !selectedMaterial_.isNull())
+    {
+        stylized::material::MaterialInstance* materialInstance =
+            resourceCache.getOrCreateMaterialInstance(
+                selectedMaterial_,
+                materialTemplate,
+                assets);
+
+        if (materialInstance != nullptr &&
+            materialInstance->mtoonParameters.has_value())
+        {
             stylized::material::MToonMaterialParameters& parameters =
                 materialInstance->mtoonParameters.value();
 
             if (ImGui::CollapsingHeader(
-                    "Base / Shade",
-                    ImGuiTreeNodeFlags_DefaultOpen))
+                    "Base / Shade"))
             {
                 if (beginPropertyTable(
                         "##BaseShadeProperties"))
@@ -2045,19 +2186,8 @@ void ViewerPanels::draw(
                 }
             }
 
-            if (ImGui::CollapsingHeader("Outline"))
+            if (ImGui::CollapsingHeader("World Shell Outline"))
             {
-                int widthMode =
-                    parameters.outline.widthMode ==
-                            stylized::material::OutlineWidthMode::World
-                        ? 0
-                        : 1;
-
-                constexpr const char* widthModes[] = {
-                    "World",
-                    "Screen"
-                };
-
                 if (beginPropertyTable(
                         "##OutlineProperties"))
                 {
@@ -2065,38 +2195,10 @@ void ViewerPanels::draw(
                         "Enabled",
                         &parameters.outline.enabled);
 
-                    drawCheckboxProperty(
-                        "Detect Self Depth",
-                        &parameters.outlineDetectSelfDepth);
-
-                    drawCheckboxProperty(
-                        "Detect Self Normal",
-                        &parameters.outlineDetectSelfNormal);
-
-                    if (drawComboProperty(
-                            "Width Mode",
-                            &widthMode,
-                            widthModes,
-                            IM_ARRAYSIZE(widthModes)))
-                    {
-                        parameters.outline.widthMode =
-                            widthMode == 0
-                                ? stylized::material::
-                                    OutlineWidthMode::World
-                                : stylized::material::
-                                    OutlineWidthMode::Screen;
-                    }
-
-                    const float widthSpeed =
-                        parameters.outline.widthMode ==
-                                stylized::material::OutlineWidthMode::World
-                            ? 0.001F
-                            : 0.1F;
-
                     drawDragFloatProperty(
                         "Width",
                         &parameters.outline.width,
-                        widthSpeed,
+                        0.001F,
                         0.0F,
                         100.0F,
                         "%.3f");
@@ -2145,11 +2247,17 @@ void ViewerPanels::draw(
         constexpr const char* debugViews[] = {
             "Final",
             "Surface Normal",
-            "Linear Depth",
-            "Shell Outline Mask",
-            "Screen Edge",
-            "Combined Outline"
-        };
+                "Linear Depth",
+                "Shell Outline Mask",
+                "Screen Edge",
+                "Combined Outline",
+                "Depth Edge",
+                "Normal Edge",
+                "Policy Index",
+                "Group ID",
+                "Effective Depth Threshold",
+                "Effective Normal Threshold"
+            };
 
         int mode =
             static_cast<int>(settings.mode);

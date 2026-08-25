@@ -34,6 +34,65 @@ namespace stylized::render
 namespace
 {
 
+[[nodiscard]] std::uint32_t registerOutlinePolicy(
+    const material::MaterialInstance& materialInstance,
+    RenderWorld& renderWorld)
+{
+    const auto existing =
+        renderWorld.outlinePolicyIndices.find(
+            &materialInstance);
+
+    if (existing !=
+        renderWorld.outlinePolicyIndices.end())
+    {
+        return existing->second;
+    }
+
+    const std::uint32_t policyIndex =
+        static_cast<std::uint32_t>(
+            renderWorld.outlinePolicies.size() + 1U);
+
+    std::uint32_t groupId = policyIndex;
+
+    const std::string& group =
+        materialInstance.screenOutline.group;
+
+    if (!group.empty())
+    {
+        const auto groupIterator =
+            renderWorld.outlineGroupIds.find(group);
+
+        if (groupIterator !=
+            renderWorld.outlineGroupIds.end())
+        {
+            groupId = groupIterator->second;
+        }
+        else
+        {
+            groupId =
+                0x80000000U |
+                static_cast<std::uint32_t>(
+                    renderWorld.outlineGroupIds.size() + 1U);
+
+            renderWorld.outlineGroupIds.emplace(
+                group,
+                groupId);
+        }
+    }
+
+    renderWorld.outlinePolicies.push_back(
+        ScreenOutlinePolicy{
+            .materialInstance = &materialInstance,
+            .groupId = groupId
+        });
+
+    renderWorld.outlinePolicyIndices.emplace(
+        &materialInstance,
+        policyIndex);
+
+    return policyIndex;
+}
+
 constexpr float minimumShadowRadius = 1.0e-5F;
 constexpr float minimumDirectionLength = 1.0e-6F;
 
@@ -596,29 +655,10 @@ bool RenderExtractor::appendScene(
                 objectIdBase +
                 static_cast<std::uint32_t>(nodeIndex);
 
-            // The material-ID render target is RGB8. Reserve zero for the
-            // clear/background value so a material/background edge remains
-            // distinguishable even for primitives with no source material.
-            // Bits 0-11 identify the source material. Bits 12-20 are reserved
-            // for an explicit outline group, and bits 21-23 carry group/self
-            // policy flags. Primitive and mesh identities are intentionally
-            // absent: one material controls its own internal edge policy.
-            constexpr std::uint64_t outlineMaterialMask =
-                0x00000FFFULL;
-            constexpr std::uint32_t detectSelfDepthBit =
-                1U << 22U;
-            constexpr std::uint32_t detectSelfNormalBit =
-                1U << 23U;
-
-            const std::uint32_t materialIdentity =
-                static_cast<std::uint32_t>(
-                    sourceMaterialHandle.id().value %
-                    outlineMaterialMask);
-
-            item.outlineMaterialId =
-                materialIdentity |
-                detectSelfDepthBit |
-                detectSelfNormalBit;
+            item.outlinePolicyIndex =
+                registerOutlinePolicy(
+                    *item.materialInstance,
+                    renderWorld);
 
             switch (item.materialClass)
             {

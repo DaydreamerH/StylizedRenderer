@@ -187,10 +187,6 @@ bool OutlineMaskPass::execute(FrameContext& frame)
     if (!shader_.setMat4(
             "uViewProjection",
             renderWorld.mainView.viewProjection) ||
-        !shader_.setVec2(
-            "uViewportSize",
-            static_cast<float>(extent_.width),
-            static_cast<float>(extent_.height)) ||
         !shader_.setInt(
             "uOutlineWidthMask",
             0) ||
@@ -274,6 +270,8 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         const bool materialOutlineEnabled =
             materialOutline != nullptr &&
             materialOutline->enabled &&
+            materialOutline->widthMode ==
+                material::OutlineWidthMode::World &&
             materialOutline->width > 0.0F;
 
         if (!globalWorldOutlineEnabled &&
@@ -281,11 +279,6 @@ bool OutlineMaskPass::execute(FrameContext& frame)
         {
             continue;
         }
-
-        const material::OutlineWidthMode widthMode =
-            globalWorldOutlineEnabled
-                ? material::OutlineWidthMode::World
-                : materialOutline->widthMode;
 
         const float width =
             globalWorldOutlineEnabled
@@ -342,10 +335,6 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             !shader_.setInt(
                 "uSkinningEnabled",
                 skinningEnabled ? 1 : 0) ||
-            !shader_.setInt(
-                "uOutlineWidthMode",
-                static_cast<int>(
-                    widthMode)) ||
             !shader_.setFloat(
                 "uOutlineWidth",
                 width) ||

@@ -175,6 +175,80 @@ bool readString(
     return true;
 }
 
+bool readOptionalFloat(
+    const Json& source,
+    const char* field,
+    std::optional<float>& destination,
+    const float minimum,
+    const float maximum,
+    const std::string& materialName,
+    MToonSidecarError& error)
+{
+    const auto iterator = source.find(field);
+    if (iterator == source.end() || iterator->is_null())
+    {
+        destination.reset();
+        return true;
+    }
+
+    float value = 0.0F;
+    if (!readFloat(
+            source,
+            field,
+            value,
+            minimum,
+            maximum,
+            materialName,
+            error))
+    {
+        return false;
+    }
+
+    destination = value;
+    return true;
+}
+
+template<std::size_t ComponentCount>
+bool readVector(
+    const Json& source,
+    const char* field,
+    float* destination,
+    float minimum,
+    float maximum,
+    const std::string& materialName,
+    MToonSidecarError& error);
+
+bool readOptionalVector3(
+    const Json& source,
+    const char* field,
+    std::optional<glm::vec3>& destination,
+    const std::string& materialName,
+    MToonSidecarError& error)
+{
+    const auto iterator = source.find(field);
+    if (iterator == source.end() || iterator->is_null())
+    {
+        destination.reset();
+        return true;
+    }
+
+    glm::vec3 value{0.0F};
+    if (!readVector<3>(
+            source,
+            field,
+            &value.x,
+            0.0F,
+            100.0F,
+            materialName,
+            error))
+    {
+        return false;
+    }
+
+    destination = value;
+    return true;
+}
+
 template<std::size_t ComponentCount>
 bool readVector(
     const Json& source,
@@ -395,6 +469,48 @@ Json outlineToJson(
     };
 }
 
+Json screenOutlineToJson(
+    const MToonSidecarMaterial& material)
+{
+    Json result{
+        {"enabled", material.screenOutlineEnabled},
+        {"depthEnabled", material.screenOutlineDepthEnabled},
+        {"normalEnabled", material.screenOutlineNormalEnabled},
+        {"detectSelfDepth", material.outlineDetectSelfDepth},
+        {"detectSelfNormal", material.outlineDetectSelfNormal}
+    };
+
+    if (!material.outlineGroup.empty())
+    {
+        result["group"] = material.outlineGroup;
+    }
+
+    if (material.screenOutlineWidth.has_value())
+    {
+        result["width"] = *material.screenOutlineWidth;
+    }
+
+    if (material.screenOutlineDepthThreshold.has_value())
+    {
+        result["depthThreshold"] =
+            *material.screenOutlineDepthThreshold;
+    }
+
+    if (material.screenOutlineNormalThreshold.has_value())
+    {
+        result["normalThreshold"] =
+            *material.screenOutlineNormalThreshold;
+    }
+
+    if (material.screenOutlineColor.has_value())
+    {
+        result["color"] =
+            toJson(*material.screenOutlineColor);
+    }
+
+    return result;
+}
+
 Json materialToJson(
     const MToonSidecarMaterial& material)
 {
@@ -455,6 +571,7 @@ Json materialToJson(
         {"rimLightingMix", material.rimLightingMix},
         {"emissionColor", toJson(material.emissionColor)},
         {"emissionStrength", material.emissionStrength},
+        {"screenOutline", screenOutlineToJson(material)},
         {"outline", outlineToJson(material)},
         {"textures", texturePathsToJson(material.textures)},
         {"occlusionStrength", material.occlusionStrength},
@@ -463,23 +580,65 @@ Json materialToJson(
         {"specularPower", material.specularPower}
     };
 
-    if (!material.outlineGroup.empty())
-    {
-        result["outlineGroup"] =
-            material.outlineGroup;
-    }
-
-    if (!material.outlineDetectSelfDepth)
-    {
-        result["outlineDetectSelfDepth"] = false;
-    }
-
-    if (!material.outlineDetectSelfNormal)
-    {
-        result["outlineDetectSelfNormal"] = false;
-    }
-
     return result;
+}
+
+bool parseScreenOutline(
+    const Json& source,
+    MToonSidecarMaterial& material,
+    MToonSidecarError& error)
+{
+    const auto iterator = source.find("screenOutline");
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_object())
+    {
+        setError(
+            error,
+            material.name,
+            "screenOutline",
+            "Expected an object.");
+        return false;
+    }
+
+    const Json& outline = *iterator;
+    material.hasScreenOutline = true;
+    return
+        readString(
+            outline, "group", material.outlineGroup,
+            material.name, error) &&
+        readBool(
+            outline, "enabled", material.screenOutlineEnabled,
+            material.name, error) &&
+        readBool(
+            outline, "depthEnabled", material.screenOutlineDepthEnabled,
+            material.name, error) &&
+        readBool(
+            outline, "normalEnabled", material.screenOutlineNormalEnabled,
+            material.name, error) &&
+        readBool(
+            outline, "detectSelfDepth", material.outlineDetectSelfDepth,
+            material.name, error) &&
+        readBool(
+            outline, "detectSelfNormal", material.outlineDetectSelfNormal,
+            material.name, error) &&
+        readOptionalFloat(
+            outline, "width", material.screenOutlineWidth,
+            0.0F, 100.0F, material.name, error) &&
+        readOptionalFloat(
+            outline, "depthThreshold",
+            material.screenOutlineDepthThreshold,
+            0.000001F, 1.0F, material.name, error) &&
+        readOptionalFloat(
+            outline, "normalThreshold",
+            material.screenOutlineNormalThreshold,
+            0.000001F, 2.0F, material.name, error) &&
+        readOptionalVector3(
+            outline, "color", material.screenOutlineColor,
+            material.name, error);
 }
 
 bool parseTexturePaths(
@@ -674,7 +833,7 @@ bool parseMaterial(
     material.name =
         nameIterator->get<std::string>();
 
-    return
+    const bool parsed =
         readString(
             source,
             "outlineGroup",
@@ -924,6 +1083,12 @@ bool parseMaterial(
             material,
             error) &&
         parseTexturePaths(
+            source,
+            material,
+            error);
+
+    return parsed &&
+        parseScreenOutline(
             source,
             material,
             error);

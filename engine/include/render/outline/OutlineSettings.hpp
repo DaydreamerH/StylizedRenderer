@@ -21,7 +21,13 @@ enum class OutlineDebugView : std::uint8_t
     LinearDepth,
     ShellOutlineMask,
     ScreenEdge,
-    CombinedOutline
+    CombinedOutline,
+    DepthEdge,
+    NormalEdge,
+    PolicyIndex,
+    GroupId,
+    EffectiveDepthThreshold,
+    EffectiveNormalThreshold
 };
 
 struct GlobalOutlineSettings

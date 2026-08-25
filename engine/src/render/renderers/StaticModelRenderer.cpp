@@ -42,26 +42,6 @@ namespace
         };
     }
 
-    std::uint32_t outlineGroupId(
-        const std::string_view group) noexcept
-    {
-        std::uint32_t hash =
-            2166136261U;
-
-        for (const unsigned char character : group)
-        {
-            hash ^= character;
-            hash *= 16777619U;
-        }
-
-        const std::uint32_t compactHash =
-            (hash ^ (hash >> 24U)) &
-            0x00FFFFFFU;
-
-        return compactHash == 0U
-            ? 1U
-            : compactHash;
-    }
 } // namespace
 
 
@@ -202,50 +182,9 @@ bool StaticModelRenderer::render(
             return false;
         }
 
-        std::uint32_t outlineMaterialIdValue =
-            item.outlineMaterialId;
-
-        constexpr std::uint32_t groupMask = 0x1FFU;
-        constexpr std::uint32_t groupShift = 12U;
-        constexpr std::uint32_t groupBitsMask =
-            groupMask << groupShift;
-        constexpr std::uint32_t explicitGroupBit =
-            1U << 21U;
-        constexpr std::uint32_t detectSelfDepthBit =
-            1U << 22U;
-        constexpr std::uint32_t detectSelfNormalBit =
-            1U << 23U;
-
-        if (materialInstance.mtoonParameters.has_value())
-        {
-            const material::MToonMaterialParameters& parameters =
-                *materialInstance.mtoonParameters;
-
-            if (!parameters.outlineGroup.empty())
-            {
-                const std::uint32_t groupId =
-                    outlineGroupId(parameters.outlineGroup) & groupMask;
-
-                outlineMaterialIdValue =
-                    (outlineMaterialIdValue & ~groupBitsMask) |
-                    (groupId << groupShift) |
-                    explicitGroupBit;
-            }
-
-            outlineMaterialIdValue =
-                parameters.outlineDetectSelfDepth
-                    ? outlineMaterialIdValue | detectSelfDepthBit
-                    : outlineMaterialIdValue & ~detectSelfDepthBit;
-
-            outlineMaterialIdValue =
-                parameters.outlineDetectSelfNormal
-                    ? outlineMaterialIdValue | detectSelfNormalBit
-                    : outlineMaterialIdValue & ~detectSelfNormalBit;
-        }
-
         const glm::vec3 outlineMaterialId =
             encodeOutlineMaterialId(
-                outlineMaterialIdValue);
+                item.outlinePolicyIndex);
 
         if (!shader->setVec3(
                 "uOutlineMaterialId",

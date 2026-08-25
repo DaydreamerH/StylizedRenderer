@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 #include <string_view>
@@ -50,6 +51,17 @@ struct MToonSidecarMaterial
     bool outlineDetectSelfDepth = true;
     bool outlineDetectSelfNormal = true;
 
+    bool screenOutlineEnabled = true;
+    bool screenOutlineDepthEnabled = true;
+    bool screenOutlineNormalEnabled = true;
+
+    std::optional<float> screenOutlineWidth;
+    std::optional<float> screenOutlineDepthThreshold;
+    std::optional<float> screenOutlineNormalThreshold;
+    std::optional<glm::vec3> screenOutlineColor;
+
+    bool hasScreenOutline = false;
+
     glm::vec4 baseColorFactor{1.0F};
 
     glm::vec3 shadeColor{0.1F};
@@ -87,7 +99,7 @@ struct MToonSidecarMaterial
     bool outlineEnabled = false;
 
     OutlineWidthMode outlineWidthMode =
-        OutlineWidthMode::Screen;
+        OutlineWidthMode::World;
 
     float outlineWidth = 1.0F;
 
@@ -110,7 +122,7 @@ struct MToonMaterialSidecar
         minimumSupportedVersion = 1;
 
     static constexpr std::uint32_t
-        currentVersion = 2;
+        currentVersion = 3;
 
     std::uint32_t version = currentVersion;
 

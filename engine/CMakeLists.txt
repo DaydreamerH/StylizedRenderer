@@ -29,6 +29,7 @@ add_library(stylized_engine STATIC
     include/graphics/resources/Texture2D.hpp
     include/graphics/resources/VertexArray.hpp
     include/material/MaterialInstance.hpp
+    include/material/ScreenOutlineMaterialParameters.hpp
     include/material/MaterialTemplate.hpp
     include/material/mtoon/MToonMaterialParameters.hpp
     include/material/mtoon/MToonMaterialSidecar.hpp

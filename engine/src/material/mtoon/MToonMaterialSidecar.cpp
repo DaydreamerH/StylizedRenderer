@@ -264,11 +264,26 @@ bool captureMToonSidecarMaterial(
 
     captured.name = materialName;
     captured.outlineGroup =
-        parameters.outlineGroup;
+        instance.screenOutline.group;
     captured.outlineDetectSelfDepth =
-        parameters.outlineDetectSelfDepth;
+        instance.screenOutline.detectSelfDepth;
     captured.outlineDetectSelfNormal =
-        parameters.outlineDetectSelfNormal;
+        instance.screenOutline.detectSelfNormal;
+    captured.screenOutlineEnabled =
+        instance.screenOutline.enabled;
+    captured.screenOutlineDepthEnabled =
+        instance.screenOutline.depthEnabled;
+    captured.screenOutlineNormalEnabled =
+        instance.screenOutline.normalEnabled;
+    captured.screenOutlineWidth =
+        instance.screenOutline.screenWidth;
+    captured.screenOutlineDepthThreshold =
+        instance.screenOutline.depthThreshold;
+    captured.screenOutlineNormalThreshold =
+        instance.screenOutline.normalThreshold;
+    captured.screenOutlineColor =
+        instance.screenOutline.color;
+    captured.hasScreenOutline = true;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -506,12 +521,26 @@ bool applyMToonSidecarMaterial(
     MToonMaterialParameters& parameters =
         applied.mtoonParameters.value();
 
-    parameters.outlineGroup =
+    applied.screenOutline.group =
         source.outlineGroup;
-    parameters.outlineDetectSelfDepth =
+    applied.screenOutline.detectSelfDepth =
         source.outlineDetectSelfDepth;
-    parameters.outlineDetectSelfNormal =
+    applied.screenOutline.detectSelfNormal =
         source.outlineDetectSelfNormal;
+    applied.screenOutline.enabled =
+        source.screenOutlineEnabled;
+    applied.screenOutline.depthEnabled =
+        source.screenOutlineDepthEnabled;
+    applied.screenOutline.normalEnabled =
+        source.screenOutlineNormalEnabled;
+    applied.screenOutline.screenWidth =
+        source.screenOutlineWidth;
+    applied.screenOutline.depthThreshold =
+        source.screenOutlineDepthThreshold;
+    applied.screenOutline.normalThreshold =
+        source.screenOutlineNormalThreshold;
+    applied.screenOutline.color =
+        source.screenOutlineColor;
 
     applied.baseColorFactor =
         source.baseColorFactor;
@@ -591,8 +620,28 @@ bool applyMToonSidecarMaterial(
     parameters.outline.enabled =
         source.outlineEnabled;
 
-    parameters.outline.widthMode =
-        source.outlineWidthMode;
+    if (source.outlineWidthMode ==
+        OutlineWidthMode::Screen)
+    {
+        if (!source.hasScreenOutline)
+        {
+            applied.screenOutline.enabled =
+                source.outlineEnabled;
+            applied.screenOutline.screenWidth =
+                source.outlineWidth;
+            applied.screenOutline.color =
+                source.outlineColor;
+        }
+
+        parameters.outline.enabled = false;
+        parameters.outline.widthMode =
+            OutlineWidthMode::World;
+    }
+    else
+    {
+        parameters.outline.widthMode =
+            source.outlineWidthMode;
+    }
 
     parameters.outline.width =
         source.outlineWidth;
