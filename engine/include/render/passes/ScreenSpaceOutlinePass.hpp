@@ -24,6 +24,8 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
+struct RenderWorld;
+
 class ScreenSpaceOutlinePass final
     : public IRenderPass,
       public core::NonCopyable
@@ -66,6 +68,12 @@ public:
         settings() const noexcept;
 
 private:
+    [[nodiscard]] bool ensurePolicyBuffer(
+        std::size_t policyCount);
+
+    [[nodiscard]] bool updatePolicyBuffer(
+        const RenderWorld& renderWorld);
+
     graphics::GraphicsDevice& graphicsDevice_;
 
     graphics::ShaderProgram shader_;
@@ -73,6 +81,7 @@ private:
 
     graphics::Buffer vertexBuffer_;
     graphics::Buffer indexBuffer_;
+    graphics::Buffer policyBuffer_;
     graphics::VertexArray vertexArray_;
 
     graphics::RenderTexture outlinedHdrColor_;
@@ -87,6 +96,7 @@ private:
 
     std::size_t lastDrawCallCount_ = 0;
     std::size_t renderTargetRebuildCount_ = 0;
+    std::size_t policyBufferCapacity_ = 0;
 
     bool initialized_ = false;
 };

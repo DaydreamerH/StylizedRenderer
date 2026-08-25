@@ -8,6 +8,7 @@ uniform sampler2D uHdrColor;
 uniform sampler2D uOutlineMask;
 uniform sampler2D uScreenEdgeMask;
 uniform sampler2D uDepth;
+uniform sampler2D uMaterialId;
 uniform int uDebugView;
 
 uniform vec3 uScreenOutlineColor;
@@ -16,6 +17,29 @@ uniform float uNearPlane;
 uniform float uFarPlane;
 
 uniform sampler2D uNormal;
+
+struct ScreenOutlinePolicy
+{
+    vec4 colorAndWidth;
+    vec4 thresholds;
+    uvec4 metadata;
+};
+
+layout(std430, binding = 1)
+readonly buffer ScreenOutlinePolicyBuffer
+{
+    ScreenOutlinePolicy policies[];
+};
+
+uint policyIndexAt(const vec2 textureCoordinate)
+{
+    const uvec3 bytes = uvec3(round(
+        texture(uMaterialId, textureCoordinate).rgb * 255.0));
+
+    return bytes.x |
+        (bytes.y << 8U) |
+        (bytes.z << 16U);
+}
 
 const int DEBUG_VIEW_FINAL = 0;
 const int DEBUG_VIEW_SURFACE_NORMAL = 1;
@@ -206,10 +230,18 @@ void main()
         return;
     }
 
+    const uint policyIndex =
+        policyIndexAt(vertexTextureCoordinate);
+
+    const vec3 screenOutlineColor =
+        policyIndex != 0U
+        ? policies[policyIndex].colorAndWidth.rgb
+        : uScreenOutlineColor;
+
     const vec3 outlineColor =
         shellCoverage > 1.0e-4
         ? outlineMask.rgb
-        : uScreenOutlineColor;
+        : screenOutlineColor;
 
     const vec3 compositedColor =
         mix(

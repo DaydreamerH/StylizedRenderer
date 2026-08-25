@@ -6,8 +6,10 @@
 #include <graphics/device/GraphicsTypes.hpp>
 
 #include <cstdint>
-#include <vector>
 #include <cstddef>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
@@ -178,16 +180,21 @@ struct RenderItem
 
     std::uint32_t objectId = 0;
 
-    // Compact source-material identity written into the opaque G-buffer.
-    // Screen-space outlines use it to ignore discontinuities inside one
-    // material, such as overlapping hair cards.
-    std::uint32_t outlineMaterialId = 0;
+    // Zero is reserved for the background. Visible materials receive a
+    // compact per-frame screen-outline policy index.
+    std::uint32_t outlinePolicyIndex = 0;
 
     RenderMaterialClass materialClass = 
         RenderMaterialClass::Opaque;
     
     RenderItemFlags flags = 
         RenderItemFlags::CastShadow | RenderItemFlags::ReceiveShadow;
+};
+
+struct ScreenOutlinePolicy
+{
+    const material::MaterialInstance* materialInstance = nullptr;
+    std::uint32_t groupId = 0;
 };
 
 struct RenderStats
@@ -211,6 +218,14 @@ struct RenderWorld
 
     std::vector<RenderItem> items;
     std::vector<ShadowRenderItem> shadowItems;
+    std::vector<ScreenOutlinePolicy> outlinePolicies;
+
+    std::unordered_map<
+        const material::MaterialInstance*,
+        std::uint32_t> outlinePolicyIndices;
+
+    std::unordered_map<std::string, std::uint32_t>
+        outlineGroupIds;
 
     RenderStats renderStats;
 
@@ -220,6 +235,9 @@ struct RenderWorld
     {
         items.clear();
         shadowItems.clear();
+        outlinePolicies.clear();
+        outlinePolicyIndices.clear();
+        outlineGroupIds.clear();
 
         shadowCasterBounds = {};
 

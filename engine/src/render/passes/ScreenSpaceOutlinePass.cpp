@@ -3,6 +3,7 @@
 #include <graphics/device/GraphicsCommands.hpp>
 #include <graphics/device/GraphicsDevice.hpp>
 #include <graphics/resources/DepthTexture.hpp>
+#include <material/MaterialInstance.hpp>
 #include <render/world/RenderWorld.hpp>
 
 #include <array>
@@ -10,6 +11,9 @@
 #include <cstdint>
 #include <span>
 #include <utility>
+#include <vector>
+
+#include <glm/vec4.hpp>
 
 namespace stylized::render
 {
@@ -26,7 +30,130 @@ struct FullscreenVertex
     float textureV = 0.0F;
 };
 
+struct alignas(16) GpuScreenOutlinePolicy
+{
+    glm::vec4 colorAndWidth{0.0F};
+    glm::vec4 thresholds{0.0F};
+    glm::uvec4 metadata{0U};
+};
+
+constexpr std::uint32_t policyBufferBinding = 1;
+
+constexpr std::uint32_t policyEnabled = 1U << 0U;
+constexpr std::uint32_t policyDepthEnabled = 1U << 1U;
+constexpr std::uint32_t policyNormalEnabled = 1U << 2U;
+constexpr std::uint32_t policyDetectSelfDepth = 1U << 3U;
+constexpr std::uint32_t policyDetectSelfNormal = 1U << 4U;
+
 } // namespace
+
+bool ScreenSpaceOutlinePass::ensurePolicyBuffer(
+    const std::size_t policyCount)
+{
+    if (policyCount <= policyBufferCapacity_ &&
+        policyBuffer_.isValid())
+    {
+        return true;
+    }
+
+    std::size_t newCapacity = 16;
+    while (newCapacity < policyCount)
+    {
+        newCapacity *= 2;
+    }
+
+    graphics::BufferDesc desc;
+    desc.size = newCapacity *
+        sizeof(GpuScreenOutlinePolicy);
+    desc.usage = graphics::BufferUsage::Dynamic;
+    desc.debugName = "Screen Outline Policy Buffer";
+
+    graphics::Buffer newBuffer =
+        graphicsDevice_.createBuffer(desc);
+
+    if (!newBuffer.isValid())
+    {
+        return false;
+    }
+
+    policyBuffer_ = std::move(newBuffer);
+    policyBufferCapacity_ = newCapacity;
+    return true;
+}
+
+bool ScreenSpaceOutlinePass::updatePolicyBuffer(
+    const RenderWorld& renderWorld)
+{
+    const std::size_t policyCount =
+        renderWorld.outlinePolicies.size() + 1U;
+
+    if (!ensurePolicyBuffer(policyCount))
+    {
+        return false;
+    }
+
+    std::vector<GpuScreenOutlinePolicy> policies(
+        policyCount);
+
+    for (std::size_t index = 0;
+         index < renderWorld.outlinePolicies.size();
+         ++index)
+    {
+        const ScreenOutlinePolicy& source =
+            renderWorld.outlinePolicies[index];
+
+        if (source.materialInstance == nullptr)
+        {
+            return false;
+        }
+
+        const material::ScreenOutlineMaterialParameters& parameters =
+            source.materialInstance->screenOutline;
+
+        std::uint32_t flags = 0;
+        flags |= parameters.enabled ? policyEnabled : 0U;
+        flags |= parameters.depthEnabled ? policyDepthEnabled : 0U;
+        flags |= parameters.normalEnabled ? policyNormalEnabled : 0U;
+        flags |= parameters.detectSelfDepth ? policyDetectSelfDepth : 0U;
+        flags |= parameters.detectSelfNormal ? policyDetectSelfNormal : 0U;
+
+        policies[index + 1U] =
+            GpuScreenOutlinePolicy{
+                .colorAndWidth = glm::vec4{
+                    parameters.color.value_or(settings_.color),
+                    parameters.screenWidth.value_or(
+                        settings_.screenWidth)
+                },
+                .thresholds = glm::vec4{
+                    parameters.depthThreshold.value_or(
+                        settings_.depthThreshold),
+                    parameters.normalThreshold.value_or(
+                        settings_.normalThreshold),
+                    0.0F,
+                    0.0F
+                },
+                .metadata = glm::uvec4{
+                    source.groupId,
+                    flags,
+                    0U,
+                    0U
+                }
+            };
+    }
+
+    if (!policyBuffer_.update<GpuScreenOutlinePolicy>(
+            0,
+            std::span<const GpuScreenOutlinePolicy>{
+                policies
+            }))
+    {
+        return false;
+    }
+
+    policyBuffer_.bindShaderStorage(
+        policyBufferBinding);
+    return true;
+}
 
 ScreenSpaceOutlinePass::ScreenSpaceOutlinePass(
     graphics::GraphicsDevice& graphicsDevice
@@ -354,6 +481,11 @@ bool ScreenSpaceOutlinePass::execute(
     const RenderView& view =
         frame.renderWorld->mainView;
 
+    if (!updatePolicyBuffer(*frame.renderWorld))
+    {
+        return false;
+    }
+
     frame.depth->bind(0);
     frame.normal->bind(1);
     frame.materialId->bind(2);
@@ -374,20 +506,11 @@ bool ScreenSpaceOutlinePass::execute(
                 ? 1
                 : 0) ||
         !edgeShader_.setFloat(
-            "uScreenOutlineWidth",
-            settings_.screenWidth) ||
-        !edgeShader_.setFloat(
-            "uDepthThreshold",
-            settings_.depthThreshold) ||
-        !edgeShader_.setFloat(
             "uNearPlane",
             view.nearPlane) ||
         !edgeShader_.setFloat(
             "uFarPlane",
-            view.farPlane) ||
-        !edgeShader_.setFloat(
-            "uNormalThreshold",
-            settings_.normalThreshold))
+            view.farPlane))
     {
         return false;
     }
@@ -422,6 +545,7 @@ bool ScreenSpaceOutlinePass::execute(
     screenEdgeMask_.bind(2);
     frame.depth->bind(3);
     frame.normal->bind(4);
+    frame.materialId->bind(5);
 
     if (!shader_.setInt(
             "uHdrColor",
@@ -438,6 +562,9 @@ bool ScreenSpaceOutlinePass::execute(
         !shader_.setInt(
             "uNormal",
             4) ||
+        !shader_.setInt(
+            "uMaterialId",
+            5) ||
         !shader_.setInt(
             "uDebugView",
             static_cast<int>(settings_.debugView)) ||

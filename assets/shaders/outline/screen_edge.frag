@@ -9,12 +9,28 @@ uniform sampler2D uNormal;
 uniform sampler2D uMaterialId;
 
 uniform int uScreenOutlineEnabled;
-uniform float uScreenOutlineWidth;
-uniform float uDepthThreshold;
-uniform float uNormalThreshold;
 
 uniform float uNearPlane;
 uniform float uFarPlane;
+
+struct ScreenOutlinePolicy
+{
+    vec4 colorAndWidth;
+    vec4 thresholds;
+    uvec4 metadata;
+};
+
+layout(std430, binding = 1)
+readonly buffer ScreenOutlinePolicyBuffer
+{
+    ScreenOutlinePolicy policies[];
+};
+
+const uint POLICY_ENABLED = 1U << 0U;
+const uint POLICY_DEPTH_ENABLED = 1U << 1U;
+const uint POLICY_NORMAL_ENABLED = 1U << 2U;
+const uint POLICY_DETECT_SELF_DEPTH = 1U << 3U;
+const uint POLICY_DETECT_SELF_NORMAL = 1U << 4U;
 
 vec4 sampleMaterialId(const vec2 textureCoordinate)
 {
@@ -37,7 +53,7 @@ vec4 sampleMaterialId(const vec2 textureCoordinate)
         0);
 }
 
-uint decodeOutlineId(const vec4 value)
+uint decodePolicyIndex(const vec4 value)
 {
     const uvec3 bytes =
         uvec3(round(value.rgb * 255.0));
@@ -47,75 +63,11 @@ uint decodeOutlineId(const vec4 value)
         (bytes.z << 16U);
 }
 
-const uint MATERIAL_MASK = 0xFFFU;
-const uint GROUP_MASK = 0x1FFU;
-const uint GROUP_SHIFT = 12U;
-const uint EXPLICIT_GROUP_BIT = 1U << 21U;
-const uint DETECT_SELF_DEPTH_BIT = 1U << 22U;
-const uint DETECT_SELF_NORMAL_BIT = 1U << 23U;
-
-uint materialOf(const uint id)
+bool policyHasFlag(
+    const ScreenOutlinePolicy policy,
+    const uint flag)
 {
-    return id & MATERIAL_MASK;
-}
-
-bool hasExplicitGroup(const uint id)
-{
-    return (id & EXPLICIT_GROUP_BIT) != 0U;
-}
-
-uint outlineGroupOf(const uint id)
-{
-    return (id >> GROUP_SHIFT) & GROUP_MASK;
-}
-
-bool detectsSelfDepth(const uint id)
-{
-    return (id & DETECT_SELF_DEPTH_BIT) != 0U;
-}
-
-bool detectsSelfNormal(const uint id)
-{
-    return (id & DETECT_SELF_NORMAL_BIT) != 0U;
-}
-
-bool belongsToSameOutlineGroup(
-    const vec4 centerMaterialId,
-    const vec4 neighborMaterialId)
-{
-    if (centerMaterialId.a <= 1.0e-4 ||
-        neighborMaterialId.a <= 1.0e-4)
-    {
-        return false;
-    }
-
-    const uint centerId = decodeOutlineId(centerMaterialId);
-    const uint neighborId = decodeOutlineId(neighborMaterialId);
-
-    if (hasExplicitGroup(centerId) != hasExplicitGroup(neighborId))
-    {
-        return false;
-    }
-
-    return hasExplicitGroup(centerId)
-        ? outlineGroupOf(centerId) == outlineGroupOf(neighborId)
-        : materialOf(centerId) == materialOf(neighborId);
-}
-
-bool belongsToSameMaterial(
-    const vec4 centerMaterialId,
-    const vec4 neighborMaterialId)
-{
-    if (centerMaterialId.a <= 1.0e-4 ||
-        neighborMaterialId.a <= 1.0e-4)
-    {
-        return false;
-    }
-
-    return materialOf(
-        decodeOutlineId(centerMaterialId)) ==
-        materialOf(
-            decodeOutlineId(neighborMaterialId));
+    return (policy.metadata.y & flag) != 0U;
 }
 
 bool materialIdComesFirst(
@@ -212,12 +164,29 @@ float calculateDepthEdge(const vec2 textureCoordinate)
     const vec4 centerMaterialId =
         sampleMaterialId(textureCoordinate);
 
+    const uint centerPolicyIndex =
+        decodePolicyIndex(centerMaterialId);
+
+    if (centerPolicyIndex == 0U)
+    {
+        return 0.0;
+    }
+
+    const ScreenOutlinePolicy centerPolicy =
+        policies[centerPolicyIndex];
+
+    if (!policyHasFlag(centerPolicy, POLICY_ENABLED) ||
+        !policyHasFlag(centerPolicy, POLICY_DEPTH_ENABLED))
+    {
+        return 0.0;
+    }
+
     const vec2 texelSize =
         1.0 /
         vec2(textureSize(uDepth, 0));
 
     const float sampleWidth =
-        max(uScreenOutlineWidth, 1.0);
+        max(centerPolicy.colorAndWidth.w, 1.0);
 
     float maximumDifference = 0.0;
 
@@ -238,13 +207,13 @@ float calculateDepthEdge(const vec2 textureCoordinate)
             const vec4 neighborMaterialId =
                 sampleMaterialId(sampleCoordinate);
 
-            const uint centerOutlineId =
-                decodeOutlineId(centerMaterialId);
+            const uint neighborPolicyIndex =
+                decodePolicyIndex(neighborMaterialId);
 
-            if (belongsToSameMaterial(
-                    centerMaterialId,
-                    neighborMaterialId) &&
-                !detectsSelfDepth(centerOutlineId))
+            if (neighborPolicyIndex == centerPolicyIndex &&
+                !policyHasFlag(
+                    centerPolicy,
+                    POLICY_DETECT_SELF_DEPTH))
             {
                 // This material disables outlines caused by its own depth
                 // discontinuities. Object/background silhouettes still pass
@@ -279,7 +248,7 @@ float calculateDepthEdge(const vec2 textureCoordinate)
     }
 
     const float threshold =
-        max(uDepthThreshold, 1.0e-6);
+        max(centerPolicy.thresholds.x, 1.0e-6);
 
     return smoothstep(
         threshold,
@@ -307,12 +276,29 @@ float calculateNormalEdge(const vec2 textureCoordinate)
     const vec4 centerMaterialId =
         sampleMaterialId(textureCoordinate);
 
+    const uint centerPolicyIndex =
+        decodePolicyIndex(centerMaterialId);
+
+    if (centerPolicyIndex == 0U)
+    {
+        return 0.0;
+    }
+
+    const ScreenOutlinePolicy centerPolicy =
+        policies[centerPolicyIndex];
+
+    if (!policyHasFlag(centerPolicy, POLICY_ENABLED) ||
+        !policyHasFlag(centerPolicy, POLICY_NORMAL_ENABLED))
+    {
+        return 0.0;
+    }
+
     const vec2 texelSize =
         1.0 /
         vec2(textureSize(uNormal, 0));
 
     const float sampleWidth =
-        max(uScreenOutlineWidth, 1.0);
+        max(centerPolicy.colorAndWidth.w, 1.0);
 
     float maximumDifference = 0.0;
 
@@ -333,21 +319,21 @@ float calculateNormalEdge(const vec2 textureCoordinate)
             const vec4 neighborMaterialId =
                 sampleMaterialId(sampleCoordinate);
 
-            const uint centerOutlineId =
-                decodeOutlineId(centerMaterialId);
+            const uint neighborPolicyIndex =
+                decodePolicyIndex(neighborMaterialId);
 
-            if (belongsToSameMaterial(
-                    centerMaterialId,
-                    neighborMaterialId))
+            if (neighborPolicyIndex == centerPolicyIndex)
             {
-                if (!detectsSelfNormal(centerOutlineId))
+                if (!policyHasFlag(
+                        centerPolicy,
+                        POLICY_DETECT_SELF_NORMAL))
                 {
                     continue;
                 }
             }
-            else if (belongsToSameOutlineGroup(
-                         centerMaterialId,
-                         neighborMaterialId))
+            else if (neighborPolicyIndex != 0U &&
+                     centerPolicy.metadata.x ==
+                         policies[neighborPolicyIndex].metadata.x)
             {
                 // Different materials in one explicit group retain their
                 // depth edge above, but suppress normal-only discontinuities.
@@ -391,7 +377,7 @@ float calculateNormalEdge(const vec2 textureCoordinate)
     }
 
     const float threshold =
-        max(uNormalThreshold, 1.0e-6);
+        max(centerPolicy.thresholds.y, 1.0e-6);
 
     return smoothstep(
         threshold,
