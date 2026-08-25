@@ -33,8 +33,22 @@ readonly buffer ScreenOutlinePolicyBuffer
 
 uint policyIndexAt(const vec2 textureCoordinate)
 {
+    const ivec2 extent =
+        textureSize(uMaterialId, 0);
+
+    const ivec2 coordinate =
+        clamp(
+            ivec2(
+                textureCoordinate *
+                vec2(extent)),
+            ivec2(0),
+            extent - ivec2(1));
+
     const uvec3 bytes = uvec3(round(
-        texture(uMaterialId, textureCoordinate).rgb * 255.0));
+        texelFetch(
+            uMaterialId,
+            coordinate,
+            0).rgb * 255.0));
 
     return bytes.x |
         (bytes.y << 8U) |

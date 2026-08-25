@@ -2186,19 +2186,8 @@ void ViewerPanels::draw(
                 }
             }
 
-            if (ImGui::CollapsingHeader("Outline"))
+            if (ImGui::CollapsingHeader("World Shell Outline"))
             {
-                int widthMode =
-                    parameters.outline.widthMode ==
-                            stylized::material::OutlineWidthMode::World
-                        ? 0
-                        : 1;
-
-                constexpr const char* widthModes[] = {
-                    "World",
-                    "Screen"
-                };
-
                 if (beginPropertyTable(
                         "##OutlineProperties"))
                 {
@@ -2206,30 +2195,10 @@ void ViewerPanels::draw(
                         "Enabled",
                         &parameters.outline.enabled);
 
-                    if (drawComboProperty(
-                            "Width Mode",
-                            &widthMode,
-                            widthModes,
-                            IM_ARRAYSIZE(widthModes)))
-                    {
-                        parameters.outline.widthMode =
-                            widthMode == 0
-                                ? stylized::material::
-                                    OutlineWidthMode::World
-                                : stylized::material::
-                                    OutlineWidthMode::Screen;
-                    }
-
-                    const float widthSpeed =
-                        parameters.outline.widthMode ==
-                                stylized::material::OutlineWidthMode::World
-                            ? 0.001F
-                            : 0.1F;
-
                     drawDragFloatProperty(
                         "Width",
                         &parameters.outline.width,
-                        widthSpeed,
+                        0.001F,
                         0.0F,
                         100.0F,
                         "%.3f");

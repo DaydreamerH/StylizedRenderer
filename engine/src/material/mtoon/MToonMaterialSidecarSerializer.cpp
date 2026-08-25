@@ -605,6 +605,7 @@ bool parseScreenOutline(
     }
 
     const Json& outline = *iterator;
+    material.hasScreenOutline = true;
     return
         readString(
             outline, "group", material.outlineGroup,

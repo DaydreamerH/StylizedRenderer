@@ -283,6 +283,7 @@ bool captureMToonSidecarMaterial(
         instance.screenOutline.normalThreshold;
     captured.screenOutlineColor =
         instance.screenOutline.color;
+    captured.hasScreenOutline = true;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -619,8 +620,28 @@ bool applyMToonSidecarMaterial(
     parameters.outline.enabled =
         source.outlineEnabled;
 
-    parameters.outline.widthMode =
-        source.outlineWidthMode;
+    if (source.outlineWidthMode ==
+        OutlineWidthMode::Screen)
+    {
+        if (!source.hasScreenOutline)
+        {
+            applied.screenOutline.enabled =
+                source.outlineEnabled;
+            applied.screenOutline.screenWidth =
+                source.outlineWidth;
+            applied.screenOutline.color =
+                source.outlineColor;
+        }
+
+        parameters.outline.enabled = false;
+        parameters.outline.widthMode =
+            OutlineWidthMode::World;
+    }
+    else
+    {
+        parameters.outline.widthMode =
+            source.outlineWidthMode;
+    }
 
     parameters.outline.width =
         source.outlineWidth;

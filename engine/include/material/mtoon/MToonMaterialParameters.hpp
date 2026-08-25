@@ -27,7 +27,7 @@ struct MToonOutlineParameters
     bool enabled = false;
 
     OutlineWidthMode widthMode =
-        OutlineWidthMode::Screen;
+        OutlineWidthMode::World;
 
     float width = 1.0F;
 

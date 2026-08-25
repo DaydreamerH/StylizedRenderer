@@ -60,6 +60,8 @@ struct MToonSidecarMaterial
     std::optional<float> screenOutlineNormalThreshold;
     std::optional<glm::vec3> screenOutlineColor;
 
+    bool hasScreenOutline = false;
+
     glm::vec4 baseColorFactor{1.0F};
 
     glm::vec3 shadeColor{0.1F};
@@ -97,7 +99,7 @@ struct MToonSidecarMaterial
     bool outlineEnabled = false;
 
     OutlineWidthMode outlineWidthMode =
-        OutlineWidthMode::Screen;
+        OutlineWidthMode::World;
 
     float outlineWidth = 1.0F;
 
