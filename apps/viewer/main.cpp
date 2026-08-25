@@ -407,21 +407,31 @@ bool updateCameraFromJson(
 
         if (rightIterator != keyframes.end())
         {
-            right = &*rightIterator;
-            left = &*(rightIterator - 1);
-
-            const float interval =
-                right->timeFromStartSeconds -
-                left->timeFromStartSeconds;
-
-            if (interval > 1.0e-6F)
+            if (std::abs(
+                    rightIterator->timeFromStartSeconds -
+                    timeSeconds) <= 1.0e-6F)
             {
-                factor = std::clamp(
-                    (timeSeconds -
-                        left->timeFromStartSeconds) /
-                        interval,
-                    0.0F,
-                    1.0F);
+                left = &*rightIterator;
+                right = left;
+            }
+            else
+            {
+                right = &*rightIterator;
+                left = &*(rightIterator - 1);
+
+                const float interval =
+                    right->timeFromStartSeconds -
+                    left->timeFromStartSeconds;
+
+                if (interval > 1.0e-6F)
+                {
+                    factor = std::clamp(
+                        (timeSeconds -
+                            left->timeFromStartSeconds) /
+                            interval,
+                        0.0F,
+                        1.0F);
+                }
             }
         }
     }
@@ -684,16 +694,18 @@ protected:
                 }
             }
 
-            if (cameraTrack_->durationSeconds > 0.0F)
-            {
-                cameraTrackTimeSeconds_ = std::fmod(
-                    cameraTrackTimeSeconds_ + deltaTime,
-                    cameraTrack_->durationSeconds);
-            }
+            const float animationTimeSeconds =
+                sceneInstance->animationPlayer.clip() != nullptr
+                ? sceneInstance->animationPlayer.currentTime()
+                : 0.0F;
+
+            const float cameraTimeSeconds = std::min(
+                animationTimeSeconds,
+                cameraTrack_->durationSeconds);
 
             if (!updateCameraFromJson(
                     *cameraTrack_,
-                    cameraTrackTimeSeconds_,
+                    cameraTimeSeconds,
                     sceneInstance->rootTransform.localMatrix(),
                     sceneCamera_))
             {
@@ -1455,7 +1467,6 @@ private:
         }
 
         cameraTrack_ = std::move(track);
-        cameraTrackTimeSeconds_ = 0.0F;
         useSceneCamera_ = false;
 
         return true;
@@ -1815,7 +1826,6 @@ private:
     std::vector<std::filesystem::path> modelPaths_;
     std::filesystem::path cameraJsonPath_;
     std::optional<CameraJsonTrack> cameraTrack_;
-    float cameraTrackTimeSeconds_ = 0.0F;
 
     std::size_t selectedSceneInstanceIndex_ = 0;
 
