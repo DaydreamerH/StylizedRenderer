@@ -215,6 +215,7 @@ struct RenderWorld
     ShadowView shadowView;
 
     math::Bounds shadowCasterBounds;
+    math::Bounds shadowReceiverBounds;
 
     std::vector<RenderItem> items;
     std::vector<ShadowRenderItem> shadowItems;
@@ -240,6 +241,7 @@ struct RenderWorld
         outlineGroupIds.clear();
 
         shadowCasterBounds = {};
+        shadowReceiverBounds = {};
 
         renderStats = {};
         shadowView = {};

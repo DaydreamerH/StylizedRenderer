@@ -99,6 +99,15 @@ constexpr float minimumDirectionLength = 1.0e-6F;
 constexpr float shadowEyeDistanceScale = 2.0F;
 constexpr float shadowProjectionMarginScale = 0.02F;
 
+[[nodiscard]] RenderItemFlags removeFlag(
+    const RenderItemFlags value,
+    const RenderItemFlags flag) noexcept
+{
+    return static_cast<RenderItemFlags>(
+        static_cast<std::uint32_t>(value) &
+        ~static_cast<std::uint32_t>(flag));
+}
+
 [[nodiscard]] float maximumLinearScale(
     const std::vector<glm::mat4>& matrices) noexcept
 {
@@ -151,15 +160,16 @@ constexpr float shadowProjectionMarginScale = 0.02F;
 }
 
 bool buildDirectionalShadowView(
-    const math::Bounds& bounds,
+    const math::Bounds& casterBounds,
+    const math::Bounds& receiverBounds,
     const DirectionalLightData& light,
     ShadowView& destination
 ) noexcept
 {
-    if (!bounds.isValid()) return false;
+    if (!casterBounds.isValid()) return false;
 
     const float radius =
-        glm::length(bounds.extent());
+        glm::length(casterBounds.extent());
 
     if (!std::isfinite(radius) ||
         radius <= minimumShadowRadius)
@@ -180,12 +190,12 @@ bool buildDirectionalShadowView(
         glm::normalize(light.direction);
 
     const glm::vec3 center =
-        bounds.center();
+        casterBounds.center();
 
     const float eyeDistance =
         radius * shadowEyeDistanceScale;
 
-    const glm::vec3 lightPosition =
+    glm::vec3 lightPosition =
         center - lightDirection * eyeDistance;
 
     const glm::vec3 up =
@@ -193,18 +203,55 @@ bool buildDirectionalShadowView(
         ? glm::vec3{1.F, 0.F, 0.F}
         : glm::vec3{0.F, 1.F, 0.F};
 
-    const glm::mat4 view =
+    glm::mat4 view =
         glm::lookAtRH(
             lightPosition,
             center,
             up);
+
+    const float projectionMargin = std::max(
+        radius * shadowProjectionMarginScale,
+        minimumShadowRadius);
+
+    if (receiverBounds.isValid())
+    {
+        const math::Bounds initialReceiverLightBounds =
+            receiverBounds.transformed(view);
+
+        if (!initialReceiverLightBounds.isValid())
+        {
+            return false;
+        }
+
+        const float receiverMaximumZ =
+            initialReceiverLightBounds.maximum().z;
+
+        if (!std::isfinite(receiverMaximumZ))
+        {
+            return false;
+        }
+
+        const float backwardShift = std::max(
+            receiverMaximumZ + projectionMargin +
+                minimumShadowRadius,
+            0.0F);
+
+        if (backwardShift > 0.0F)
+        {
+            lightPosition -= lightDirection * backwardShift;
+            view = glm::lookAtRH(
+                lightPosition,
+                center,
+                up);
+        }
+    }
 
     // A bounding sphere produces a square shadow projection with substantial
     // unused area for most character poses.  Fit the orthographic projection
     // to the caster bounds in light space so the available shadow texels are
     // concentrated on the actual geometry.
     const math::Bounds lightSpaceBounds =
-        bounds.transformed(view);
+        casterBounds.transformed(view);
 
     if (!lightSpaceBounds.isValid())
     {
@@ -226,10 +273,6 @@ bool buildDirectionalShadowView(
     {
         return false;
     }
-
-    const float projectionMargin = std::max(
-        radius * shadowProjectionMarginScale,
-        minimumShadowRadius);
 
     float left =
         lightSpaceMinimum.x - projectionMargin;
@@ -282,12 +325,33 @@ bool buildDirectionalShadowView(
 
     // OpenGL right-handed view space looks down -Z.  Keep the near and far
     // planes just outside the complete light-space caster volume.
+    float depthMinimumZ = lightSpaceMinimum.z;
+    float depthMaximumZ = lightSpaceMaximum.z;
+
+    if (receiverBounds.isValid())
+    {
+        const math::Bounds receiverLightBounds =
+            receiverBounds.transformed(view);
+
+        if (!receiverLightBounds.isValid())
+        {
+            return false;
+        }
+
+        depthMinimumZ = std::min(
+            depthMinimumZ,
+            receiverLightBounds.minimum().z);
+        depthMaximumZ = std::max(
+            depthMaximumZ,
+            receiverLightBounds.maximum().z);
+    }
+
     const float nearPlane = std::max(
-        -lightSpaceMaximum.z - projectionMargin,
+        -depthMaximumZ - projectionMargin,
         minimumShadowRadius);
 
     const float farPlane =
-        -lightSpaceMinimum.z + projectionMargin;
+        -depthMinimumZ + projectionMargin;
 
     if (!(left < right) ||
         !(bottom < top) ||
@@ -598,10 +662,17 @@ bool RenderExtractor::appendScene(
             if (item.materialInstance->mtoonParameters.has_value() &&
                 !item.materialInstance->mtoonParameters->castShadow)
             {
-                item.flags = static_cast<RenderItemFlags>(
-                    static_cast<std::uint32_t>(item.flags) &
-                    ~static_cast<std::uint32_t>(
-                        RenderItemFlags::CastShadow));
+                item.flags = removeFlag(
+                    item.flags,
+                    RenderItemFlags::CastShadow);
+            }
+
+            if (item.materialInstance->mtoonParameters.has_value() &&
+                !item.materialInstance->mtoonParameters->receiveShadow)
+            {
+                item.flags = removeFlag(
+                    item.flags,
+                    RenderItemFlags::ReceiveShadow);
             }
 
             const asset::MaterialAsset* sourceMaterial =
@@ -645,6 +716,12 @@ bool RenderExtractor::appendScene(
                 shadowItem.materialClass =
                     item.materialClass;
                 renderWorld.shadowItems.push_back(shadowItem);
+            }
+
+            if (hasFlag(item.flags, RenderItemFlags::ReceiveShadow))
+            {
+                renderWorld.shadowReceiverBounds.expand(
+                    item.worldBounds);
             }
 
             if (!renderWorld.mainView.frustum.intersects(item.worldBounds))
@@ -701,6 +778,7 @@ bool RenderExtractor::endFrame(
 
     return buildDirectionalShadowView(
         renderWorld.shadowCasterBounds,
+        renderWorld.shadowReceiverBounds,
         renderWorld.mainView.mainLight,
         renderWorld.shadowView);
 }
