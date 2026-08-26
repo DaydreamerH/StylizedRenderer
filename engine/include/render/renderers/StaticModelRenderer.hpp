@@ -19,6 +19,7 @@ namespace stylized::graphics
     
 class GraphicsDevice;
 class DepthTexture;
+class RenderTexture;
 
 } // namespace stylized::graphics
 
@@ -55,6 +56,7 @@ public:
         const RenderWorld& renderWorld,
         const graphics::DepthTexture& shadowMap,
         bool shadowMapAvailable,
+        const graphics::RenderTexture* faceHairShadowMask,
         StaticModelRenderQueue renderQueue);
 
     [[nodiscard]] std::size_t lastDrawCallCount() const noexcept;

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
 
 namespace stylized::asset
 {
@@ -41,6 +42,19 @@ struct FaceSdfRuntimeConfig
     std::uint32_t headNodeIndex = invalidNodeIndex;
     glm::vec3 headRight{1.0F, 0.0F, 0.0F};
     glm::vec3 headForward{0.0F, 0.0F, 1.0F};
+
+    bool hairShadowEnabled = false;
+    asset::AssetHandle<asset::MaterialAsset> hairShadowCaster;
+    std::uint32_t hairShadowResolution = 512;
+    glm::vec3 hairShadowLocalCenter{0.0F};
+    glm::vec2 hairShadowUvOffset{0.0F};
+    float hairShadowWidth = 0.11F;
+    float hairShadowHeight = 0.14F;
+    float hairShadowDepth = 0.25F;
+    float hairShadowCameraDistance = 0.12F;
+    float hairShadowAlphaCutoff = 0.72F;
+    float hairShadowSoftness = 0.004F;
+    float hairShadowStrength = 0.8F;
 
     [[nodiscard]] bool isValid() const noexcept
     {

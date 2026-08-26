@@ -86,6 +86,13 @@ uniform vec3 uFaceForward;
 uniform vec3 uFaceRight;
 uniform vec3 uFaceUp;
 
+uniform sampler2D uFaceHairShadowMask;
+uniform int uFaceHairShadowEnabled;
+uniform mat4 uFaceHairShadowViewProjection;
+uniform vec2 uFaceHairShadowUvOffset;
+uniform float uFaceHairShadowSoftness;
+uniform float uFaceHairShadowStrength;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -93,6 +100,61 @@ vec3 calculateGeometricNormal()
         : -1.0;
 
     return normalize(vertexNormal) * faceSign;
+}
+
+float calculateFaceHairShadowVisibility(
+    const vec3 worldPosition)
+{
+    if (uFaceHairShadowEnabled == 0)
+    {
+        return 1.0;
+    }
+
+    const vec4 clipPosition =
+        uFaceHairShadowViewProjection *
+        vec4(worldPosition, 1.0);
+
+    if (abs(clipPosition.w) <= 1.0e-8)
+    {
+        return 1.0;
+    }
+
+    const vec3 ndc = clipPosition.xyz / clipPosition.w;
+    vec2 uv = ndc.xy * 0.5 + 0.5;
+
+    uv += uFaceHairShadowUvOffset;
+
+    if (any(lessThan(uv, vec2(0.0))) ||
+        any(greaterThan(uv, vec2(1.0))))
+    {
+        return 1.0;
+    }
+
+    const vec2 texel =
+        1.0 / vec2(textureSize(uFaceHairShadowMask, 0));
+
+    float visibility = 0.0;
+    for (int y = -1; y <= 1; ++y)
+    {
+        for (int x = -1; x <= 1; ++x)
+        {
+            visibility += texture(
+                uFaceHairShadowMask,
+                uv + vec2(x, y) * texel).r;
+        }
+    }
+    visibility /= 9.0;
+
+    const float softness = max(uFaceHairShadowSoftness, 0.0);
+    visibility = smoothstep(
+        0.5 - softness,
+        0.5 + softness,
+        visibility);
+
+    return mix(
+        1.0,
+        visibility,
+        clamp(uFaceHairShadowStrength, 0.0, 1.0));
 }
 
 vec3 calculateSurfaceNormal(const vec3 geometricNormal)
@@ -490,9 +552,19 @@ void main()
                 perturbedShadowVisibility);
     }
 
+    const float faceHairShadowVisibility =
+        calculateFaceHairShadowVisibility(
+            vertexWorldPosition);
+
+    // SDF and HairA both drive the same MToon self-shading factor so their
+    // shadow regions use one shade color and one toon-ramp response.
+    const float faceShadingFactor = min(
+        shadingFactor,
+        faceHairShadowVisibility);
+
     const float toonRampCoordinate =
         1.0 - clamp(
-            shadingFactor,
+            faceShadingFactor,
             0.0,
             1.0);
 
@@ -506,7 +578,7 @@ void main()
         mix(
             shadeColor,
             litColor,
-            shadingFactor) *
+            faceShadingFactor) *
         sampledToonRamp;
 
     const vec3 castShadowRamp =

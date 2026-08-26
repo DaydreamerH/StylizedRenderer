@@ -110,6 +110,7 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
             *frame.renderWorld,
             sampledShadowMap,
             shadowMapAvailable,
+            frame.faceHairShadowMask,
             StaticModelRenderQueue::Opaque))
     {
         return false;

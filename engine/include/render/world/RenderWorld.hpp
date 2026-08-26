@@ -13,6 +13,7 @@
 
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace stylized::material
@@ -136,6 +137,26 @@ struct ShadowRenderItem
     RenderMaterialClass materialClass = RenderMaterialClass::Opaque;
 };
 
+struct FaceHairShadowRenderItem
+{
+    const RuntimeMeshPrimitive* primitive = nullptr;
+    const graphics::VertexArray* vertexArray = nullptr;
+    const material::MaterialInstance* materialInstance = nullptr;
+    const SkinningPalette* skinningPalette = nullptr;
+    glm::mat4 world{1.0F};
+};
+
+struct FaceHairShadowView
+{
+    bool valid = false;
+    glm::mat4 viewProjection{1.0F};
+    graphics::Extent2D extent{512, 512};
+    glm::vec2 uvOffset{0.0F};
+    float alphaCutoff = 0.72F;
+    float softness = 0.004F;
+    float strength = 0.8F;
+};
+
 struct RenderView
 {
     glm::mat4 view{1.F};
@@ -177,6 +198,7 @@ struct RenderItem
     glm::mat3 normalMatrix{1.0F};
 
     bool faceSdfFrameValid = false;
+    bool receivesFaceHairShadow = false;
     glm::vec3 faceForward{0.0F, 0.0F, 1.0F};
     glm::vec3 faceRight{1.0F, 0.0F, 0.0F};
     glm::vec3 faceUp{0.0F, 1.0F, 0.0F};
@@ -218,12 +240,14 @@ struct RenderWorld
 {
     RenderView mainView;
     ShadowView shadowView;
+    FaceHairShadowView faceHairShadowView;
 
     math::Bounds shadowCasterBounds;
     math::Bounds shadowReceiverBounds;
 
     std::vector<RenderItem> items;
     std::vector<ShadowRenderItem> shadowItems;
+    std::vector<FaceHairShadowRenderItem> faceHairShadowItems;
     std::vector<ScreenOutlinePolicy> outlinePolicies;
 
     std::unordered_map<
@@ -241,6 +265,7 @@ struct RenderWorld
     {
         items.clear();
         shadowItems.clear();
+        faceHairShadowItems.clear();
         outlinePolicies.clear();
         outlinePolicyIndices.clear();
         outlineGroupIds.clear();
@@ -250,6 +275,7 @@ struct RenderWorld
 
         renderStats = {};
         shadowView = {};
+        faceHairShadowView = {};
 
         nextObjectId = 0;
     }

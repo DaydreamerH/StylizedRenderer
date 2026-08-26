@@ -5,6 +5,7 @@
 #include <graphics/device/GraphicsDevice.hpp>
 #include <graphics/resources/ShaderProgram.hpp>
 #include <graphics/resources/DepthTexture.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMaterial.hpp>
@@ -59,6 +60,7 @@ bool StaticModelRenderer::render(
     const RenderWorld& renderWorld,
     const graphics::DepthTexture& shadowMap,
     const bool shadowMapAvailable,
+    const graphics::RenderTexture* faceHairShadowMask,
     const StaticModelRenderQueue renderQueue)
 {
     lastDrawCallCount_ = 0;
@@ -296,6 +298,12 @@ bool StaticModelRenderer::render(
                     !materialInstance.mtoonParameters
                         ->faceSdf.texture.isNull();
 
+                const bool faceHairShadowEnabled =
+                    item.receivesFaceHairShadow &&
+                    faceHairShadowMask != nullptr &&
+                    faceHairShadowMask->isValid() &&
+                    renderWorld.faceHairShadowView.valid;
+
                 if (!shader->setInt(
                         "uFaceSdfEnabled",
                         faceSdfEnabled ? 1 : 0) ||
@@ -307,9 +315,30 @@ bool StaticModelRenderer::render(
                         item.faceRight) ||
                     !shader->setVec3(
                         "uFaceUp",
-                        item.faceUp))
+                        item.faceUp) ||
+                    !shader->setInt(
+                        "uFaceHairShadowEnabled",
+                        faceHairShadowEnabled ? 1 : 0) ||
+                    !shader->setMat4(
+                        "uFaceHairShadowViewProjection",
+                        renderWorld.faceHairShadowView.viewProjection) ||
+                    !shader->setVec2(
+                        "uFaceHairShadowUvOffset",
+                        renderWorld.faceHairShadowView.uvOffset.x,
+                        renderWorld.faceHairShadowView.uvOffset.y) ||
+                    !shader->setFloat(
+                        "uFaceHairShadowSoftness",
+                        renderWorld.faceHairShadowView.softness) ||
+                    !shader->setFloat(
+                        "uFaceHairShadowStrength",
+                        renderWorld.faceHairShadowView.strength))
                 {
                     return false;
+                }
+
+                if (faceHairShadowEnabled)
+                {
+                    faceHairShadowMask->bind(12);
                 }
 
                 if (!shader->setMat4(

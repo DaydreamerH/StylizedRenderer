@@ -107,6 +107,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uFaceSdfTexture",
                 11
+            ) ||
+            !shader_.setInt(
+                "uFaceHairShadowMask",
+                12
             ))
         {
             shader_ = {};

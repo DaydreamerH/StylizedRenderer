@@ -18,6 +18,7 @@
 #include <render/renderers/StaticModelRenderer.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
 #include <render/passes/ForwardTransparentPass.hpp>
+#include <render/passes/FaceHairShadowPass.hpp>
 #include <render/passes/FxaaPass.hpp>
 #include <render/pipeline/FrameContext.hpp>
 #include <render/pipeline/FramePipeline.hpp>
@@ -803,7 +804,31 @@ protected:
                             currentInstance->faceSdf.headNodeIndex,
                         .headRight = currentInstance->faceSdf.headRight,
                         .headForward =
-                            currentInstance->faceSdf.headForward};
+                            currentInstance->faceSdf.headForward,
+                        .hairShadowEnabled =
+                            currentInstance->faceSdf.hairShadowEnabled,
+                        .hairShadowCaster =
+                            currentInstance->faceSdf.hairShadowCaster,
+                        .hairShadowResolution =
+                            currentInstance->faceSdf.hairShadowResolution,
+                        .hairShadowLocalCenter = currentInstance
+                            ->faceSdf.hairShadowLocalCenter,
+                        .hairShadowUvOffset = currentInstance
+                            ->faceSdf.hairShadowUvOffset,
+                        .hairShadowWidth =
+                            currentInstance->faceSdf.hairShadowWidth,
+                        .hairShadowHeight =
+                            currentInstance->faceSdf.hairShadowHeight,
+                        .hairShadowDepth =
+                            currentInstance->faceSdf.hairShadowDepth,
+                        .hairShadowCameraDistance = currentInstance
+                            ->faceSdf.hairShadowCameraDistance,
+                        .hairShadowAlphaCutoff = currentInstance
+                            ->faceSdf.hairShadowAlphaCutoff,
+                        .hairShadowSoftness = currentInstance
+                            ->faceSdf.hairShadowSoftness,
+                        .hairShadowStrength = currentInstance
+                            ->faceSdf.hairShadowStrength};
                 }
 
                 if (!extractor_->appendScene(
@@ -1103,6 +1128,20 @@ private:
 
         if (!framePipeline_->addPass(
                 std::move(shadowPass)))
+        {
+            return false;
+        }
+
+        auto faceHairShadowPass =
+            std::make_unique<
+                stylized::render::FaceHairShadowPass>(
+                    graphicsDevice(),
+                    assetRegistry_,
+                    *resourceCache_);
+
+        if (!faceHairShadowPass->initialize() ||
+            !framePipeline_->addPass(
+                std::move(faceHairShadowPass)))
         {
             return false;
         }
@@ -1636,6 +1675,120 @@ private:
             {
                 throw std::runtime_error(
                     "character faceMaterial was not found");
+            }
+
+            if (document.contains("faceHairShadow"))
+            {
+                const auto& hairShadow =
+                    document.at("faceHairShadow");
+
+                if (!hairShadow.is_object())
+                {
+                    throw std::runtime_error(
+                        "faceHairShadow must be an object");
+                }
+
+                if (hairShadow.value("enabled", false))
+                {
+                    const std::string casterName =
+                        hairShadow.value(
+                            "casterMaterial",
+                            std::string{});
+
+                    stylized::asset::AssetHandle<
+                        stylized::asset::MaterialAsset> caster;
+
+                    for (const auto& node : sceneAsset.nodes)
+                    {
+                        const auto* mesh =
+                            assetRegistry_.get(node.mesh);
+                        if (mesh == nullptr) continue;
+
+                        for (const auto& primitive : mesh->primitives)
+                        {
+                            const auto* material =
+                                assetRegistry_.get(primitive.material);
+                            if (material != nullptr &&
+                                material->name == casterName)
+                            {
+                                if (!caster.isNull() &&
+                                    caster != primitive.material)
+                                {
+                                    throw std::runtime_error(
+                                        "faceHairShadow caster is not unique");
+                                }
+                                caster = primitive.material;
+                            }
+                        }
+                    }
+
+                    const std::uint32_t resolution =
+                        hairShadow.value("resolution", 512U);
+                    const float width =
+                        hairShadow.value("width", 0.11F);
+                    const float height =
+                        hairShadow.value("height", 0.14F);
+                    const float depth =
+                        hairShadow.value("depth", 0.25F);
+                    const float cameraDistance =
+                        hairShadow.value("cameraDistance", 0.12F);
+                    const float alphaCutoff =
+                        hairShadow.value("alphaCutoff", 0.72F);
+                    const float softness =
+                        hairShadow.value("softness", 0.004F);
+                    const float strength =
+                        hairShadow.value("strength", 0.8F);
+
+                    const glm::vec3 localCenter =
+                        readVector(hairShadow.at("localCenter"));
+
+                    const auto& offsetSource =
+                        hairShadow.at("uvOffset");
+                    if (!offsetSource.is_array() ||
+                        offsetSource.size() != 2)
+                    {
+                        throw std::runtime_error(
+                            "faceHairShadow uvOffset must have two values");
+                    }
+
+                    const glm::vec2 uvOffset{
+                        offsetSource[0].get<float>(),
+                        offsetSource[1].get<float>()};
+
+                    if (casterName.empty() || caster.isNull() ||
+                        (resolution != 256U && resolution != 512U) ||
+                        !finiteVector(localCenter) ||
+                        !std::isfinite(uvOffset.x) ||
+                        !std::isfinite(uvOffset.y) ||
+                        !std::isfinite(width) || width <= 0.0F ||
+                        !std::isfinite(height) || height <= 0.0F ||
+                        !std::isfinite(depth) || depth <= 0.0F ||
+                        !std::isfinite(cameraDistance) ||
+                        cameraDistance <= 0.0F ||
+                        !std::isfinite(alphaCutoff) ||
+                        alphaCutoff < 0.0F || alphaCutoff > 1.0F ||
+                        !std::isfinite(softness) || softness < 0.0F ||
+                        !std::isfinite(strength) ||
+                        strength < 0.0F || strength > 1.0F)
+                    {
+                        throw std::runtime_error(
+                            "invalid faceHairShadow configuration");
+                    }
+
+                    sceneInstance.faceSdf.hairShadowEnabled = true;
+                    sceneInstance.faceSdf.hairShadowCaster = caster;
+                    sceneInstance.faceSdf.hairShadowResolution = resolution;
+                    sceneInstance.faceSdf.hairShadowLocalCenter = localCenter;
+                    sceneInstance.faceSdf.hairShadowUvOffset = uvOffset;
+                    sceneInstance.faceSdf.hairShadowWidth = width;
+                    sceneInstance.faceSdf.hairShadowHeight = height;
+                    sceneInstance.faceSdf.hairShadowDepth = depth;
+                    sceneInstance.faceSdf.hairShadowCameraDistance =
+                        cameraDistance;
+                    sceneInstance.faceSdf.hairShadowAlphaCutoff = alphaCutoff;
+                    sceneInstance.faceSdf.hairShadowSoftness = softness;
+                    sceneInstance.faceSdf.hairShadowStrength = strength;
+                }
             }
 
             stylized::material::MaterialInstance* instance =

@@ -18,7 +18,7 @@
       "shadingShiftTextureScale": 1,
       "shadingToony": 0.6,
       "normalScale": 0,
-      "receiveShadow": true,
+      "receiveShadow": false,
       "shadowNormalInfluence": 0,
       "shadowCutoffEnabled": false,
       "shadowCutoff": 0.35,

@@ -490,6 +490,7 @@ bool RenderExtractor::appendScene(
     glm::vec3 faceForward{0.0F, 0.0F, 1.0F};
     glm::vec3 faceRight{1.0F, 0.0F, 0.0F};
     glm::vec3 faceUp{0.0F, 1.0F, 0.0F};
+    glm::mat4 headWorld{1.0F};
 
     if (faceSdf != nullptr &&
         !faceSdf->material.isNull() &&
@@ -503,8 +504,8 @@ bool RenderExtractor::appendScene(
             return false;
         }
 
-        const glm::mat3 headBasis{
-            instanceWorldMatrix * *headPoseMatrix};
+        headWorld = instanceWorldMatrix * *headPoseMatrix;
+        const glm::mat3 headBasis{headWorld};
 
         faceForward =
             headBasis * faceSdf->headForward;
@@ -531,6 +532,49 @@ bool RenderExtractor::appendScene(
                 }
             }
         }
+    }
+
+    if (faceSdfFrameValid &&
+        faceSdf != nullptr &&
+        faceSdf->hairShadowEnabled)
+    {
+        if (renderWorld.faceHairShadowView.valid ||
+            faceSdf->hairShadowCaster.isNull())
+        {
+            return false;
+        }
+
+        const glm::vec3 center = glm::vec3(
+            headWorld *
+            glm::vec4(faceSdf->hairShadowLocalCenter, 1.0F));
+
+        const glm::vec3 cameraPosition =
+            center +
+            faceForward * faceSdf->hairShadowCameraDistance;
+
+        const glm::mat4 view = glm::lookAtRH(
+            cameraPosition,
+            center,
+            faceUp);
+
+        const glm::mat4 projection = glm::orthoRH_NO(
+            -faceSdf->hairShadowWidth,
+            faceSdf->hairShadowWidth,
+            -faceSdf->hairShadowHeight,
+            faceSdf->hairShadowHeight,
+            minimumShadowRadius,
+            faceSdf->hairShadowDepth);
+
+        renderWorld.faceHairShadowView = {
+            .valid = true,
+            .viewProjection = projection * view,
+            .extent = {
+                faceSdf->hairShadowResolution,
+                faceSdf->hairShadowResolution},
+            .uvOffset = faceSdf->hairShadowUvOffset,
+            .alphaCutoff = faceSdf->hairShadowAlphaCutoff,
+            .softness = faceSdf->hairShadowSoftness,
+            .strength = faceSdf->hairShadowStrength};
     }
 
     for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
@@ -704,6 +748,8 @@ bool RenderExtractor::appendScene(
                 sourceMaterialHandle == faceSdf->material)
             {
                 item.faceSdfFrameValid = true;
+                item.receivesFaceHairShadow =
+                    faceSdf->hairShadowEnabled;
                 item.faceForward = faceForward;
                 item.faceRight = faceRight;
                 item.faceUp = faceUp;
@@ -717,6 +763,20 @@ bool RenderExtractor::appendScene(
 
             if (item.runtimeMaterial == nullptr)
                 return false;
+
+            if (faceSdfFrameValid &&
+                faceSdf != nullptr &&
+                faceSdf->hairShadowEnabled &&
+                sourceMaterialHandle == faceSdf->hairShadowCaster)
+            {
+                renderWorld.faceHairShadowItems.push_back(
+                    FaceHairShadowRenderItem{
+                        .primitive = &primitive,
+                        .vertexArray = vertexArray,
+                        .materialInstance = item.materialInstance,
+                        .skinningPalette = skinningPalette,
+                        .world = worldMatrix});
+            }
 
             if (item.materialInstance->mtoonParameters.has_value() &&
                 !item.materialInstance->mtoonParameters->castShadow)
