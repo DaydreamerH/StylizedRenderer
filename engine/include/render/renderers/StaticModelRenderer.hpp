@@ -56,6 +56,7 @@ public:
         const RenderWorld& renderWorld,
         const graphics::DepthTexture& shadowMap,
         bool shadowMapAvailable,
+        const graphics::DepthTexture* faceFilteredShadowMap,
         const graphics::RenderTexture* faceHairShadowMask,
         StaticModelRenderQueue renderQueue);
 

@@ -31,6 +31,7 @@ struct FrameContext
     graphics::Framebuffer* framebuffer = nullptr;
 
     graphics::DepthTexture* shadowMap = nullptr;
+    graphics::DepthTexture* faceFilteredShadowMap = nullptr;
     graphics::RenderTexture* faceHairShadowMask = nullptr;
 
     float deltaTime = 0.0F;

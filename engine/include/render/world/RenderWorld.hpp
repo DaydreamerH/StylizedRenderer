@@ -135,6 +135,7 @@ struct ShadowRenderItem
     glm::mat4 world{1.0F};
 
     RenderMaterialClass materialClass = RenderMaterialClass::Opaque;
+    bool excludeFromFaceFilteredShadow = false;
 };
 
 struct FaceHairShadowRenderItem

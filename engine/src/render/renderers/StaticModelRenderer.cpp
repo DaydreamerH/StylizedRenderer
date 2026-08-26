@@ -60,6 +60,7 @@ bool StaticModelRenderer::render(
     const RenderWorld& renderWorld,
     const graphics::DepthTexture& shadowMap,
     const bool shadowMapAvailable,
+    const graphics::DepthTexture* faceFilteredShadowMap,
     const graphics::RenderTexture* faceHairShadowMask,
     const StaticModelRenderQueue renderQueue)
 {
@@ -401,8 +402,13 @@ bool StaticModelRenderer::render(
                 materialInstance.mtoonParameters
                     ->faceSdf.disableProjectedShadows;
 
+            const bool faceFilteredShadowAvailable =
+                item.faceSdfFrameValid &&
+                faceFilteredShadowMap != nullptr &&
+                faceFilteredShadowMap->isValid();
+
             const bool shadowEnabled =
-                shadowMapAvailable &&
+                (shadowMapAvailable || faceFilteredShadowAvailable) &&
                 materialReceivesShadow &&
                 !projectedFaceShadowDisabled &&
                 hasFlag(
@@ -423,7 +429,14 @@ bool StaticModelRenderer::render(
                 return false;
             }
 
-            shadowMap.bind(1);
+            if (faceFilteredShadowAvailable)
+            {
+                faceFilteredShadowMap->bind(1);
+            }
+            else
+            {
+                shadowMap.bind(1);
+            }
         }
 
         graphics::DrawIndexedCommand command;

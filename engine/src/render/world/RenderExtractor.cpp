@@ -834,6 +834,11 @@ bool RenderExtractor::appendScene(
                 shadowItem.world = worldMatrix;
                 shadowItem.materialClass =
                     item.materialClass;
+                shadowItem.excludeFromFaceFilteredShadow =
+                    faceSdf != nullptr &&
+                    faceSdf->hairShadowEnabled &&
+                    sourceMaterialHandle ==
+                        faceSdf->hairShadowCaster;
                 renderWorld.shadowItems.push_back(shadowItem);
             }
 

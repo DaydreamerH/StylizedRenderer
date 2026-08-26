@@ -23,10 +23,12 @@ constexpr std::uint32_t skinningPaletteBinding = 0;
 ShadowPass::ShadowPass(
     graphics::GraphicsDevice& graphicsDevice,
     const asset::AssetRegistry& assetRegistry,
-    RuntimeResourceCache& resourceCache) noexcept
+    RuntimeResourceCache& resourceCache,
+    const ShadowPassKind kind) noexcept
     : graphicsDevice_(graphicsDevice),
       assetRegistry_(assetRegistry),
-      resourceCache_(resourceCache)
+      resourceCache_(resourceCache),
+      kind_(kind)
 {
 }
 
@@ -46,7 +48,9 @@ bool ShadowPass::initialize()
         "assets/shaders/shadow/shadow.frag";
 
     shaderDesc.debugName =
-        "Directional Shadow";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow"
+        : "Face Filtered Directional Shadow";
 
     shader_ =
         graphicsDevice_.createShaderProgram(
@@ -91,7 +95,9 @@ bool ShadowPass::ensureResources(
     depthDesc.comparisonSampling = true;
 
     depthDesc.debugName =
-        "Directional Shadow Depth";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow Depth"
+        : "Face Filtered Shadow Depth";
 
     graphics::DepthTexture newDepth =
         graphicsDevice_.createDepthTexture(
@@ -108,7 +114,9 @@ bool ShadowPass::ensureResources(
         &newDepth;
 
     framebufferDesc.debugName =
-        "Directional Shadow Framebuffer";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow Framebuffer"
+        : "Face Filtered Shadow Framebuffer";
 
     graphics::Framebuffer newFramebuffer =
         graphicsDevice_.createFramebuffer(
@@ -135,7 +143,15 @@ bool ShadowPass::execute(
     FrameContext& frame)
 {
     lastDrawCallCount_ = 0;
-    frame.shadowMap = nullptr;
+
+    if (kind_ == ShadowPassKind::Main)
+    {
+        frame.shadowMap = nullptr;
+    }
+    else
+    {
+        frame.faceFilteredShadowMap = nullptr;
+    }
 
     if (!initialized_ ||
         frame.renderWorld == nullptr)
@@ -150,6 +166,12 @@ bool ShadowPass::execute(
 
     const RenderWorld& renderWorld =
         *frame.renderWorld;
+
+    if (kind_ == ShadowPassKind::FaceFiltered &&
+        !renderWorld.faceHairShadowView.valid)
+    {
+        return true;
+    }
 
     if (renderWorld.shadowItems.empty())
     {
@@ -188,6 +210,12 @@ bool ShadowPass::execute(
     for (const ShadowRenderItem& item :
          renderWorld.shadowItems)
     {
+        if (kind_ == ShadowPassKind::FaceFiltered &&
+            item.excludeFromFaceFilteredShadow)
+        {
+            continue;
+        }
+
         if (item.primitive == nullptr ||
             item.vertexArray == nullptr ||
             !item.primitive->isValid())
@@ -337,8 +365,14 @@ bool ShadowPass::execute(
 
     graphicsDevice_.setPolygonOffset(false);
 
-    frame.shadowMap =
-        &depth_;
+    if (kind_ == ShadowPassKind::Main)
+    {
+        frame.shadowMap = &depth_;
+    }
+    else
+    {
+        frame.faceFilteredShadowMap = &depth_;
+    }
 
     return true;
 }
@@ -353,7 +387,9 @@ bool ShadowPass::resize(
 std::string_view ShadowPass::name()
     const noexcept
 {
-    return "ShadowPass";
+    return kind_ == ShadowPassKind::Main
+        ? "ShadowPass"
+        : "FaceFilteredShadowPass";
 }
 
 std::size_t ShadowPass::lastDrawCallCount()

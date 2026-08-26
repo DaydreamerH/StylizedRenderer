@@ -113,6 +113,7 @@ bool ForwardTransparentPass::execute(
             *frame.renderWorld,
             sampledShadowMap,
             shadowMapAvailable,
+            frame.faceFilteredShadowMap,
             frame.faceHairShadowMask,
             StaticModelRenderQueue::Transparent);
 

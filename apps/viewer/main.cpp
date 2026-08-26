@@ -1132,6 +1132,20 @@ private:
             return false;
         }
 
+        auto faceFilteredShadowPass =
+            std::make_unique<stylized::render::ShadowPass>(
+                graphicsDevice(),
+                assetRegistry_,
+                *resourceCache_,
+                stylized::render::ShadowPassKind::FaceFiltered);
+
+        if (!faceFilteredShadowPass->initialize() ||
+            !framePipeline_->addPass(
+                std::move(faceFilteredShadowPass)))
+        {
+            return false;
+        }
+
         auto faceHairShadowPass =
             std::make_unique<
                 stylized::render::FaceHairShadowPass>(
