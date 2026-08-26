@@ -37,6 +37,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstring>
+#include <iostream>
 #include <map>
 #include <span>
 #include <string>
@@ -660,12 +661,51 @@ bool ViewerPanels::initialize(GLFWwindow* window)
 
 bool ViewerPanels::wantsMouseCapture() const noexcept
 {
-    if (!initialized_)
+    if (!initialized_ || !uiVisible_)
     {
         return false;
     }
 
     return ImGui::GetIO().WantCaptureMouse;
+}
+
+bool ViewerPanels::loadMaterialSidecarForScene(
+    const std::filesystem::path& modelPath,
+    const stylized::asset::SceneAsset& scene,
+    stylized::asset::AssetRegistry& assets,
+    stylized::render::RuntimeResourceCache& resourceCache,
+    const stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        materialTemplate)
+{
+    const std::filesystem::path sidecarPath =
+        makeMaterialSidecarPath(modelPath);
+
+    if (!std::filesystem::exists(sidecarPath))
+    {
+        return true;
+    }
+
+    stylized::material::MToonSidecarError error;
+    const bool loaded = loadMaterialSidecar(
+        modelPath,
+        collectMaterialHandles(assets, &scene),
+        materialTemplate,
+        assets,
+        resourceCache,
+        error);
+
+    if (!loaded)
+    {
+        std::cerr
+            << "Failed to load material sidecar: "
+            << sidecarPath
+            << " ("
+            << formatSidecarError(error)
+            << ")\n";
+    }
+
+    return loaded;
 }
 
 void ViewerPanels::beginFrame() noexcept
@@ -678,6 +718,12 @@ void ViewerPanels::beginFrame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    if (ImGui::IsKeyPressed(ImGuiKey_Tab, false))
+    {
+        uiVisible_ = !uiVisible_;
+        sidebarResizing_ = false;
+    }
 }
 
 void ViewerPanels::draw(
@@ -718,7 +764,7 @@ void ViewerPanels::draw(
     bool& fxaaEnabled,
     bool& useSceneCamera)
 {
-    if (!initialized_)
+    if (!initialized_ || !uiVisible_)
     {
         return;
     }
@@ -814,19 +860,13 @@ void ViewerPanels::draw(
             minimumSidebarWidth,
             maximumSidebarWidth);
 
-    const float collapsedWidth =
-        ImGui::GetFrameHeight() +
-        2.0F * ImGui::GetStyle().WindowPadding.x;
-
     ImGui::SetNextWindowPos(
         viewport->WorkPos,
         ImGuiCond_Always);
 
     ImGui::SetNextWindowSize(
         ImVec2{
-            sidebarExpanded_
-                ? sidebarWidth_
-                : collapsedWidth,
+            sidebarWidth_,
             viewport->WorkSize.y},
         ImGuiCond_Always);
 
@@ -841,32 +881,6 @@ void ViewerPanels::draw(
         "StylizedRenderer##ViewerSidebar",
         nullptr,
         sidebarFlags);
-
-    if (!sidebarExpanded_)
-    {
-        const float buttonWidth =
-            ImGui::GetFrameHeight();
-
-        ImGui::SetCursorPosX(
-            0.5F *
-                (ImGui::GetWindowWidth() -
-                 buttonWidth));
-
-        if (ImGui::ArrowButton(
-                "##ExpandViewerSidebar",
-                ImGuiDir_Right))
-        {
-            sidebarExpanded_ = true;
-        }
-
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Expand viewer controls");
-        }
-
-        ImGui::End();
-        return;
-    }
 
     constexpr float resizeHandleWidth = 8.0F;
 
@@ -926,19 +940,6 @@ void ViewerPanels::draw(
     {
         ImGui::End();
         return;
-    }
-
-    if (ImGui::TabItemButton(
-            "<<##CollapseViewerSidebar",
-            ImGuiTabItemFlags_Trailing |
-                ImGuiTabItemFlags_NoTooltip))
-    {
-        sidebarExpanded_ = false;
-    }
-
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Collapse viewer controls");
     }
 
     if (ImGui::BeginTabItem("Scene"))

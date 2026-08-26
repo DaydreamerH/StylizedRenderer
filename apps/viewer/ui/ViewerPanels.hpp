@@ -67,6 +67,15 @@ public:
     [[nodiscard]] bool initialize(GLFWwindow* window);
     [[nodiscard]] bool wantsMouseCapture() const noexcept;
 
+    [[nodiscard]] bool loadMaterialSidecarForScene(
+        const std::filesystem::path& modelPath,
+        const stylized::asset::SceneAsset& scene,
+        stylized::asset::AssetRegistry& assets,
+        stylized::render::RuntimeResourceCache& resourceCache,
+        stylized::asset::AssetHandle<
+            stylized::material::MaterialTemplate>
+            materialTemplate);
+
     void beginFrame() noexcept;
 
     void draw(
@@ -122,7 +131,7 @@ private:
 
     float sidebarWidth_ = 0.0F;
     bool sidebarResizing_ = false;
-    bool sidebarExpanded_ = true;
+    bool uiVisible_ = true;
     bool initialized_ = false;
 };
 

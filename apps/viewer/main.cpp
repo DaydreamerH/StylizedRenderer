@@ -1256,6 +1256,16 @@ private:
             return false;
         }
 
+        if (!viewerPanels_.loadMaterialSidecarForScene(
+                modelPath,
+                *sceneAsset,
+                assetRegistry_,
+                *resourceCache_,
+                mtoonTemplateHandle_))
+        {
+            return false;
+        }
+
         if (!sceneInstance->scenePose.initialize(*sceneAsset))
         {
             std::cerr
