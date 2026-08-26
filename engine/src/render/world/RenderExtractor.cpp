@@ -408,6 +408,7 @@ bool RenderExtractor::extract(
             skinningPalettes,
             morphMeshInstances,
             glm::mat4{1.0F},
+            nullptr,
             assetRegistry,
             materialTemplate,
             renderWorld) &&
@@ -461,6 +462,7 @@ bool RenderExtractor::appendScene(
     std::span<const RuntimeMeshInstance>
         morphMeshInstances,
     const glm::mat4& instanceWorldMatrix,
+    const FaceSdfExtractionData* faceSdf,
     const asset::AssetRegistry& assetRegistry,
     asset::AssetHandle<
         material::MaterialTemplate>
@@ -483,6 +485,53 @@ bool RenderExtractor::appendScene(
 
     renderWorld.nextObjectId +=
         static_cast<std::uint32_t>(nodeCount);
+
+    bool faceSdfFrameValid = false;
+    glm::vec3 faceForward{0.0F, 0.0F, 1.0F};
+    glm::vec3 faceRight{1.0F, 0.0F, 0.0F};
+    glm::vec3 faceUp{0.0F, 1.0F, 0.0F};
+
+    if (faceSdf != nullptr &&
+        !faceSdf->material.isNull() &&
+        faceSdf->headNodeIndex < sceneAsset.nodes.size())
+    {
+        const glm::mat4* headPoseMatrix =
+            scenePose.worldMatrix(faceSdf->headNodeIndex);
+
+        if (headPoseMatrix == nullptr)
+        {
+            return false;
+        }
+
+        const glm::mat3 headBasis{
+            instanceWorldMatrix * *headPoseMatrix};
+
+        faceForward =
+            headBasis * faceSdf->headForward;
+        glm::vec3 rightCandidate =
+            headBasis * faceSdf->headRight;
+
+        if (glm::dot(faceForward, faceForward) > 1.0e-8F)
+        {
+            faceForward = glm::normalize(faceForward);
+            rightCandidate -= faceForward *
+                glm::dot(rightCandidate, faceForward);
+
+            if (glm::dot(rightCandidate, rightCandidate) > 1.0e-8F)
+            {
+                faceRight = glm::normalize(rightCandidate);
+                faceUp = glm::cross(faceForward, faceRight);
+
+                if (glm::dot(faceUp, faceUp) > 1.0e-8F)
+                {
+                    faceUp = glm::normalize(faceUp);
+                    faceRight = glm::normalize(
+                        glm::cross(faceUp, faceForward));
+                    faceSdfFrameValid = true;
+                }
+            }
+        }
+    }
 
     for (std::size_t nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex)
     {
@@ -649,6 +698,16 @@ bool RenderExtractor::appendScene(
 
             if (item.materialInstance == nullptr)
                 return false;
+
+            if (faceSdfFrameValid &&
+                faceSdf != nullptr &&
+                sourceMaterialHandle == faceSdf->material)
+            {
+                item.faceSdfFrameValid = true;
+                item.faceForward = faceForward;
+                item.faceRight = faceRight;
+                item.faceUp = faceUp;
+            }
 
             item.runtimeMaterial =
                 resourceCache_.getOrCreateRuntimeMaterial(

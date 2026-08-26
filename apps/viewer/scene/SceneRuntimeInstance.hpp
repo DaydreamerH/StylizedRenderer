@@ -15,18 +15,39 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <string>
 #include <vector>
+
+#include <glm/vec3.hpp>
 
 namespace stylized::asset
 {
 
+struct MaterialAsset;
 struct SceneAsset;
 
 } // namespace stylized::asset
 
 namespace stylized::viewer
 {
+
+struct FaceSdfRuntimeConfig
+{
+    static constexpr std::uint32_t invalidNodeIndex =
+        std::numeric_limits<std::uint32_t>::max();
+
+    asset::AssetHandle<asset::MaterialAsset> material;
+    std::uint32_t headNodeIndex = invalidNodeIndex;
+    glm::vec3 headRight{1.0F, 0.0F, 0.0F};
+    glm::vec3 headForward{0.0F, 0.0F, 1.0F};
+
+    [[nodiscard]] bool isValid() const noexcept
+    {
+        return !material.isNull() &&
+            headNodeIndex != invalidNodeIndex;
+    }
+};
 
 struct SceneRuntimeInstance final
     : core::NonCopyable
@@ -49,6 +70,8 @@ struct SceneRuntimeInstance final
 
     render::SkinningPaletteSet
         skinningPalettes;
+
+    FaceSdfRuntimeConfig faceSdf;
 
     std::vector<render::RuntimeMeshInstance>
         morphMeshInstances;

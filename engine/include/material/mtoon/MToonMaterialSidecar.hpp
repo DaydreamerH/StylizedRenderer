@@ -40,6 +40,17 @@ struct MToonSidecarTexturePaths
     std::filesystem::path specular;
 };
 
+struct MToonSidecarFaceSdf
+{
+    bool enabled = false;
+    bool disableProjectedShadows = false;
+    bool flipHorizontal = false;
+    float offset = 0.0F;
+    float softness = 0.03F;
+    float strength = 1.0F;
+    std::filesystem::path texture;
+};
+
 struct MToonSidecarMaterial
 {
     std::string name;
@@ -77,6 +88,8 @@ struct MToonSidecarMaterial
     bool receiveShadow = true;
     bool shadowCutoffEnabled = false;
     float shadowCutoff = 0.5F;
+
+    MToonSidecarFaceSdf faceSdf;
 
     bool sphericalFaceNormalEnabled = false;
     glm::vec3 sphericalFaceNormalCenter{0.0F};

@@ -320,6 +320,19 @@ bool captureMToonSidecarMaterial(
     captured.shadowCutoff =
         parameters.shadowCutoff;
 
+    captured.faceSdf.enabled =
+        parameters.faceSdf.enabled;
+    captured.faceSdf.disableProjectedShadows =
+        parameters.faceSdf.disableProjectedShadows;
+    captured.faceSdf.flipHorizontal =
+        parameters.faceSdf.flipHorizontal;
+    captured.faceSdf.offset =
+        parameters.faceSdf.offset;
+    captured.faceSdf.softness =
+        parameters.faceSdf.softness;
+    captured.faceSdf.strength =
+        parameters.faceSdf.strength;
+
     captured.sphericalFaceNormalEnabled =
         parameters.sphericalFaceNormalEnabled;
 
@@ -476,6 +489,14 @@ bool captureMToonSidecarMaterial(
             captured.textures.specular,
             materialName,
             "textures.specular",
+            error) ||
+        !resolveTexturePath(
+            parameters.faceSdf.texture,
+            assets,
+            sidecarDirectory,
+            captured.faceSdf.texture,
+            materialName,
+            "faceSdf.texture",
             error))
     {
         return false;
@@ -580,6 +601,19 @@ bool applyMToonSidecarMaterial(
 
     parameters.shadowCutoff =
         source.shadowCutoff;
+
+    parameters.faceSdf.enabled =
+        source.faceSdf.enabled;
+    parameters.faceSdf.disableProjectedShadows =
+        source.faceSdf.disableProjectedShadows;
+    parameters.faceSdf.flipHorizontal =
+        source.faceSdf.flipHorizontal;
+    parameters.faceSdf.offset =
+        source.faceSdf.offset;
+    parameters.faceSdf.softness =
+        source.faceSdf.softness;
+    parameters.faceSdf.strength =
+        source.faceSdf.strength;
 
     parameters.sphericalFaceNormalEnabled =
         source.sphericalFaceNormalEnabled;
@@ -794,6 +828,17 @@ bool applyMToonSidecarMaterial(
             parameters.textures.specularTexture,
             source.name,
             "textures.specular",
+            error) ||
+        !restoreTexture(
+            source.faceSdf.texture,
+            asset::ColorSpace::Linear,
+            parameters.faceSdf.texture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.faceSdf.texture,
+            source.name,
+            "faceSdf.texture",
             error))
     {
         return false;

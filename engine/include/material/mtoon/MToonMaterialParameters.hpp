@@ -69,6 +69,19 @@ struct MToonTextureBindings
         specularTexture;
 };
 
+struct MToonFaceSdfParameters
+{
+    bool enabled = false;
+    bool disableProjectedShadows = false;
+    bool flipHorizontal = false;
+
+    float offset = 0.0F;
+    float softness = 0.03F;
+    float strength = 1.0F;
+
+    asset::AssetHandle<asset::TextureAsset> texture;
+};
+
 struct MToonMaterialParameters
 {
     glm::vec3 shadeColor{0.1F};
@@ -85,6 +98,8 @@ struct MToonMaterialParameters
     bool receiveShadow = true;
     bool shadowCutoffEnabled = false;
     float shadowCutoff = 0.5F;
+
+    MToonFaceSdfParameters faceSdf;
 
     bool sphericalFaceNormalEnabled = false;
     glm::vec3 sphericalFaceNormalCenter{0.0F};

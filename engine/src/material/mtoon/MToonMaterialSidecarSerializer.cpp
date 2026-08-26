@@ -511,6 +511,23 @@ Json screenOutlineToJson(
     return result;
 }
 
+Json faceSdfToJson(
+    const MToonSidecarFaceSdf& faceSdf)
+{
+    return Json{
+        {"enabled", faceSdf.enabled},
+        {
+            "disableProjectedShadows",
+            faceSdf.disableProjectedShadows
+        },
+        {"flipHorizontal", faceSdf.flipHorizontal},
+        {"offset", faceSdf.offset},
+        {"softness", faceSdf.softness},
+        {"strength", faceSdf.strength},
+        {"texture", faceSdf.texture.generic_string()}
+    };
+}
+
 Json materialToJson(
     const MToonSidecarMaterial& material)
 {
@@ -546,6 +563,7 @@ Json materialToJson(
             "shadowCutoff",
             material.shadowCutoff
         },
+        {"faceSdf", faceSdfToJson(material.faceSdf)},
         {
             "sphericalFaceNormalEnabled",
             material.sphericalFaceNormalEnabled
@@ -736,6 +754,53 @@ bool parseTexturePaths(
             material.textures.specular,
             material.name,
             error);
+}
+
+bool parseFaceSdf(
+    const Json& source,
+    MToonSidecarMaterial& material,
+    MToonSidecarError& error)
+{
+    const auto iterator = source.find("faceSdf");
+    if (iterator == source.end())
+    {
+        return true;
+    }
+
+    if (!iterator->is_object())
+    {
+        setError(
+            error,
+            material.name,
+            "faceSdf",
+            "Expected an object.");
+        return false;
+    }
+
+    return
+        readBool(
+            *iterator, "enabled", material.faceSdf.enabled,
+            material.name, error) &&
+        readBool(
+            *iterator, "disableProjectedShadows",
+            material.faceSdf.disableProjectedShadows,
+            material.name, error) &&
+        readBool(
+            *iterator, "flipHorizontal",
+            material.faceSdf.flipHorizontal,
+            material.name, error) &&
+        readFloat(
+            *iterator, "offset", material.faceSdf.offset,
+            -1.0F, 1.0F, material.name, error) &&
+        readFloat(
+            *iterator, "softness", material.faceSdf.softness,
+            0.0F, 0.25F, material.name, error) &&
+        readFloat(
+            *iterator, "strength", material.faceSdf.strength,
+            0.0F, 1.0F, material.name, error) &&
+        readTexturePath(
+            *iterator, "texture", material.faceSdf.texture,
+            material.name, error);
 }
 
 bool parseOutline(
@@ -1093,6 +1158,10 @@ bool parseMaterial(
             material,
             error) &&
         parseTexturePaths(
+            source,
+            material,
+            error) &&
+        parseFaceSdf(
             source,
             material,
             error);

@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "headNode": "頭",
+  "headRight": [1.0, 0.0, 0.0],
+  "headForward": [0.0, 0.0, 1.0],
+  "faceMaterial": "Face__stylized_gltf"
+}

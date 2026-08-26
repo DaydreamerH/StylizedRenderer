@@ -289,6 +289,29 @@ bool StaticModelRenderer::render(
             if (materialKind ==
                 material::MaterialKind::MToon)
             {
+                const bool faceSdfEnabled =
+                    item.faceSdfFrameValid &&
+                    materialInstance.mtoonParameters.has_value() &&
+                    materialInstance.mtoonParameters->faceSdf.enabled &&
+                    !materialInstance.mtoonParameters
+                        ->faceSdf.texture.isNull();
+
+                if (!shader->setInt(
+                        "uFaceSdfEnabled",
+                        faceSdfEnabled ? 1 : 0) ||
+                    !shader->setVec3(
+                        "uFaceForward",
+                        item.faceForward) ||
+                    !shader->setVec3(
+                        "uFaceRight",
+                        item.faceRight) ||
+                    !shader->setVec3(
+                        "uFaceUp",
+                        item.faceUp))
+                {
+                    return false;
+                }
+
                 if (!shader->setMat4(
                     "uView",
                     view.view
@@ -340,9 +363,19 @@ bool StaticModelRenderer::render(
                 !materialInstance.mtoonParameters.has_value() ||
                 materialInstance.mtoonParameters->receiveShadow;
 
+            const bool projectedFaceShadowDisabled =
+                item.faceSdfFrameValid &&
+                materialKind == material::MaterialKind::MToon &&
+                materialInstance.mtoonParameters.has_value() &&
+                materialInstance.mtoonParameters
+                    ->faceSdf.enabled &&
+                materialInstance.mtoonParameters
+                    ->faceSdf.disableProjectedShadows;
+
             const bool shadowEnabled =
                 shadowMapAvailable &&
                 materialReceivesShadow &&
+                !projectedFaceShadowDisabled &&
                 hasFlag(
                     item.flags,
                     RenderItemFlags::ReceiveShadow);

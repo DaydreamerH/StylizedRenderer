@@ -1,4 +1,5 @@
 #include <asset/AssetRegistry.hpp>
+#include <asset/MaterialAsset.hpp>
 #include <asset/MeshAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <asset/importers/ModelImporter.hpp>
@@ -791,12 +792,27 @@ protected:
                     break;
                 }
 
+                std::optional<stylized::render::FaceSdfExtractionData>
+                    faceSdf;
+
+                if (currentInstance->faceSdf.isValid())
+                {
+                    faceSdf = stylized::render::FaceSdfExtractionData{
+                        .material = currentInstance->faceSdf.material,
+                        .headNodeIndex =
+                            currentInstance->faceSdf.headNodeIndex,
+                        .headRight = currentInstance->faceSdf.headRight,
+                        .headForward =
+                            currentInstance->faceSdf.headForward};
+                }
+
                 if (!extractor_->appendScene(
                         *currentSceneAsset,
                         currentInstance->scenePose,
                         currentInstance->skinningPalettes,
                         currentInstance->morphMeshInstances,
                         currentInstance->rootTransform.localMatrix(),
+                        faceSdf.has_value() ? &*faceSdf : nullptr,
                         assetRegistry_,
                         activeMaterialTemplateHandle_,
                         renderWorld_))
@@ -1266,6 +1282,14 @@ private:
             return false;
         }
 
+        if (!loadCharacterSidecar(
+                modelPath,
+                *sceneAsset,
+                *sceneInstance))
+        {
+            return false;
+        }
+
         if (!sceneInstance->scenePose.initialize(*sceneAsset))
         {
             std::cerr
@@ -1463,6 +1487,193 @@ private:
 
         sceneInstances_.push_back(
             std::move(sceneInstance));
+
+        return true;
+    }
+
+    bool loadCharacterSidecar(
+        const std::filesystem::path& modelPath,
+        const stylized::asset::SceneAsset& sceneAsset,
+        stylized::viewer::SceneRuntimeInstance& sceneInstance)
+    {
+        std::filesystem::path sidecarPath = modelPath;
+        sidecarPath.replace_extension(".character.json");
+
+        if (!std::filesystem::exists(sidecarPath))
+        {
+            return true;
+        }
+
+        try
+        {
+            std::ifstream input(sidecarPath);
+            if (!input.is_open())
+            {
+                throw std::runtime_error(
+                    "failed to open character sidecar");
+            }
+
+            const nlohmann::json document =
+                nlohmann::json::parse(input);
+
+            if (!document.is_object() ||
+                document.value("version", 0) != 1 ||
+                !document.contains("headNode") ||
+                !document["headNode"].is_string() ||
+                !document.contains("faceMaterial") ||
+                !document["faceMaterial"].is_string() ||
+                !document.contains("headRight") ||
+                !document["headRight"].is_array() ||
+                document["headRight"].size() != 3 ||
+                !document.contains("headForward") ||
+                !document["headForward"].is_array() ||
+                document["headForward"].size() != 3)
+            {
+                throw std::runtime_error(
+                    "invalid version 1 character sidecar structure");
+            }
+
+            const std::string headNodeName =
+                document.at("headNode").get<std::string>();
+            const std::string faceMaterialName =
+                document.at("faceMaterial").get<std::string>();
+
+            const auto readVector = [](
+                const nlohmann::json& source)
+            {
+                return glm::vec3{
+                    source[0].get<float>(),
+                    source[1].get<float>(),
+                    source[2].get<float>()};
+            };
+
+            const glm::vec3 headRight =
+                readVector(document.at("headRight"));
+            const glm::vec3 headForward =
+                readVector(document.at("headForward"));
+
+            if (headNodeName.empty() ||
+                faceMaterialName.empty() ||
+                !finiteVector(headRight) ||
+                !finiteVector(headForward) ||
+                glm::dot(headRight, headRight) <= 1.0e-8F ||
+                glm::dot(headForward, headForward) <= 1.0e-8F ||
+                glm::dot(
+                    glm::cross(headRight, headForward),
+                    glm::cross(headRight, headForward)) <= 1.0e-8F)
+            {
+                throw std::runtime_error(
+                    "invalid character head axes or names");
+            }
+
+            std::uint32_t headNodeIndex =
+                stylized::viewer::FaceSdfRuntimeConfig::invalidNodeIndex;
+
+            for (std::size_t index = 0;
+                 index < sceneAsset.nodes.size();
+                 ++index)
+            {
+                if (sceneAsset.nodes[index].name != headNodeName)
+                {
+                    continue;
+                }
+
+                if (headNodeIndex !=
+                    stylized::viewer::FaceSdfRuntimeConfig::invalidNodeIndex)
+                {
+                    throw std::runtime_error(
+                        "character headNode is not unique");
+                }
+
+                headNodeIndex = static_cast<std::uint32_t>(index);
+            }
+
+            if (headNodeIndex ==
+                stylized::viewer::FaceSdfRuntimeConfig::invalidNodeIndex)
+            {
+                throw std::runtime_error(
+                    "character headNode was not found");
+            }
+
+            stylized::asset::AssetHandle<
+                stylized::asset::MaterialAsset> faceMaterial;
+
+            for (const stylized::asset::SceneNodeAsset& node :
+                 sceneAsset.nodes)
+            {
+                const stylized::asset::MeshAsset* mesh =
+                    assetRegistry_.get(node.mesh);
+
+                if (mesh == nullptr)
+                {
+                    continue;
+                }
+
+                for (const stylized::asset::MeshPrimitiveAsset& primitive :
+                     mesh->primitives)
+                {
+                    const stylized::asset::MaterialAsset* material =
+                        assetRegistry_.get(primitive.material);
+
+                    if (material == nullptr ||
+                        material->name != faceMaterialName)
+                    {
+                        continue;
+                    }
+
+                    if (!faceMaterial.isNull() &&
+                        faceMaterial != primitive.material)
+                    {
+                        throw std::runtime_error(
+                            "character faceMaterial is not unique");
+                    }
+
+                    faceMaterial = primitive.material;
+                }
+            }
+
+            if (faceMaterial.isNull())
+            {
+                throw std::runtime_error(
+                    "character faceMaterial was not found");
+            }
+
+            stylized::material::MaterialInstance* instance =
+                resourceCache_->getOrCreateMaterialInstance(
+                    faceMaterial,
+                    mtoonTemplateHandle_,
+                    assetRegistry_);
+
+            if (instance == nullptr ||
+                !instance->mtoonParameters.has_value())
+            {
+                throw std::runtime_error(
+                    "face material has no MToon instance");
+            }
+
+            sceneInstance.faceSdf.material = faceMaterial;
+            sceneInstance.faceSdf.headNodeIndex = headNodeIndex;
+            sceneInstance.faceSdf.headRight = glm::normalize(headRight);
+            sceneInstance.faceSdf.headForward =
+                glm::normalize(headForward);
+
+            std::cout
+                << "Character face frame loaded: "
+                << sidecarPath
+                << " (material "
+                << faceMaterialName
+                << ")\n";
+        }
+        catch (const std::exception& exception)
+        {
+            std::cerr
+                << "Failed to load character sidecar: "
+                << sidecarPath
+                << " ("
+                << exception.what()
+                << ")\n";
+            return false;
+        }
 
         return true;
     }

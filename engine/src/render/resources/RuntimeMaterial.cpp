@@ -103,6 +103,10 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uSpecularTexture",
                 10
+            ) ||
+            !shader_.setInt(
+                "uFaceSdfTexture",
+                11
             ))
         {
             shader_ = {};
@@ -339,6 +343,13 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& faceSdfTexture =
+            parameters.faceSdf.texture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.faceSdf.texture,
+                assetRegistry);
+
         if (!shadeTexture.isValid() ||
             !toonRampTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
@@ -347,7 +358,8 @@ bool RuntimeMaterial::bind(
             !rimMaskTexture.isValid() ||
             !emissionTexture.isValid() ||
             !occlusionTexture.isValid() ||
-            !specularTexture.isValid())
+            !specularTexture.isValid() ||
+            !faceSdfTexture.isValid())
         {
             return false;
         }
@@ -414,6 +426,22 @@ bool RuntimeMaterial::bind(
         if (!shader_.setFloat(
                 "uShadowCutoff",
                 parameters.shadowCutoff))
+        {
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uFaceSdfFlipHorizontal",
+                parameters.faceSdf.flipHorizontal ? 1 : 0) ||
+            !shader_.setFloat(
+                "uFaceSdfOffset",
+                parameters.faceSdf.offset) ||
+            !shader_.setFloat(
+                "uFaceSdfSoftness",
+                parameters.faceSdf.softness) ||
+            !shader_.setFloat(
+                "uFaceSdfStrength",
+                parameters.faceSdf.strength))
         {
             return false;
         }
@@ -545,6 +573,7 @@ bool RuntimeMaterial::bind(
         toonRampTexture.bind(8);
         occlusionTexture.bind(9);
         specularTexture.bind(10);
+        faceSdfTexture.bind(11);
 
         return true;
     }

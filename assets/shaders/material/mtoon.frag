@@ -76,6 +76,16 @@ uniform vec3 uSpecularColor;
 uniform float uSpecularStrength;
 uniform float uSpecularPower;
 
+uniform sampler2D uFaceSdfTexture;
+uniform int uFaceSdfEnabled;
+uniform int uFaceSdfFlipHorizontal;
+uniform float uFaceSdfOffset;
+uniform float uFaceSdfSoftness;
+uniform float uFaceSdfStrength;
+uniform vec3 uFaceForward;
+uniform vec3 uFaceRight;
+uniform vec3 uFaceUp;
+
 vec3 calculateGeometricNormal()
 {
     const float faceSign = gl_FrontFacing
@@ -333,10 +343,89 @@ void main()
 
     const float aaWidth = max(halfWidth, delta);
 
-    const float shadingFactor = smoothstep(
+    const float normalShadingFactor = smoothstep(
         threshold - aaWidth,
         threshold + aaWidth,
         normalDotLight);
+
+    float shadingFactor = normalShadingFactor;
+
+    if (uFaceSdfEnabled != 0)
+    {
+        const vec3 faceForward = normalize(uFaceForward);
+        const vec3 faceRight = normalize(uFaceRight);
+        const vec3 faceUp = normalize(uFaceUp);
+
+        const vec3 projectedLight =
+            lightDirection -
+            faceUp * dot(lightDirection, faceUp);
+
+        const float projectedLengthSquared =
+            dot(projectedLight, projectedLight);
+
+        float normalizedAngle = 0.0;
+        float lightSide = 0.0;
+
+        if (projectedLengthSquared > 1.0e-8)
+        {
+            const vec3 horizontalLight =
+                projectedLight *
+                inversesqrt(projectedLengthSquared);
+
+            const float lightFront = clamp(
+                dot(horizontalLight, faceForward),
+                -1.0,
+                1.0);
+
+            lightSide = dot(horizontalLight, faceRight);
+            normalizedAngle =
+                atan(abs(lightSide), lightFront) /
+                3.141592653589793;
+        }
+
+        vec2 sdfUv = vertexTexCoord0;
+        const bool mirrorForLightSide = lightSide < 0.0;
+        const bool configuredFlip =
+            uFaceSdfFlipHorizontal != 0;
+
+        if (mirrorForLightSide != configuredFlip)
+        {
+            sdfUv.x = 1.0 - sdfUv.x;
+        }
+
+        const vec2 sdfTexelSize =
+            0.5 /
+            vec2(textureSize(uFaceSdfTexture, 0));
+
+        sdfUv = clamp(
+            sdfUv,
+            sdfTexelSize,
+            vec2(1.0) - sdfTexelSize);
+
+        const float sdfThreshold =
+            texture(uFaceSdfTexture, sdfUv).r;
+
+        const float signedThreshold =
+            sdfThreshold +
+            uFaceSdfOffset -
+            normalizedAngle;
+
+        const float sdfWidth = max(
+            max(uFaceSdfSoftness, 0.0),
+            max(
+                0.5 * fwidth(signedThreshold),
+                1.0e-5));
+
+        const float sdfVisibility = smoothstep(
+            -sdfWidth,
+            sdfWidth,
+            signedThreshold);
+
+        shadingFactor = mix(
+            normalShadingFactor,
+            sdfVisibility,
+            clamp(uFaceSdfStrength, 0.0, 1.0));
+    }
 
     const vec3 lightRadiance =
         uLightColor * max(uLightIntensity, 0.0);

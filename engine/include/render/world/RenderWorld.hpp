@@ -176,6 +176,11 @@ struct RenderItem
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};
 
+    bool faceSdfFrameValid = false;
+    glm::vec3 faceForward{0.0F, 0.0F, 1.0F};
+    glm::vec3 faceRight{1.0F, 0.0F, 0.0F};
+    glm::vec3 faceUp{0.0F, 1.0F, 0.0F};
+
     math::Bounds worldBounds;
 
     std::uint32_t objectId = 0;

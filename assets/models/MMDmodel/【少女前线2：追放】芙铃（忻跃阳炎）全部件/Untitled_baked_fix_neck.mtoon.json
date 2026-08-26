@@ -1,0 +1,2791 @@
+{
+  "version": 3,
+  "materials": [
+    {
+      "name": "Face__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.45,
+        0.34,
+        0.34
+      ],
+      "shadingShift": 0.25,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.6,
+      "normalScale": 0,
+      "receiveShadow": true,
+      "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": false,
+      "shadowCutoff": 0.35,
+      "faceSdf": {
+        "enabled": true,
+        "texture": "face_sdf_procedural.png",
+        "disableProjectedShadows": false,
+        "flipHorizontal": false,
+        "offset": 0.0,
+        "softness": 0.03,
+        "strength": 1.0
+      },
+      "sphericalFaceNormalEnabled": true,
+      "sphericalFaceNormalCenter": [
+        0.001662,
+        1.2167,
+        0.012509
+      ],
+      "sphericalFaceNormalRadius": 0.062,
+      "sphericalFaceNormalSoftness": 0.015,
+      "sphericalFaceNormalBlend": 0.55,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.76,
+        0.7
+      ],
+      "specularStrength": 0.1,
+      "specularPower": 112,
+      "matcapColor": [
+        1,
+        0.78,
+        0.72
+      ],
+      "matcapStrength": 0.05,
+      "rimColor": [
+        0.11,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 7,
+      "rimLift": 0.01,
+      "rimLightingMix": 0.55,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.62,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/SSShine1.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "UpperTeeth__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.62,
+        0.58,
+        0.58
+      ],
+      "shadingShift": 0.1,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.85,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.8,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.96,
+        0.96
+      ],
+      "specularStrength": 0.18,
+      "specularPower": 128,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "LowerTeeth__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.62,
+        0.58,
+        0.58
+      ],
+      "shadingShift": 0.1,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.85,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.8,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.96,
+        0.96
+      ],
+      "specularStrength": 0.18,
+      "specularPower": 128,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Tongue__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.48,
+        0.13,
+        0.16
+      ],
+      "shadingShift": 0.1,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.8,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.8,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.48,
+        0.52
+      ],
+      "specularStrength": 0.18,
+      "specularPower": 80,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.38,
+        "color": [
+          0.34,
+          0.04,
+          0.06
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "EyeWhite__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.62,
+        0.58,
+        0.58
+      ],
+      "shadingShift": 0.1,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.85,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.8,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.96,
+        0.96
+      ],
+      "specularStrength": 0.18,
+      "specularPower": 128,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Lashes__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.42,
+        0.24,
+        0.22
+      ],
+      "shadingShift": 0,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 1,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 1,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0,
+        0,
+        0
+      ],
+      "specularStrength": 0,
+      "specularPower": 96,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Brows__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.42,
+        0.24,
+        0.22
+      ],
+      "shadingShift": 0,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 1,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 1,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0,
+        0,
+        0
+      ],
+      "specularStrength": 0,
+      "specularPower": 96,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_face_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "EyeRed(Left)__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        0.62,
+        0.72,
+        1
+      ],
+      "shadeColor": [
+        0.36,
+        0.035,
+        0.08
+      ],
+      "shadingShift": 0.12,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.92,
+      "normalScale": 0,
+      "surfaceOffset": 0.0002,
+      "shadowNormalInfluence": 0,
+      "receiveShadow": false,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.9,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.4,
+        0.52
+      ],
+      "specularStrength": 0.3,
+      "specularPower": 48,
+      "matcapColor": [
+        1,
+        0.22,
+        0.34
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        1,
+        0.08,
+        0.18
+      ],
+      "emissionStrength": 0.13,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_L_eye_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/eyes.png",
+        "rimMask": "",
+        "emission": "Textures/c_Faelynn_slg_L_eye_d.png",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Eyes__stylized_gltf",
+      "baseColorFactor": [
+        0.52,
+        0.75,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.025,
+        0.11,
+        0.36
+      ],
+      "shadingShift": 0.12,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.92,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "receiveShadow": false,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.9,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0.55,
+        0.86,
+        1
+      ],
+      "specularStrength": 0.3,
+      "specularPower": 48,
+      "matcapColor": [
+        0.18,
+        0.58,
+        1
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0.1,
+        0.55,
+        1
+      ],
+      "emissionStrength": 0.13,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_R_eye_d.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/eyes.png",
+        "rimMask": "",
+        "emission": "Textures/c_Faelynn_slg_R_eye_d.png",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Eyes+__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.2,
+        0.1,
+        0.1
+      ],
+      "shadingShift": 0.12,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.92,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "receiveShadow": false,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.9,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.9,
+        0.88
+      ],
+      "specularStrength": 0.08,
+      "specularPower": 56,
+      "matcapColor": [
+        1,
+        0.8,
+        0.78
+      ],
+      "matcapStrength": 0.02,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0.85,
+        0.95,
+        1
+      ],
+      "emissionStrength": 0.62,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_eyeblend.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/eyes.png",
+        "rimMask": "",
+        "emission": "Textures/c_Faelynn_slg_eyeblend.png",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "EyeShadow__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "shadeColor": [
+        0.42,
+        0.24,
+        0.22
+      ],
+      "shadingShift": 0,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 1,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 1,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0,
+        0,
+        0
+      ],
+      "specularStrength": 0,
+      "specularPower": 96,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_eyeblend.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "HairC(Ears)__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.4,
+        0.24,
+        0.17
+      ],
+      "shadingShift": 0.04,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.84,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.82,
+        0.7
+      ],
+      "specularStrength": 0.52,
+      "specularPower": 72,
+      "matcapColor": [
+        1,
+        0.78,
+        0.66
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0.2,
+        0.07,
+        0.04
+      ],
+      "rimFresnelPower": 5.5,
+      "rimLift": 0.03,
+      "rimLightingMix": 0.55,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.76,
+        "color": [
+          0.22,
+          0.055,
+          0.035
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_hair_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon03.png",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/hair-a.bmp",
+        "rimMask": "normalmap/c_FaelynnSSR01_slg_hair_spc.png",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "HairA__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.4,
+        0.24,
+        0.17
+      ],
+      "shadingShift": 0.04,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.84,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.82,
+        0.7
+      ],
+      "specularStrength": 0.52,
+      "specularPower": 72,
+      "matcapColor": [
+        1,
+        0.78,
+        0.66
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0.2,
+        0.07,
+        0.04
+      ],
+      "rimFresnelPower": 5.5,
+      "rimLift": 0.03,
+      "rimLightingMix": 0.55,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.76,
+        "color": [
+          0.22,
+          0.055,
+          0.035
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_hair_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon03.png",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/hair-a.bmp",
+        "rimMask": "normalmap/c_FaelynnSSR01_slg_hair_spc.png",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
+      },
+      "screenOutline": {
+        "group": "hair",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": false,
+        "detectSelfNormal": false
+      }
+    },
+    {
+      "name": "HairB__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.4,
+        0.24,
+        0.17
+      ],
+      "shadingShift": 0.04,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.84,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "shadowCutoffEnabled": true,
+      "shadowCutoff": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.82,
+        0.7
+      ],
+      "specularStrength": 0.52,
+      "specularPower": 72,
+      "matcapColor": [
+        1,
+        0.78,
+        0.66
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0.2,
+        0.07,
+        0.04
+      ],
+      "rimFresnelPower": 5.5,
+      "rimLift": 0.03,
+      "rimLightingMix": 0.55,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.76,
+        "color": [
+          0.22,
+          0.055,
+          0.035
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_hair_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon03.png",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/hair-a.bmp",
+        "rimMask": "normalmap/c_FaelynnSSR01_slg_hair_spc.png",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": "normalmap/c_FaelynnSSR01_slg_hair_spc.png"
+      },
+      "screenOutline": {
+        "group": "hair",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": false,
+        "detectSelfNormal": false
+      }
+    },
+    {
+      "name": "发饰__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_cloth_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR01_slg_cloth_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr01_slg_cloth_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-首__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-身体P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-上身P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-下身P1-1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-腿P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-手臂__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/body_d.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/body_rmo.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "皮肤-脚P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.54,
+        0.32,
+        0.3
+      ],
+      "shadingShift": 0.08,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.72,
+      "normalScale": 0.72,
+      "shadowNormalInfluence": 0.18,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.75,
+      "occlusionStrength": 0.82,
+      "specularColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 96,
+      "matcapColor": [
+        1,
+        0.72,
+        0.66
+      ],
+      "matcapStrength": 0.055,
+      "rimColor": [
+        0.14,
+        0.045,
+        0.04
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.64,
+        "color": [
+          0.34,
+          0.1,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_body_da.png",
+        "shade": "",
+        "toonRamp": "spa/skintoon.bmp",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/skin.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "脚趾甲-P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.48,
+        0.15,
+        0.16
+      ],
+      "shadingShift": 0.04,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.86,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.85,
+      "occlusionStrength": 0,
+      "specularColor": [
+        1,
+        0.66,
+        0.72
+      ],
+      "specularStrength": 0.4,
+      "specularPower": 128,
+      "matcapColor": [
+        1,
+        0.72,
+        0.75
+      ],
+      "matcapStrength": 0.1,
+      "rimColor": [
+        0.06,
+        0.01,
+        0.02
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_zhijia_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "spa/SSShine1.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "小裤裤-P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_hip_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_hip_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_hip_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "口哨__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_cloth_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_cloth_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_cloth_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "上衣-P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_cloth_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_cloth_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_cloth_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "丝袜-P1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.26,
+        0.17,
+        0.22
+      ],
+      "shadingShift": -0.03,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.88,
+      "normalScale": 0.74,
+      "shadowNormalInfluence": 0.12,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.62,
+      "occlusionStrength": 0.88,
+      "specularColor": [
+        0.92,
+        0.76,
+        0.88
+      ],
+      "specularStrength": 0.28,
+      "specularPower": 112,
+      "matcapColor": [
+        0.72,
+        0.5,
+        0.68
+      ],
+      "matcapStrength": 0.06,
+      "rimColor": [
+        0.1,
+        0.035,
+        0.08
+      ],
+      "rimFresnelPower": 7,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.6,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.13,
+          0.03,
+          0.1
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_body_da.png",
+        "shade": "",
+        "toonRamp": "spa/SToon03.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/Socks2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "group": "body",
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "创可贴-P1-1__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_hip_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_hip_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_hip_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "创可贴-P1-2__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR0101_slg_P1_body_da.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR0101_slg_P1_body_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr0101_slg_p1_body_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "手套__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.3,
+        0.19,
+        0.22
+      ],
+      "shadingShift": 0.02,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 0.82,
+      "normalScale": 0.78,
+      "shadowNormalInfluence": 0.2,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 0.64,
+      "occlusionStrength": 0.86,
+      "specularColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "specularStrength": 0.16,
+      "specularPower": 88,
+      "matcapColor": [
+        1,
+        0.82,
+        0.86
+      ],
+      "matcapStrength": 0.07,
+      "rimColor": [
+        0.09,
+        0.025,
+        0.05
+      ],
+      "rimFresnelPower": 6.5,
+      "rimLift": 0.015,
+      "rimLightingMix": 0.62,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0.68,
+        "color": [
+          0.12,
+          0.025,
+          0.055
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_FaelynnSSR01_slg_cloth_d.png",
+        "shade": "",
+        "toonRamp": "spa/SToon01.png",
+        "normal": "normalmap/c_FaelynnSSR01_slg_cloth_n.png",
+        "shadingShift": "",
+        "matcap": "spa/SSShine2.png",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "normalmap/c_faelynnssr01_slg_cloth_rmo_05_21_2026.png",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Emotions(Blush)__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.42,
+        0.24,
+        0.22
+      ],
+      "shadingShift": 0,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 1,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 1,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0,
+        0,
+        0
+      ],
+      "specularStrength": 0,
+      "specularPower": 96,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/c_Faelynn_slg_saihong_da.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    },
+    {
+      "name": "Emotions__stylized_gltf",
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "shadeColor": [
+        0.42,
+        0.24,
+        0.22
+      ],
+      "shadingShift": 0,
+      "shadingShiftTextureScale": 1,
+      "shadingToony": 1,
+      "normalScale": 0,
+      "shadowNormalInfluence": 0,
+      "sphericalFaceNormalEnabled": false,
+      "sphericalFaceNormalCenter": [
+        0,
+        0,
+        0
+      ],
+      "sphericalFaceNormalBlend": 0,
+      "giEqualization": 1,
+      "occlusionStrength": 0,
+      "specularColor": [
+        0,
+        0,
+        0
+      ],
+      "specularStrength": 0,
+      "specularPower": 96,
+      "matcapColor": [
+        0,
+        0,
+        0
+      ],
+      "matcapStrength": 0,
+      "rimColor": [
+        0,
+        0,
+        0
+      ],
+      "rimFresnelPower": 6,
+      "rimLift": 0.02,
+      "rimLightingMix": 0.65,
+      "emissionColor": [
+        0,
+        0,
+        0
+      ],
+      "emissionStrength": 1,
+      "outline": {
+        "enabled": false,
+        "widthMode": "screen",
+        "width": 0,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "lightingMix": 0.15
+      },
+      "textures": {
+        "baseColor": "Textures/extra.png",
+        "shade": "",
+        "toonRamp": "",
+        "normal": "",
+        "shadingShift": "",
+        "matcap": "",
+        "rimMask": "",
+        "emission": "",
+        "outlineWidthMask": "",
+        "occlusion": "",
+        "specular": ""
+      },
+      "screenOutline": {
+        "enabled": true,
+        "depthEnabled": true,
+        "normalEnabled": true,
+        "detectSelfDepth": true,
+        "detectSelfNormal": true
+      }
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 namespace stylized::asset
 {
 class AssetRegistry;
+struct MaterialAsset;
 struct SceneAsset;
 }
 
@@ -37,6 +38,14 @@ namespace stylized::render
 class RuntimeResourceCache;
 class RuntimeMeshInstance;
 class SkinningPaletteSet;
+
+struct FaceSdfExtractionData
+{
+    asset::AssetHandle<asset::MaterialAsset> material;
+    std::uint32_t headNodeIndex = 0;
+    glm::vec3 headRight{1.0F, 0.0F, 0.0F};
+    glm::vec3 headForward{0.0F, 0.0F, 1.0F};
+};
 
 class RenderExtractor final : public core::NonCopyable
 {
@@ -71,6 +80,7 @@ public:
         std::span<const RuntimeMeshInstance>
             morphMeshInstances,
         const glm::mat4& instanceWorldMatrix,
+        const FaceSdfExtractionData* faceSdf,
         const asset::AssetRegistry& assetRegistry,
         asset::AssetHandle<
             material::MaterialTemplate>
