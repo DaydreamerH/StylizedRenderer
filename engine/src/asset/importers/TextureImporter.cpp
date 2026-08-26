@@ -19,7 +19,8 @@ TextureImporter::TextureImporter(
 
 AssetHandle<TextureAsset> TextureImporter::import(
     const std::filesystem::path& path,
-    const ColorSpace colorSpace)
+    const ColorSpace colorSpace,
+    const bool generateMipmaps)
 {
     if (path.empty())
     {
@@ -76,6 +77,7 @@ AssetHandle<TextureAsset> TextureImporter::import(
     }
 
     texture.colorSpace = colorSpace;
+    texture.generateMipmaps = generateMipmaps;
 
     try
     {

@@ -133,6 +133,7 @@ bool resolveTexturePath(
 bool restoreTexture(
     const std::filesystem::path& relativePath,
     const asset::ColorSpace colorSpace,
+    const bool generateMipmaps,
     const asset::AssetHandle<asset::TextureAsset> currentHandle,
     asset::AssetRegistry& assets,
     asset::importers::TextureImporter& importer,
@@ -194,6 +195,7 @@ bool restoreTexture(
                 );
 
             if (!filesystemError &&
+                currentTexture->generateMipmaps == generateMipmaps &&
                 currentSourcePath.lexically_normal() ==
                 resolvedPath.lexically_normal())
             {
@@ -206,7 +208,8 @@ bool restoreTexture(
     const asset::AssetHandle<asset::TextureAsset> imported =
         importer.import(
             resolvedPath,
-            colorSpace);
+            colorSpace,
+            generateMipmaps);
 
     if (imported.isNull())
     {
@@ -711,6 +714,7 @@ bool applyMToonSidecarMaterial(
     if (!restoreTexture(
             source.textures.baseColor,
             asset::ColorSpace::Srgb,
+            true,
             applied.baseColorTexture,
             assets,
             importer,
@@ -722,6 +726,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.shade,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.shadeTexture,
             assets,
             importer,
@@ -733,6 +738,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.toonRamp,
             asset::ColorSpace::Srgb,
+            false,
             parameters.textures.toonRampTexture,
             assets,
             importer,
@@ -744,6 +750,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.normal,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.normalTexture,
             assets,
             importer,
@@ -755,6 +762,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.shadingShift,
             asset::ColorSpace::Linear,
+            false,
             parameters.textures.shadingShiftTexture,
             assets,
             importer,
@@ -766,6 +774,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.matcap,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.matcapTexture,
             assets,
             importer,
@@ -777,6 +786,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.rimMask,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.rimMaskTexture,
             assets,
             importer,
@@ -788,6 +798,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.emission,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.emissionTexture,
             assets,
             importer,
@@ -799,6 +810,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.outlineWidthMask,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.outlineWidthMaskTexture,
             assets,
             importer,
@@ -810,6 +822,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.occlusion,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.occlusionTexture,
             assets,
             importer,
@@ -821,6 +834,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.specular,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.specularTexture,
             assets,
             importer,
@@ -832,6 +846,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.faceSdf.texture,
             asset::ColorSpace::Linear,
+            false,
             parameters.faceSdf.texture,
             assets,
             importer,

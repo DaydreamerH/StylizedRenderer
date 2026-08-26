@@ -321,6 +321,7 @@ RuntimeResourceCache::uploadTexture(const asset::TextureAsset& textureAsset)
     desc.wrapV = graphics::TextureWrap::Repeat;
     desc.minFilter = graphics::TextureFilter::Linear;
     desc.magFilter = graphics::TextureFilter::Linear;
+    desc.generateMipmaps = textureAsset.generateMipmaps;
     desc.debugName = textureAsset.debugName;
 
     return graphicsDevice_.createTexture2D(

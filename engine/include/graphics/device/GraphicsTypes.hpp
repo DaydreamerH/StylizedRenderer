@@ -78,6 +78,7 @@ struct Texture2DDesc
 
     TextureFilter minFilter = TextureFilter::Linear;
     TextureFilter magFilter = TextureFilter::Linear;
+    bool generateMipmaps = false;
 
     std::string debugName;
 };
