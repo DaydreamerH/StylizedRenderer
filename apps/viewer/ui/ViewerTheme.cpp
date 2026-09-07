@@ -1,6 +1,7 @@
 #include "ViewerTheme.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -139,7 +140,9 @@ bool applyViewerTheme(
     ImFont* font =
         io.Fonts->AddFontFromFileTTF(
             STYLIZED_VIEWER_FONT_PATH,
-            baseFontSize * scale);
+            baseFontSize * scale,
+            nullptr,
+            io.Fonts->GetGlyphRangesDefault());
 
     if (font == nullptr)
     {
@@ -150,6 +153,28 @@ bool applyViewerTheme(
         font = io.Fonts->AddFontDefault(
             &fallbackConfig);
     }
+
+#ifdef STYLIZED_VIEWER_CJK_FONT_PATH
+    if (font != nullptr)
+    {
+        ImFontConfig cjkConfig;
+        cjkConfig.MergeMode = true;
+        cjkConfig.PixelSnapH = false;
+        cjkConfig.GlyphMinAdvanceX = 0.0F;
+
+        if (io.Fonts->AddFontFromFileTTF(
+                STYLIZED_VIEWER_CJK_FONT_PATH,
+                baseFontSize * scale,
+                &cjkConfig,
+                io.Fonts->GetGlyphRangesChineseFull()) == nullptr)
+        {
+            std::cerr
+                << "Failed to load Viewer CJK font: "
+                << STYLIZED_VIEWER_CJK_FONT_PATH
+                << '\n';
+        }
+    }
+#endif
 
     if (font == nullptr)
     {

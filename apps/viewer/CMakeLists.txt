@@ -47,6 +47,22 @@ target_compile_definitions(stylized_viewer
         STYLIZED_VIEWER_FONT_PATH="${imgui_SOURCE_DIR}/misc/fonts/Roboto-Medium.ttf"
 )
 
+set(STYLIZED_VIEWER_CJK_FONT_CANDIDATES
+    "C:/Windows/Fonts/NotoSansSC-VF.ttf"
+    "C:/Windows/Fonts/msyh.ttc"
+    "C:/Windows/Fonts/Deng.ttf"
+)
+
+foreach(cjk_font IN LISTS STYLIZED_VIEWER_CJK_FONT_CANDIDATES)
+    if(EXISTS "${cjk_font}")
+        target_compile_definitions(stylized_viewer
+            PRIVATE
+                STYLIZED_VIEWER_CJK_FONT_PATH="${cjk_font}"
+        )
+        break()
+    endif()
+endforeach()
+
 if(MSVC)
     target_compile_options(stylized_viewer PRIVATE
         /W4

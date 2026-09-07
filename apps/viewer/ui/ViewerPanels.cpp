@@ -47,6 +47,17 @@
 namespace
 {
 
+std::string pathToUtf8(
+    const std::filesystem::path& path)
+{
+    const std::u8string value =
+        path.generic_u8string();
+
+    return {
+        reinterpret_cast<const char*>(value.data()),
+        value.size()};
+}
+
 const char* renderTextureFormatName(
     const stylized::graphics::RenderTextureFormat format) noexcept
 {
@@ -599,7 +610,7 @@ void drawTextureStatus(
 
     const std::string textureName =
         !texture->sourcePath.empty()
-        ? texture->sourcePath.string()
+        ? pathToUtf8(texture->sourcePath)
         : !texture->debugName.empty()
             ? texture->debugName
             : "Texture asset " +
@@ -821,13 +832,13 @@ void ViewerPanels::draw(
             materialSidecarStatus_ =
                 materialSidecarFailed_
                 ? formatSidecarError(sidecarError)
-                : "Loaded: " + sidecarPath.string();
+                : "Loaded: " + pathToUtf8(sidecarPath);
         }
         else
         {
             materialSidecarStatus_ =
                 "No sidecar: " +
-                sidecarPath.string();
+                pathToUtf8(sidecarPath);
 
             materialSidecarFailed_ = false;
         }
@@ -947,7 +958,7 @@ void ViewerPanels::draw(
     ImGui::SeparatorText("Scene Instance");
 
     const std::string selectedSceneName =
-        modelPath.filename().string();
+        pathToUtf8(modelPath.filename());
 
     if (beginPropertyTable(
             "##SceneInstanceProperties"))
@@ -963,7 +974,7 @@ void ViewerPanels::draw(
                  ++index)
             {
                 const std::string visibleName =
-                    modelPaths[index].filename().string();
+                    pathToUtf8(modelPaths[index].filename());
 
                 const std::string label =
                     visibleName +
@@ -1068,7 +1079,7 @@ void ViewerPanels::draw(
         ImGui::TableSetColumnIndex(1);
         ImGui::TextWrapped(
             "%s",
-            modelPath.string().c_str());
+            pathToUtf8(modelPath).c_str());
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -1691,7 +1702,7 @@ void ViewerPanels::draw(
 
         ImGui::TextWrapped(
             "Sidecar: %s",
-            sidecarPath.string().c_str());
+            pathToUtf8(sidecarPath).c_str());
 
         stylized::material::MToonSidecarError sidecarError;
 
@@ -1716,7 +1727,7 @@ void ViewerPanels::draw(
             materialSidecarStatus_ =
                 materialSidecarFailed_
                 ? formatSidecarError(sidecarError)
-                : "Saved: " + sidecarPath.string();
+                : "Saved: " + pathToUtf8(sidecarPath);
         }
 
         ImGui::SameLine();
@@ -1737,7 +1748,7 @@ void ViewerPanels::draw(
             materialSidecarStatus_ =
                 materialSidecarFailed_
                 ? formatSidecarError(sidecarError)
-                : "Loaded: " + sidecarPath.string();
+                : "Loaded: " + pathToUtf8(sidecarPath);
         }
 
         if (!materialSidecarStatus_.empty())
