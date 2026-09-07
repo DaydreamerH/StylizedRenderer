@@ -71,9 +71,33 @@ Window::Window(const Desc& desc)
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     }
 
+    int windowWidth = static_cast<int>(desc.width);
+    int windowHeight = static_cast<int>(desc.height);
+    int monitorX = 0;
+    int monitorY = 0;
+    bool borderlessFullscreen = false;
+
+    if (desc.borderlessFullscreen)
+    {
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode =
+            monitor != nullptr ? glfwGetVideoMode(monitor) : nullptr;
+
+        if (monitor != nullptr && mode != nullptr)
+        {
+            windowWidth = mode->width;
+            windowHeight = mode->height;
+            glfwGetMonitorPos(monitor, &monitorX, &monitorY);
+
+            glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            borderlessFullscreen = true;
+        }
+    }
+
     window_ = glfwCreateWindow(
-        static_cast<int>(desc.width),
-        static_cast<int>(desc.height),
+        windowWidth,
+        windowHeight,
         desc.title.c_str(),
         nullptr,
         nullptr);
@@ -82,6 +106,11 @@ Window::Window(const Desc& desc)
     {
         std::cerr << "Failed to create GLFW window.\n";
         return;
+    }
+
+    if (borderlessFullscreen)
+    {
+        glfwSetWindowPos(window_, monitorX, monitorY);
     }
 
     glfwSetWindowUserPointer(window_, this);

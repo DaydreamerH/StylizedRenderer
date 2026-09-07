@@ -510,6 +510,7 @@ stylized::core::ApplicationDesc makeApplicationDesc(
     desc.height = 720;
     desc.visible = !smokeTest;
     desc.vsync = !smokeTest;
+    desc.borderlessFullscreen = true;
 
     return desc;
 }
