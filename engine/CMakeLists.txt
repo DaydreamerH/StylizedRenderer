@@ -1,10 +1,12 @@
 add_library(stylized_engine STATIC
     include/animation/AnimationPlayer.hpp
     include/animation/MorphState.hpp
+    include/animation/SceneMorphPose.hpp
     include/animation/ScenePose.hpp
     include/asset/AnimationAsset.hpp
     include/asset/AssetHandle.hpp
     include/asset/AssetRegistry.hpp
+    include/asset/CameraAsset.hpp
     include/asset/MaterialAsset.hpp
     include/asset/MeshAsset.hpp
     include/asset/SceneAsset.hpp
@@ -27,6 +29,7 @@ add_library(stylized_engine STATIC
     include/graphics/resources/Texture2D.hpp
     include/graphics/resources/VertexArray.hpp
     include/material/MaterialInstance.hpp
+    include/material/ScreenOutlineMaterialParameters.hpp
     include/material/MaterialTemplate.hpp
     include/material/mtoon/MToonMaterialParameters.hpp
     include/material/mtoon/MToonMaterialSidecar.hpp
@@ -35,10 +38,14 @@ add_library(stylized_engine STATIC
     include/math/Frustum.hpp
     include/platform/Window.hpp
     include/render/passes/ForwardOpaquePass.hpp
+    include/render/passes/FaceHairShadowPass.hpp
+    include/render/passes/ForwardTransparentPass.hpp
+    include/render/passes/FxaaPass.hpp
     include/render/passes/OutlineMaskPass.hpp
     include/render/passes/PostProcessPass.hpp
     include/render/passes/ScreenSpaceOutlinePass.hpp
     include/render/passes/ShadowPass.hpp
+    include/render/outline/OutlineSettings.hpp
     include/render/pipeline/FrameContext.hpp
     include/render/pipeline/FramePipeline.hpp
     include/render/pipeline/IRenderPass.hpp
@@ -62,6 +69,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/ModelImporter.cpp
     src/asset/importers/TextureImporter.cpp
     src/asset/importers/detail/AssimpAnimationImporter.cpp
+    src/asset/importers/detail/AssimpCameraImporter.cpp
     src/asset/importers/detail/AssimpMaterialImporter.cpp
     src/asset/importers/detail/AssimpMeshImporter.cpp
     src/asset/importers/detail/AssimpSceneImporter.cpp
@@ -70,6 +78,7 @@ add_library(stylized_engine STATIC
     src/asset/importers/detail/StbImage.cpp
     src/animation/AnimationPlayer.cpp
     src/animation/MorphState.cpp
+    src/animation/SceneMorphPose.cpp
     src/animation/ScenePose.cpp
     src/core/Application.cpp
     src/graphics/opengl/device/GraphicsDevice.cpp
@@ -89,6 +98,9 @@ add_library(stylized_engine STATIC
     src/math/Frustum.cpp
     src/platform/Window.cpp
     src/render/passes/ForwardOpaquePass.cpp
+    src/render/passes/FaceHairShadowPass.cpp
+    src/render/passes/ForwardTransparentPass.cpp
+    src/render/passes/FxaaPass.cpp
     src/render/passes/OutlineMaskPass.cpp
     src/render/passes/PostProcessPass.cpp
     src/render/passes/ScreenSpaceOutlinePass.cpp

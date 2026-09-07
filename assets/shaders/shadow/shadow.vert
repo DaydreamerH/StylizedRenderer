@@ -1,6 +1,7 @@
 #version 450 core
 
 layout(location = 0) in vec3 inPosition;
+layout(location = 2) in vec2 inTexCoord;
 layout(location = 4) in uvec4 inJointIndices;
 layout(location = 5) in vec4 inJointWeights;
 
@@ -15,8 +16,12 @@ uniform mat4 uModel;
 
 uniform bool uSkinningEnabled;
 
+out vec2 vTexCoord;
+
 void main()
 {
+    vTexCoord = inTexCoord;
+
     vec3 localPosition = inPosition;
 
     if (uSkinningEnabled)

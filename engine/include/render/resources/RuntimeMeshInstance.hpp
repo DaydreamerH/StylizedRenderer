@@ -1,6 +1,7 @@
 #pragma once
 
 #include <animation/MorphState.hpp>
+#include <asset/MeshAsset.hpp>
 #include <core/NonCopyable.hpp>
 #include <graphics/resources/Buffer.hpp>
 #include <graphics/resources/VertexArray.hpp>
@@ -22,6 +23,7 @@ namespace stylized::graphics
 {
 
 class GraphicsDevice;
+class ShaderProgram;
 
 } // namespace stylized::graphics
 
@@ -29,6 +31,22 @@ namespace stylized::render
 {
 
 class RuntimeMesh;
+
+namespace detail
+{
+
+struct MorphedSkinnedVertex
+{
+    glm::vec3 position{0.0F};
+    glm::vec3 normal{0.0F, 1.0F, 0.0F};
+    glm::vec4 tangent{1.0F, 0.0F, 0.0F, 1.0F};
+    glm::vec2 texCoord0{0.0F};
+
+    glm::uvec4 joints{0U};
+    glm::vec4 weights{0.0F};
+};
+
+} // namespace detail
 
 class RuntimeMeshInstance final
     : public core::NonCopyable
@@ -46,6 +64,7 @@ public:
 
     [[nodiscard]] bool initialize(
         graphics::GraphicsDevice& graphicsDevice,
+        graphics::ShaderProgram& morphComputeProgram,
         const asset::MeshAsset& meshAsset,
         const RuntimeMesh& runtimeMesh);
 
@@ -100,6 +119,10 @@ private:
         animation::MorphState morphState;
 
         graphics::Buffer vertexBuffer;
+        graphics::Buffer baseVertexBuffer;
+        graphics::Buffer morphOffsetBuffer;
+        graphics::Buffer morphDeltaBuffer;
+        graphics::Buffer morphWeightBuffer;
         graphics::VertexArray vertexArray;
 
         math::Bounds localBounds;
@@ -121,6 +144,8 @@ private:
 
     const asset::MeshAsset* meshAsset_ = nullptr;
     const RuntimeMesh* runtimeMesh_ = nullptr;
+    graphics::ShaderProgram*
+        morphComputeProgram_ = nullptr;
 
     std::vector<PrimitiveInstance> primitives_;
 

@@ -10,6 +10,7 @@
 #include <asset/TextureAsset.hpp>
 #include <render/pipeline/FramePipeline.hpp>
 #include <render/passes/ForwardOpaquePass.hpp>
+#include <render/passes/ForwardTransparentPass.hpp>
 #include <render/passes/OutlineMaskPass.hpp>
 #include <render/passes/PostProcessPass.hpp>
 #include <render/passes/ScreenSpaceOutlinePass.hpp>
@@ -18,6 +19,7 @@
 #include <render/resources/RuntimeResourceCache.hpp>
 #include <render/resources/RuntimeMeshInstance.hpp>
 #include <render/resources/SkinningPaletteSet.hpp>
+#include <scene/Transform.hpp>
 
 #include <material/MaterialInstance.hpp>
 #include <material/mtoon/MToonMaterialSidecar.hpp>
@@ -27,8 +29,15 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#include <glm/gtc/quaternion.hpp>
+#include <glm/trigonometric.hpp>
+
 #include <algorithm>
+#include <array>
 #include <cfloat>
+#include <cmath>
+#include <cstring>
+#include <iostream>
 #include <map>
 #include <span>
 #include <string>
@@ -37,6 +46,17 @@
 
 namespace
 {
+
+std::string pathToUtf8(
+    const std::filesystem::path& path)
+{
+    const std::u8string value =
+        path.generic_u8string();
+
+    return {
+        reinterpret_cast<const char*>(value.data()),
+        value.size()};
+}
 
 const char* renderTextureFormatName(
     const stylized::graphics::RenderTextureFormat format) noexcept
@@ -243,6 +263,27 @@ bool drawDragFloatProperty(
             minimum,
             maximum,
             format);
+    endPropertyRow();
+    return changed;
+}
+
+bool drawDragFloat3Property(
+    const char* label,
+    glm::vec3& value,
+    const float speed,
+    const char* format)
+{
+    beginPropertyRow(label);
+
+    const bool changed =
+        ImGui::DragFloat3(
+            "##Value",
+            &value.x,
+            speed,
+            0.0F,
+            0.0F,
+            format);
+
     endPropertyRow();
     return changed;
 }
@@ -569,7 +610,7 @@ void drawTextureStatus(
 
     const std::string textureName =
         !texture->sourcePath.empty()
-        ? texture->sourcePath.string()
+        ? pathToUtf8(texture->sourcePath)
         : !texture->debugName.empty()
             ? texture->debugName
             : "Texture asset " +
@@ -631,12 +672,51 @@ bool ViewerPanels::initialize(GLFWwindow* window)
 
 bool ViewerPanels::wantsMouseCapture() const noexcept
 {
-    if (!initialized_)
+    if (!initialized_ || !uiVisible_)
     {
         return false;
     }
 
     return ImGui::GetIO().WantCaptureMouse;
+}
+
+bool ViewerPanels::loadMaterialSidecarForScene(
+    const std::filesystem::path& modelPath,
+    const stylized::asset::SceneAsset& scene,
+    stylized::asset::AssetRegistry& assets,
+    stylized::render::RuntimeResourceCache& resourceCache,
+    const stylized::asset::AssetHandle<
+        stylized::material::MaterialTemplate>
+        materialTemplate)
+{
+    const std::filesystem::path sidecarPath =
+        makeMaterialSidecarPath(modelPath);
+
+    if (!std::filesystem::exists(sidecarPath))
+    {
+        return true;
+    }
+
+    stylized::material::MToonSidecarError error;
+    const bool loaded = loadMaterialSidecar(
+        modelPath,
+        collectMaterialHandles(assets, &scene),
+        materialTemplate,
+        assets,
+        resourceCache,
+        error);
+
+    if (!loaded)
+    {
+        std::cerr
+            << "Failed to load material sidecar: "
+            << sidecarPath
+            << " ("
+            << formatSidecarError(error)
+            << ")\n";
+    }
+
+    return loaded;
 }
 
 void ViewerPanels::beginFrame() noexcept
@@ -649,16 +729,26 @@ void ViewerPanels::beginFrame() noexcept
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    if (ImGui::IsKeyPressed(ImGuiKey_Tab, false))
+    {
+        uiVisible_ = !uiVisible_;
+        sidebarResizing_ = false;
+    }
 }
 
 void ViewerPanels::draw(
-    const std::filesystem::path& modelPath,
+    const std::span<const std::filesystem::path> modelPaths,
+    std::size_t& selectedSceneIndex,
+    stylized::scene::Transform& rootTransform,
     stylized::asset::AssetRegistry& assets,
     stylized::render::RuntimeResourceCache& resourceCache,
     const stylized::asset::AssetHandle<
         stylized::material::MaterialTemplate>
         materialTemplate,
     const stylized::asset::SceneAsset* scene,
+    const std::string_view sceneCameraName,
+    const bool sceneCameraAvailable,
     stylized::animation::AnimationPlayer&
         animationPlayer,
     const stylized::render::SkinningPaletteSet&
@@ -666,23 +756,92 @@ void ViewerPanels::draw(
     const std::span<stylized::render::RuntimeMeshInstance>
         morphMeshInstances,
     stylized::render::RenderWorld& renderWorld,
+    stylized::render::DirectionalLightData& mainLight,
     const std::size_t drawCallCount,
     const ViewerCpuTimings& cpuTimings,
     const stylized::render::FramePipeline* framePipeline,
     const stylized::render::ShadowPass* shadowPass,
     const stylized::render::ForwardOpaquePass* forwardPass,
-    const stylized::render::OutlineMaskPass* outlineMaskPass,
+    const stylized::render::ForwardTransparentPass*
+        transparentPass,
+    stylized::render::OutlineMaskPass* outlineMaskPass,
     stylized::render::ScreenSpaceOutlinePass*
         screenSpaceOutlinePass,
     const stylized::render::PostProcessPass* postProcessPass,
     stylized::material::MaterialKind& materialKind,
     bool& shadowsEnabled,
     float& exposure,
-    bool& toneMappingEnabled)
+    bool& toneMappingEnabled,
+    bool& fxaaEnabled,
+    bool& useSceneCamera)
 {
-    if (!initialized_)
+    if (!initialized_ || !uiVisible_)
     {
         return;
+    }
+
+    if (modelPaths.empty())
+    {
+        return;
+    }
+
+    selectedSceneIndex =
+        std::min(
+            selectedSceneIndex,
+            modelPaths.size() - 1);
+
+    const std::filesystem::path& modelPath =
+        modelPaths[selectedSceneIndex];
+
+    if (displayedModelPath_ != modelPath)
+    {
+        displayedModelPath_ = modelPath;
+        selectedMaterial_ = {};
+        materialSidecarStatus_.clear();
+        materialSidecarFailed_ = false;
+        pendingSidecarLoad_ = true;
+    }
+
+    const auto materialHandles =
+        collectMaterialHandles(
+            assets,
+            scene);
+
+    if (pendingSidecarLoad_ &&
+        materialKind ==
+            stylized::material::MaterialKind::MToon)
+    {
+        pendingSidecarLoad_ = false;
+
+        const std::filesystem::path sidecarPath =
+            makeMaterialSidecarPath(modelPath);
+
+        if (std::filesystem::exists(sidecarPath))
+        {
+            stylized::material::MToonSidecarError sidecarError;
+
+            materialSidecarFailed_ =
+                !loadMaterialSidecar(
+                    modelPath,
+                    materialHandles,
+                    materialTemplate,
+                    assets,
+                    resourceCache,
+                    sidecarError);
+
+            materialSidecarStatus_ =
+                materialSidecarFailed_
+                ? formatSidecarError(sidecarError)
+                : "Loaded: " + pathToUtf8(sidecarPath);
+        }
+        else
+        {
+            materialSidecarStatus_ =
+                "No sidecar: " +
+                pathToUtf8(sidecarPath);
+
+            materialSidecarFailed_ = false;
+        }
     }
 
     const ImGuiViewport* viewport =
@@ -712,19 +871,13 @@ void ViewerPanels::draw(
             minimumSidebarWidth,
             maximumSidebarWidth);
 
-    const float collapsedWidth =
-        ImGui::GetFrameHeight() +
-        2.0F * ImGui::GetStyle().WindowPadding.x;
-
     ImGui::SetNextWindowPos(
         viewport->WorkPos,
         ImGuiCond_Always);
 
     ImGui::SetNextWindowSize(
         ImVec2{
-            sidebarExpanded_
-                ? sidebarWidth_
-                : collapsedWidth,
+            sidebarWidth_,
             viewport->WorkSize.y},
         ImGuiCond_Always);
 
@@ -739,32 +892,6 @@ void ViewerPanels::draw(
         "StylizedRenderer##ViewerSidebar",
         nullptr,
         sidebarFlags);
-
-    if (!sidebarExpanded_)
-    {
-        const float buttonWidth =
-            ImGui::GetFrameHeight();
-
-        ImGui::SetCursorPosX(
-            0.5F *
-                (ImGui::GetWindowWidth() -
-                 buttonWidth));
-
-        if (ImGui::ArrowButton(
-                "##ExpandViewerSidebar",
-                ImGuiDir_Right))
-        {
-            sidebarExpanded_ = true;
-        }
-
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Expand viewer controls");
-        }
-
-        ImGui::End();
-        return;
-    }
 
     constexpr float resizeHandleWidth = 8.0F;
 
@@ -826,21 +953,109 @@ void ViewerPanels::draw(
         return;
     }
 
-    if (ImGui::TabItemButton(
-            "<<##CollapseViewerSidebar",
-            ImGuiTabItemFlags_Trailing |
-                ImGuiTabItemFlags_NoTooltip))
-    {
-        sidebarExpanded_ = false;
-    }
-
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Collapse viewer controls");
-    }
-
     if (ImGui::BeginTabItem("Scene"))
     {
+    ImGui::SeparatorText("Scene Instance");
+
+    const std::string selectedSceneName =
+        pathToUtf8(modelPath.filename());
+
+    if (beginPropertyTable(
+            "##SceneInstanceProperties"))
+    {
+        beginPropertyRow("Selected");
+
+        if (ImGui::BeginCombo(
+                "##Value",
+                selectedSceneName.c_str()))
+        {
+            for (std::size_t index = 0;
+                 index < modelPaths.size();
+                 ++index)
+            {
+                const std::string visibleName =
+                    pathToUtf8(modelPaths[index].filename());
+
+                const std::string label =
+                    visibleName +
+                    "##scene_instance_" +
+                    std::to_string(index);
+
+                const bool selected =
+                    index == selectedSceneIndex;
+
+                if (ImGui::Selectable(
+                        label.c_str(),
+                        selected))
+                {
+                    selectedSceneIndex = index;
+                }
+
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        endPropertyRow();
+
+        glm::vec3 position =
+            rootTransform.translation();
+
+        if (drawDragFloat3Property(
+                "Position",
+                position,
+                0.01F,
+                "%.3f"))
+        {
+            rootTransform.setTranslation(position);
+        }
+
+        glm::vec3 rotationDegrees =
+            glm::degrees(
+                glm::eulerAngles(
+                    rootTransform.rotation()));
+
+        if (drawDragFloat3Property(
+                "Rotation",
+                rotationDegrees,
+                0.25F,
+                "%.1f deg"))
+        {
+            const glm::quat rotation =
+                glm::quat(
+                    glm::radians(rotationDegrees));
+
+            (void)rootTransform.setRotation(rotation);
+        }
+
+        glm::vec3 scale = rootTransform.scale();
+
+        if (drawDragFloat3Property(
+                "Scale",
+                scale,
+                0.01F,
+                "%.3f"))
+        {
+            rootTransform.setScale(scale);
+        }
+
+        ImGui::EndTable();
+    }
+
+    if (ImGui::Button(
+            "Reset Transform",
+            ImVec2{-FLT_MIN, 0.0F}))
+    {
+        rootTransform.setTranslation(glm::vec3{0.0F});
+        (void)rootTransform.setRotation(
+            glm::quat{1.0F, 0.0F, 0.0F, 0.0F});
+        rootTransform.setScale(glm::vec3{1.0F});
+    }
+
     ImGui::SeparatorText("Scene Overview");
 
     if (ImGui::BeginTable(
@@ -864,7 +1079,7 @@ void ViewerPanels::draw(
         ImGui::TableSetColumnIndex(1);
         ImGui::TextWrapped(
             "%s",
-            modelPath.string().c_str());
+            pathToUtf8(modelPath).c_str());
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -1046,9 +1261,10 @@ void ViewerPanels::draw(
                 if (clip != nullptr)
                 {
                     ImGui::Text(
-                        "Duration: %.3f s | Channels: %zu",
+                        "Duration: %.3f s | Nodes: %zu | Morphs: %zu",
                         clip->durationSeconds,
-                        clip->channels.size());
+                        clip->channels.size(),
+                        clip->morphChannels.size());
                 }
             }
         }
@@ -1058,6 +1274,51 @@ void ViewerPanels::draw(
             skinningPalettes.paletteCount(),
             skinningPalettes.jointMatrixCount(),
             skinningPalettes.lastUploadCount());
+    }
+
+    ImGui::SeparatorText("Camera Control");
+
+    if (!sceneCameraAvailable)
+    {
+        useSceneCamera = false;
+
+        ImGui::TextDisabled(
+            "No scene camera JSON; manual control only.");
+    }
+    else
+    {
+        static constexpr const char* cameraModes[] = {
+            "Manual",
+            "Scene"
+        };
+
+        int cameraMode = useSceneCamera ? 1 : 0;
+
+        if (beginPropertyTable(
+                "##CameraControlProperties"))
+        {
+            if (drawComboProperty(
+                    "Mode",
+                    &cameraMode,
+                    cameraModes,
+                    2))
+            {
+                useSceneCamera = cameraMode == 1;
+            }
+
+            beginPropertyRow("Camera");
+            const std::string cameraLabel =
+                sceneCameraName.empty()
+                    ? "Unnamed JSON camera"
+                    : std::string(sceneCameraName);
+            ImGui::TextUnformatted(cameraLabel.c_str());
+
+            endPropertyRow();
+            ImGui::EndTable();
+        }
+
+        ImGui::TextDisabled(
+            "Scene camera source: JSON");
     }
 
     if (scene != nullptr &&
@@ -1353,11 +1614,6 @@ void ViewerPanels::draw(
         ImGui::EndTable();
     }
 
-    const auto materialHandles =
-        collectMaterialHandles(
-            assets,
-            scene);
-
     const auto selectedIterator =
         std::find(
             materialHandles.begin(),
@@ -1446,7 +1702,7 @@ void ViewerPanels::draw(
 
         ImGui::TextWrapped(
             "Sidecar: %s",
-            sidecarPath.string().c_str());
+            pathToUtf8(sidecarPath).c_str());
 
         stylized::material::MToonSidecarError sidecarError;
 
@@ -1471,7 +1727,7 @@ void ViewerPanels::draw(
             materialSidecarStatus_ =
                 materialSidecarFailed_
                 ? formatSidecarError(sidecarError)
-                : "Saved: " + sidecarPath.string();
+                : "Saved: " + pathToUtf8(sidecarPath);
         }
 
         ImGui::SameLine();
@@ -1492,7 +1748,7 @@ void ViewerPanels::draw(
             materialSidecarStatus_ =
                 materialSidecarFailed_
                 ? formatSidecarError(sidecarError)
-                : "Loaded: " + sidecarPath.string();
+                : "Loaded: " + pathToUtf8(sidecarPath);
         }
 
         if (!materialSidecarStatus_.empty())
@@ -1509,9 +1765,7 @@ void ViewerPanels::draw(
         }
     }
 
-    if (materialKind ==
-            stylized::material::MaterialKind::MToon &&
-        !selectedMaterial_.isNull())
+    if (!selectedMaterial_.isNull())
     {
         stylized::material::MaterialInstance* materialInstance =
             resourceCache.getOrCreateMaterialInstance(
@@ -1519,8 +1773,7 @@ void ViewerPanels::draw(
                 materialTemplate,
                 assets);
 
-        if (materialInstance != nullptr &&
-            materialInstance->mtoonParameters.has_value())
+        if (materialInstance != nullptr)
         {
             bool resetFailed = false;
 
@@ -1544,12 +1797,154 @@ void ViewerPanels::draw(
                     "Failed to reset selected material.");
             }
 
+            if (ImGui::CollapsingHeader(
+                    "Screen Outline"))
+            {
+                stylized::material::ScreenOutlineMaterialParameters& outline =
+                    materialInstance->screenOutline;
+
+                if (beginPropertyTable(
+                        "##MaterialScreenOutlineProperties"))
+                {
+                    drawCheckboxProperty(
+                        "Enabled",
+                        &outline.enabled);
+                    drawCheckboxProperty(
+                        "Depth Enabled",
+                        &outline.depthEnabled);
+                    drawCheckboxProperty(
+                        "Normal Enabled",
+                        &outline.normalEnabled);
+                    drawCheckboxProperty(
+                        "Detect Self Depth",
+                        &outline.detectSelfDepth);
+                    drawCheckboxProperty(
+                        "Detect Self Normal",
+                        &outline.detectSelfNormal);
+
+                    std::array<char, 129> groupBuffer{};
+                    std::memcpy(
+                        groupBuffer.data(),
+                        outline.group.data(),
+                        std::min(
+                            outline.group.size(),
+                            groupBuffer.size() - 1U));
+
+                    beginPropertyRow("Group");
+                    if (ImGui::InputText(
+                            "##Value",
+                            groupBuffer.data(),
+                            groupBuffer.size()))
+                    {
+                        outline.group = groupBuffer.data();
+                    }
+                    endPropertyRow();
+
+                bool widthOverride =
+                    outline.screenWidth.has_value();
+                if (drawCheckboxProperty(
+                        "Override Width",
+                        &widthOverride))
+                {
+                    if (widthOverride)
+                        outline.screenWidth = 1.0F;
+                    else
+                        outline.screenWidth.reset();
+                }
+                if (outline.screenWidth.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Width",
+                        &*outline.screenWidth,
+                        1.0F,
+                        8.0F,
+                        "%.2f");
+                }
+
+                bool depthOverride =
+                    outline.depthThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Depth Threshold",
+                        &depthOverride))
+                {
+                    if (depthOverride)
+                        outline.depthThreshold = 0.01F;
+                    else
+                        outline.depthThreshold.reset();
+                }
+                if (outline.depthThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Depth Threshold",
+                        &*outline.depthThreshold,
+                        0.0001F,
+                        0.1F,
+                        "%.4f");
+                }
+
+                bool normalOverride =
+                    outline.normalThreshold.has_value();
+                if (drawCheckboxProperty(
+                        "Override Normal Threshold",
+                        &normalOverride))
+                {
+                    if (normalOverride)
+                        outline.normalThreshold = 0.2F;
+                    else
+                        outline.normalThreshold.reset();
+                }
+                if (outline.normalThreshold.has_value())
+                {
+                    drawSliderFloatProperty(
+                        "Normal Threshold",
+                        &*outline.normalThreshold,
+                        0.001F,
+                        1.0F,
+                        "%.3f");
+                }
+
+                bool colorOverride =
+                    outline.color.has_value();
+                if (drawCheckboxProperty(
+                        "Override Color",
+                        &colorOverride))
+                {
+                    if (colorOverride)
+                        outline.color = glm::vec3{0.0F};
+                    else
+                        outline.color.reset();
+                }
+                if (outline.color.has_value())
+                {
+                    drawColorEdit3Property(
+                        "Color",
+                        &outline.color->x);
+                }
+
+                    ImGui::EndTable();
+                }
+            }
+        }
+    }
+
+    if (materialKind ==
+            stylized::material::MaterialKind::MToon &&
+        !selectedMaterial_.isNull())
+    {
+        stylized::material::MaterialInstance* materialInstance =
+            resourceCache.getOrCreateMaterialInstance(
+                selectedMaterial_,
+                materialTemplate,
+                assets);
+
+        if (materialInstance != nullptr &&
+            materialInstance->mtoonParameters.has_value())
+        {
             stylized::material::MToonMaterialParameters& parameters =
                 materialInstance->mtoonParameters.value();
 
             if (ImGui::CollapsingHeader(
-                    "Base / Shade",
-                    ImGuiTreeNodeFlags_DefaultOpen))
+                    "Base / Shade"))
             {
                 if (beginPropertyTable(
                         "##BaseShadeProperties"))
@@ -1616,6 +2011,76 @@ void ViewerPanels::draw(
                         0.0F,
                         2.0F,
                         "%.3f");
+
+                    drawSliderFloatProperty(
+                        "Surface Offset",
+                        &parameters.surfaceOffset,
+                        -0.01F,
+                        0.01F,
+                        "%.5f");
+
+                    drawSliderFloatProperty(
+                        "Shadow Influence",
+                        &parameters.shadowNormalInfluence,
+                        0.0F,
+                        1.0F,
+                        "%.3f");
+
+                    drawCheckboxProperty(
+                        "Cast System Shadow",
+                        &parameters.castShadow);
+
+                    drawCheckboxProperty(
+                        "Receive System Shadow",
+                        &parameters.receiveShadow);
+
+                    drawCheckboxProperty(
+                        "Use Shadow Cutoff",
+                        &parameters.shadowCutoffEnabled);
+
+                    if (parameters.shadowCutoffEnabled)
+                    {
+                        drawSliderFloatProperty(
+                            "Shadow Cutoff",
+                            &parameters.shadowCutoff,
+                            0.05F,
+                            0.95F,
+                            "%.3f");
+                    }
+
+                    drawCheckboxProperty(
+                        "Spherical Face Normal",
+                        &parameters.sphericalFaceNormalEnabled);
+
+                    if (parameters.sphericalFaceNormalEnabled)
+                    {
+                        drawDragFloat3Property(
+                            "Sphere Center",
+                            parameters.sphericalFaceNormalCenter,
+                            0.001F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
+                            "Sphere Radius",
+                            &parameters.sphericalFaceNormalRadius,
+                            0.001F,
+                            1.0F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
+                            "Sphere Softness",
+                            &parameters.sphericalFaceNormalSoftness,
+                            0.0F,
+                            0.25F,
+                            "%.4f");
+
+                        drawSliderFloatProperty(
+                            "Sphere Blend",
+                            &parameters.sphericalFaceNormalBlend,
+                            0.0F,
+                            1.0F,
+                            "%.3f");
+                    }
 
                     drawTextureStatus(
                         "Texture",
@@ -1737,19 +2202,8 @@ void ViewerPanels::draw(
                 }
             }
 
-            if (ImGui::CollapsingHeader("Outline"))
+            if (ImGui::CollapsingHeader("World Shell Outline"))
             {
-                int widthMode =
-                    parameters.outline.widthMode ==
-                            stylized::material::OutlineWidthMode::World
-                        ? 0
-                        : 1;
-
-                constexpr const char* widthModes[] = {
-                    "World",
-                    "Screen"
-                };
-
                 if (beginPropertyTable(
                         "##OutlineProperties"))
                 {
@@ -1757,30 +2211,10 @@ void ViewerPanels::draw(
                         "Enabled",
                         &parameters.outline.enabled);
 
-                    if (drawComboProperty(
-                            "Width Mode",
-                            &widthMode,
-                            widthModes,
-                            IM_ARRAYSIZE(widthModes)))
-                    {
-                        parameters.outline.widthMode =
-                            widthMode == 0
-                                ? stylized::material::
-                                    OutlineWidthMode::World
-                                : stylized::material::
-                                    OutlineWidthMode::Screen;
-                    }
-
-                    const float widthSpeed =
-                        parameters.outline.widthMode ==
-                                stylized::material::OutlineWidthMode::World
-                            ? 0.001F
-                            : 0.1F;
-
                     drawDragFloatProperty(
                         "Width",
                         &parameters.outline.width,
-                        widthSpeed,
+                        0.001F,
                         0.0F,
                         100.0F,
                         "%.3f");
@@ -1814,11 +2248,11 @@ void ViewerPanels::draw(
     if (ImGui::BeginTabItem("Render"))
     {
 
-    ImGui::SeparatorText("Screen Space Outline");
+    ImGui::SeparatorText("Global Outline");
 
     if (screenSpaceOutlinePass != nullptr)
     {
-        stylized::render::ScreenSpaceOutlineSettings settings =
+        stylized::render::GlobalOutlineSettings settings =
             screenSpaceOutlinePass->settings();
 
         bool changed = false;
@@ -1829,15 +2263,44 @@ void ViewerPanels::draw(
         constexpr const char* debugViews[] = {
             "Final",
             "Surface Normal",
-            "Linear Depth",
-            "Shell Outline Mask",
-            "Screen Edge",
-            "Combined Outline"
+                "Linear Depth",
+                "Shell Outline Mask",
+                "Screen Edge",
+                "Combined Outline",
+                "Depth Edge",
+                "Normal Edge",
+                "Policy Index",
+                "Group ID",
+                "Effective Depth Threshold",
+                "Effective Normal Threshold"
+            };
+
+        int mode =
+            static_cast<int>(settings.mode);
+
+        constexpr const char* modes[] = {
+            "Disabled",
+            "World",
+            "Screen"
         };
 
         if (beginPropertyTable(
-                "##ScreenOutlineProperties"))
+                "##GlobalOutlineProperties"))
         {
+            if (drawComboProperty(
+                    "Mode",
+                    &mode,
+                    modes,
+                    IM_ARRAYSIZE(modes)))
+            {
+                settings.mode =
+                    static_cast<
+                        stylized::render::GlobalOutlineMode>(
+                            mode);
+
+                changed = true;
+            }
+
             if (drawComboProperty(
                     "Debug View",
                     &debugView,
@@ -1852,34 +2315,45 @@ void ViewerPanels::draw(
                 changed = true;
             }
 
-            changed |= drawCheckboxProperty(
-                "Enabled",
-                &settings.enabled);
-
             changed |= drawColorEdit3Property(
                 "Color",
                 &settings.color.x);
 
-            changed |= drawSliderFloatProperty(
-                "Width",
-                &settings.width,
-                1.0F,
-                8.0F,
-                "%.1f");
+            if (settings.mode ==
+                stylized::render::GlobalOutlineMode::World)
+            {
+                changed |= drawDragFloatProperty(
+                    "World Width",
+                    &settings.worldWidth,
+                    0.001F,
+                    0.0F,
+                    10.0F,
+                    "%.4f");
+            }
+            else if (settings.mode ==
+                stylized::render::GlobalOutlineMode::Screen)
+            {
+                changed |= drawSliderFloatProperty(
+                    "Screen Width",
+                    &settings.screenWidth,
+                    1.0F,
+                    8.0F,
+                    "%.1f");
 
-            changed |= drawSliderFloatProperty(
-                "Depth Threshold",
-                &settings.depthThreshold,
-                0.001F,
-                0.1F,
-                "%.4f");
+                changed |= drawSliderFloatProperty(
+                    "Depth Threshold",
+                    &settings.depthThreshold,
+                    0.001F,
+                    0.1F,
+                    "%.4f");
 
-            changed |= drawSliderFloatProperty(
-                "Normal Threshold",
-                &settings.normalThreshold,
-                0.01F,
-                1.0F,
-                "%.3f");
+                changed |= drawSliderFloatProperty(
+                    "Normal Threshold",
+                    &settings.normalThreshold,
+                    0.01F,
+                    1.0F,
+                    "%.3f");
+            }
 
             ImGui::EndTable();
         }
@@ -1887,6 +2361,11 @@ void ViewerPanels::draw(
         if (changed)
         {
             screenSpaceOutlinePass->setSettings(settings);
+        }
+
+        if (outlineMaskPass != nullptr)
+        {
+            outlineMaskPass->setGlobalSettings(settings);
         }
     }
     else
@@ -1896,9 +2375,6 @@ void ViewerPanels::draw(
 
     ImGui::SeparatorText("Lighting");
 
-    const stylized::render::DirectionalLightData& mainLight =
-        renderWorld.mainView.mainLight;
-
     if (beginPropertyTable(
             "##LightingProperties"))
     {
@@ -1907,24 +2383,39 @@ void ViewerPanels::draw(
             &shadowsEnabled);
 
         beginPropertyRow("Direction");
-        ImGui::Text(
-            "(%.2f, %.2f, %.2f)",
-            mainLight.direction.x,
-            mainLight.direction.y,
-            mainLight.direction.z);
+        if (ImGui::DragFloat3(
+                "##Value",
+                &mainLight.direction.x,
+                0.01F,
+                -1.0F,
+                1.0F,
+                "%.2f"))
+        {
+            const float directionLengthSquared =
+                mainLight.direction.x * mainLight.direction.x +
+                mainLight.direction.y * mainLight.direction.y +
+                mainLight.direction.z * mainLight.direction.z;
+
+            if (directionLengthSquared > 1.0e-8F)
+            {
+                const float inverseLength =
+                    1.0F / std::sqrt(directionLengthSquared);
+
+                mainLight.direction *= inverseLength;
+            }
+        }
         endPropertyRow();
 
-        beginPropertyRow("Color");
-        ImGui::Text(
-            "(%.2f, %.2f, %.2f)",
-            mainLight.color.r,
-            mainLight.color.g,
-            mainLight.color.b);
-        endPropertyRow();
+        drawColorEdit3Property(
+            "Color",
+            &mainLight.color.r);
 
-        beginPropertyRow("Intensity");
-        ImGui::Text("%.2f", mainLight.intensity);
-        endPropertyRow();
+        drawSliderFloatProperty(
+            "Intensity",
+            &mainLight.intensity,
+            0.0F,
+            5.0F,
+            "%.2f");
 
         ImGui::EndTable();
     }
@@ -1944,6 +2435,10 @@ void ViewerPanels::draw(
         drawCheckboxProperty(
             "Tone Mapping",
             &toneMappingEnabled);
+
+        drawCheckboxProperty(
+            "FXAA",
+            &fxaaEnabled);
 
         ImGui::EndTable();
     }
@@ -2112,17 +2607,18 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
-        "OutlineMaskPass",
-        outlineMaskPass == nullptr
+        "ForwardTransparentPass",
+        transparentPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(2)
+                    !framePipeline
+                        ->passLastExecutionSucceeded(2)
                 ? "Failed"
-                : outlineMaskPass->lastDrawCallCount() == 0
+                : transparentPass->lastDrawCallCount() == 0
                     ? "Idle"
                     : "Active",
-        outlineMaskPass != nullptr
-            ? outlineMaskPass->lastDrawCallCount()
+        transparentPass != nullptr
+            ? transparentPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
             framePipeline->passHasGpuTime(2),
@@ -2131,17 +2627,37 @@ void ViewerPanels::draw(
             : 0.0);
 
     drawPassStatus(
+        "OutlineMaskPass",
+        outlineMaskPass == nullptr
+            ? "Unavailable"
+            : framePipeline != nullptr &&
+                    !framePipeline->passLastExecutionSucceeded(3)
+                ? "Failed"
+                : outlineMaskPass->lastDrawCallCount() == 0
+                    ? "Idle"
+                    : "Active",
+        outlineMaskPass != nullptr
+            ? outlineMaskPass->lastDrawCallCount()
+            : 0,
+        framePipeline != nullptr &&
+            framePipeline->passHasGpuTime(3),
+        framePipeline != nullptr
+            ? framePipeline->passGpuTimeMilliseconds(3)
+            : 0.0);
+
+    drawPassStatus(
         "ScreenSpaceOutlinePass",
         screenSpaceOutlinePass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
                     !framePipeline
-                        ->passLastExecutionSucceeded(3)
+                        ->passLastExecutionSucceeded(4)
                 ? "Failed"
                 : screenSpaceOutlinePass->settings().debugView !=
                         stylized::render::OutlineDebugView::Final
                     ? "Debug View"
-                    : screenSpaceOutlinePass->settings().enabled
+                    : screenSpaceOutlinePass->settings().mode ==
+                            stylized::render::GlobalOutlineMode::Screen
                         ? "Active"
                         : "Composite Only",
         screenSpaceOutlinePass != nullptr
@@ -2149,10 +2665,10 @@ void ViewerPanels::draw(
                 ->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(3),
+            framePipeline->passHasGpuTime(4),
         framePipeline != nullptr
             ? framePipeline
-                ->passGpuTimeMilliseconds(3)
+                ->passGpuTimeMilliseconds(4)
             : 0.0);
 
     drawPassStatus(
@@ -2160,16 +2676,16 @@ void ViewerPanels::draw(
         postProcessPass == nullptr
             ? "Unavailable"
             : framePipeline != nullptr &&
-                    !framePipeline->passLastExecutionSucceeded(4)
+                    !framePipeline->passLastExecutionSucceeded(5)
                 ? "Failed"
                 : "Active",
         postProcessPass != nullptr
             ? postProcessPass->lastDrawCallCount()
             : 0,
         framePipeline != nullptr &&
-            framePipeline->passHasGpuTime(4),
+            framePipeline->passHasGpuTime(5),
         framePipeline != nullptr
-            ? framePipeline->passGpuTimeMilliseconds(4)
+            ? framePipeline->passGpuTimeMilliseconds(5)
             : 0.0);
 
         ImGui::EndTable();

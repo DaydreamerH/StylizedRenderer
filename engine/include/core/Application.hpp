@@ -21,6 +21,7 @@ struct ApplicationDesc
     uint32_t height = 720;
     bool visible = true;
     bool vsync = true;
+    bool borderlessFullscreen = false;
 };
 
 class Application : public NonCopyable

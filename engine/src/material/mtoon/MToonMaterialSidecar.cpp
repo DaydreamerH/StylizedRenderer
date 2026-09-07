@@ -133,6 +133,7 @@ bool resolveTexturePath(
 bool restoreTexture(
     const std::filesystem::path& relativePath,
     const asset::ColorSpace colorSpace,
+    const bool generateMipmaps,
     const asset::AssetHandle<asset::TextureAsset> currentHandle,
     asset::AssetRegistry& assets,
     asset::importers::TextureImporter& importer,
@@ -194,6 +195,7 @@ bool restoreTexture(
                 );
 
             if (!filesystemError &&
+                currentTexture->generateMipmaps == generateMipmaps &&
                 currentSourcePath.lexically_normal() ==
                 resolvedPath.lexically_normal())
             {
@@ -206,7 +208,8 @@ bool restoreTexture(
     const asset::AssetHandle<asset::TextureAsset> imported =
         importer.import(
             resolvedPath,
-            colorSpace);
+            colorSpace,
+            generateMipmaps);
 
     if (imported.isNull())
     {
@@ -263,6 +266,27 @@ bool captureMToonSidecarMaterial(
     MToonSidecarMaterial captured;
 
     captured.name = materialName;
+    captured.outlineGroup =
+        instance.screenOutline.group;
+    captured.outlineDetectSelfDepth =
+        instance.screenOutline.detectSelfDepth;
+    captured.outlineDetectSelfNormal =
+        instance.screenOutline.detectSelfNormal;
+    captured.screenOutlineEnabled =
+        instance.screenOutline.enabled;
+    captured.screenOutlineDepthEnabled =
+        instance.screenOutline.depthEnabled;
+    captured.screenOutlineNormalEnabled =
+        instance.screenOutline.normalEnabled;
+    captured.screenOutlineWidth =
+        instance.screenOutline.screenWidth;
+    captured.screenOutlineDepthThreshold =
+        instance.screenOutline.depthThreshold;
+    captured.screenOutlineNormalThreshold =
+        instance.screenOutline.normalThreshold;
+    captured.screenOutlineColor =
+        instance.screenOutline.color;
+    captured.hasScreenOutline = true;
     captured.baseColorFactor =
         instance.baseColorFactor;
 
@@ -280,6 +304,52 @@ bool captureMToonSidecarMaterial(
 
     captured.normalScale =
         parameters.normalScale;
+
+    captured.surfaceOffset =
+        parameters.surfaceOffset;
+
+    captured.shadowNormalInfluence =
+        parameters.shadowNormalInfluence;
+
+    captured.castShadow =
+        parameters.castShadow;
+
+    captured.receiveShadow =
+        parameters.receiveShadow;
+
+    captured.shadowCutoffEnabled =
+        parameters.shadowCutoffEnabled;
+
+    captured.shadowCutoff =
+        parameters.shadowCutoff;
+
+    captured.faceSdf.enabled =
+        parameters.faceSdf.enabled;
+    captured.faceSdf.disableProjectedShadows =
+        parameters.faceSdf.disableProjectedShadows;
+    captured.faceSdf.flipHorizontal =
+        parameters.faceSdf.flipHorizontal;
+    captured.faceSdf.offset =
+        parameters.faceSdf.offset;
+    captured.faceSdf.softness =
+        parameters.faceSdf.softness;
+    captured.faceSdf.strength =
+        parameters.faceSdf.strength;
+
+    captured.sphericalFaceNormalEnabled =
+        parameters.sphericalFaceNormalEnabled;
+
+    captured.sphericalFaceNormalCenter =
+        parameters.sphericalFaceNormalCenter;
+
+    captured.sphericalFaceNormalRadius =
+        parameters.sphericalFaceNormalRadius;
+
+    captured.sphericalFaceNormalSoftness =
+        parameters.sphericalFaceNormalSoftness;
+
+    captured.sphericalFaceNormalBlend =
+        parameters.sphericalFaceNormalBlend;
 
     captured.giEqualization =
         parameters.giEqualization;
@@ -323,6 +393,18 @@ bool captureMToonSidecarMaterial(
     captured.outlineLightingMix =
         parameters.outline.lightingMix;
 
+    captured.occlusionStrength =
+        parameters.occlusionStrength;
+
+    captured.specularColor =
+        parameters.specularColor;
+
+    captured.specularStrength =
+        parameters.specularStrength;
+
+    captured.specularPower =
+        parameters.specularPower;
+
     if (!resolveTexturePath(
             instance.baseColorTexture,
             assets,
@@ -338,6 +420,14 @@ bool captureMToonSidecarMaterial(
             captured.textures.shade,
             materialName,
             "textures.shade",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.toonRampTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.toonRamp,
+            materialName,
+            "textures.toonRamp",
             error) ||
         !resolveTexturePath(
             parameters.textures.normalTexture,
@@ -386,6 +476,30 @@ bool captureMToonSidecarMaterial(
             captured.textures.outlineWidthMask,
             materialName,
             "textures.outlineWidthMask",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.occlusionTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.occlusion,
+            materialName,
+            "textures.occlusion",
+            error) ||
+        !resolveTexturePath(
+            parameters.textures.specularTexture,
+            assets,
+            sidecarDirectory,
+            captured.textures.specular,
+            materialName,
+            "textures.specular",
+            error) ||
+        !resolveTexturePath(
+            parameters.faceSdf.texture,
+            assets,
+            sidecarDirectory,
+            captured.faceSdf.texture,
+            materialName,
+            "faceSdf.texture",
             error))
     {
         return false;
@@ -434,6 +548,27 @@ bool applyMToonSidecarMaterial(
     MToonMaterialParameters& parameters =
         applied.mtoonParameters.value();
 
+    applied.screenOutline.group =
+        source.outlineGroup;
+    applied.screenOutline.detectSelfDepth =
+        source.outlineDetectSelfDepth;
+    applied.screenOutline.detectSelfNormal =
+        source.outlineDetectSelfNormal;
+    applied.screenOutline.enabled =
+        source.screenOutlineEnabled;
+    applied.screenOutline.depthEnabled =
+        source.screenOutlineDepthEnabled;
+    applied.screenOutline.normalEnabled =
+        source.screenOutlineNormalEnabled;
+    applied.screenOutline.screenWidth =
+        source.screenOutlineWidth;
+    applied.screenOutline.depthThreshold =
+        source.screenOutlineDepthThreshold;
+    applied.screenOutline.normalThreshold =
+        source.screenOutlineNormalThreshold;
+    applied.screenOutline.color =
+        source.screenOutlineColor;
+
     applied.baseColorFactor =
         source.baseColorFactor;
 
@@ -451,6 +586,52 @@ bool applyMToonSidecarMaterial(
 
     parameters.normalScale =
         source.normalScale;
+
+    parameters.surfaceOffset =
+        source.surfaceOffset;
+
+    parameters.shadowNormalInfluence =
+        source.shadowNormalInfluence;
+
+    parameters.castShadow =
+        source.castShadow;
+
+    parameters.receiveShadow =
+        source.receiveShadow;
+
+    parameters.shadowCutoffEnabled =
+        source.shadowCutoffEnabled;
+
+    parameters.shadowCutoff =
+        source.shadowCutoff;
+
+    parameters.faceSdf.enabled =
+        source.faceSdf.enabled;
+    parameters.faceSdf.disableProjectedShadows =
+        source.faceSdf.disableProjectedShadows;
+    parameters.faceSdf.flipHorizontal =
+        source.faceSdf.flipHorizontal;
+    parameters.faceSdf.offset =
+        source.faceSdf.offset;
+    parameters.faceSdf.softness =
+        source.faceSdf.softness;
+    parameters.faceSdf.strength =
+        source.faceSdf.strength;
+
+    parameters.sphericalFaceNormalEnabled =
+        source.sphericalFaceNormalEnabled;
+
+    parameters.sphericalFaceNormalCenter =
+        source.sphericalFaceNormalCenter;
+
+    parameters.sphericalFaceNormalRadius =
+        source.sphericalFaceNormalRadius;
+
+    parameters.sphericalFaceNormalSoftness =
+        source.sphericalFaceNormalSoftness;
+
+    parameters.sphericalFaceNormalBlend =
+        source.sphericalFaceNormalBlend;
 
     parameters.giEqualization =
         source.giEqualization;
@@ -482,8 +663,28 @@ bool applyMToonSidecarMaterial(
     parameters.outline.enabled =
         source.outlineEnabled;
 
-    parameters.outline.widthMode =
-        source.outlineWidthMode;
+    if (source.outlineWidthMode ==
+        OutlineWidthMode::Screen)
+    {
+        if (!source.hasScreenOutline)
+        {
+            applied.screenOutline.enabled =
+                source.outlineEnabled;
+            applied.screenOutline.screenWidth =
+                source.outlineWidth;
+            applied.screenOutline.color =
+                source.outlineColor;
+        }
+
+        parameters.outline.enabled = false;
+        parameters.outline.widthMode =
+            OutlineWidthMode::World;
+    }
+    else
+    {
+        parameters.outline.widthMode =
+            source.outlineWidthMode;
+    }
 
     parameters.outline.width =
         source.outlineWidth;
@@ -494,6 +695,18 @@ bool applyMToonSidecarMaterial(
     parameters.outline.lightingMix =
         source.outlineLightingMix;
 
+    parameters.occlusionStrength =
+        source.occlusionStrength;
+
+    parameters.specularColor =
+        source.specularColor;
+
+    parameters.specularStrength =
+        source.specularStrength;
+
+    parameters.specularPower =
+        source.specularPower;
+
     asset::importers::TextureImporter importer{
         assets
     };
@@ -501,6 +714,7 @@ bool applyMToonSidecarMaterial(
     if (!restoreTexture(
             source.textures.baseColor,
             asset::ColorSpace::Srgb,
+            true,
             applied.baseColorTexture,
             assets,
             importer,
@@ -512,6 +726,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.shade,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.shadeTexture,
             assets,
             importer,
@@ -521,8 +736,21 @@ bool applyMToonSidecarMaterial(
             "textures.shade",
             error) ||
         !restoreTexture(
+            source.textures.toonRamp,
+            asset::ColorSpace::Srgb,
+            false,
+            parameters.textures.toonRampTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.toonRampTexture,
+            source.name,
+            "textures.toonRamp",
+            error) ||
+        !restoreTexture(
             source.textures.normal,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.normalTexture,
             assets,
             importer,
@@ -534,6 +762,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.shadingShift,
             asset::ColorSpace::Linear,
+            false,
             parameters.textures.shadingShiftTexture,
             assets,
             importer,
@@ -545,6 +774,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.matcap,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.matcapTexture,
             assets,
             importer,
@@ -556,6 +786,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.rimMask,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.rimMaskTexture,
             assets,
             importer,
@@ -567,6 +798,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.emission,
             asset::ColorSpace::Srgb,
+            true,
             parameters.textures.emissionTexture,
             assets,
             importer,
@@ -578,6 +810,7 @@ bool applyMToonSidecarMaterial(
         !restoreTexture(
             source.textures.outlineWidthMask,
             asset::ColorSpace::Linear,
+            true,
             parameters.textures.outlineWidthMaskTexture,
             assets,
             importer,
@@ -585,6 +818,42 @@ bool applyMToonSidecarMaterial(
             parameters.textures.outlineWidthMaskTexture,
             source.name,
             "textures.outlineWidthMask",
+            error) ||
+        !restoreTexture(
+            source.textures.occlusion,
+            asset::ColorSpace::Linear,
+            true,
+            parameters.textures.occlusionTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.occlusionTexture,
+            source.name,
+            "textures.occlusion",
+            error) ||
+        !restoreTexture(
+            source.textures.specular,
+            asset::ColorSpace::Linear,
+            true,
+            parameters.textures.specularTexture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.textures.specularTexture,
+            source.name,
+            "textures.specular",
+            error) ||
+        !restoreTexture(
+            source.faceSdf.texture,
+            asset::ColorSpace::Linear,
+            false,
+            parameters.faceSdf.texture,
+            assets,
+            importer,
+            sidecarDirectory,
+            parameters.faceSdf.texture,
+            source.name,
+            "faceSdf.texture",
             error))
     {
         return false;

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 #include <string_view>
@@ -28,17 +29,49 @@ struct MToonSidecarTexturePaths
 {
     std::filesystem::path baseColor;
     std::filesystem::path shade;
+    std::filesystem::path toonRamp;
     std::filesystem::path normal;
     std::filesystem::path shadingShift;
     std::filesystem::path matcap;
     std::filesystem::path rimMask;
     std::filesystem::path emission;
     std::filesystem::path outlineWidthMask;
+    std::filesystem::path occlusion;
+    std::filesystem::path specular;
+};
+
+struct MToonSidecarFaceSdf
+{
+    bool enabled = false;
+    bool disableProjectedShadows = false;
+    bool flipHorizontal = false;
+    float offset = 0.0F;
+    float softness = 0.03F;
+    float strength = 1.0F;
+    std::filesystem::path texture;
 };
 
 struct MToonSidecarMaterial
 {
     std::string name;
+
+    // Optional shared identity used only by the global screen outline.
+    // Empty preserves the default per-source-material behavior.
+    std::string outlineGroup;
+
+    bool outlineDetectSelfDepth = true;
+    bool outlineDetectSelfNormal = true;
+
+    bool screenOutlineEnabled = true;
+    bool screenOutlineDepthEnabled = true;
+    bool screenOutlineNormalEnabled = true;
+
+    std::optional<float> screenOutlineWidth;
+    std::optional<float> screenOutlineDepthThreshold;
+    std::optional<float> screenOutlineNormalThreshold;
+    std::optional<glm::vec3> screenOutlineColor;
+
+    bool hasScreenOutline = false;
 
     glm::vec4 baseColorFactor{1.0F};
 
@@ -49,6 +82,20 @@ struct MToonSidecarMaterial
     float shadingToony = 0.9F;
 
     float normalScale = 1.0F;
+    float surfaceOffset = 0.0F;
+    float shadowNormalInfluence = 0.0F;
+    bool castShadow = true;
+    bool receiveShadow = true;
+    bool shadowCutoffEnabled = false;
+    float shadowCutoff = 0.5F;
+
+    MToonSidecarFaceSdf faceSdf;
+
+    bool sphericalFaceNormalEnabled = false;
+    glm::vec3 sphericalFaceNormalCenter{0.0F};
+    float sphericalFaceNormalRadius = 0.06F;
+    float sphericalFaceNormalSoftness = 0.015F;
+    float sphericalFaceNormalBlend = 1.0F;
 
     float giEqualization = 0.9F;
 
@@ -66,7 +113,7 @@ struct MToonSidecarMaterial
     bool outlineEnabled = false;
 
     OutlineWidthMode outlineWidthMode =
-        OutlineWidthMode::Screen;
+        OutlineWidthMode::World;
 
     float outlineWidth = 1.0F;
 
@@ -75,6 +122,12 @@ struct MToonSidecarMaterial
     float outlineLightingMix = 0.0F;
 
     MToonSidecarTexturePaths textures;
+
+    float occlusionStrength = 1.0F;
+
+    glm::vec3 specularColor{1.0F};
+    float specularStrength = 1.0F;
+    float specularPower = 64.0F;
 };
 
 struct MToonMaterialSidecar
@@ -83,7 +136,7 @@ struct MToonMaterialSidecar
         minimumSupportedVersion = 1;
 
     static constexpr std::uint32_t
-        currentVersion = 2;
+        currentVersion = 3;
 
     std::uint32_t version = currentVersion;
 

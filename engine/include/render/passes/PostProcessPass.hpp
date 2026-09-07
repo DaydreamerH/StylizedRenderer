@@ -3,6 +3,8 @@
 #include <core/NonCopyable.hpp>
 
 #include <graphics/resources/Buffer.hpp>
+#include <graphics/resources/Framebuffer.hpp>
+#include <graphics/resources/RenderTexture.hpp>
 #include <graphics/resources/ShaderProgram.hpp>
 #include <graphics/resources/VertexArray.hpp>
 
@@ -53,6 +55,9 @@ private:
     graphics::Buffer vertexBuffer_;
     graphics::Buffer indexBuffer_;
     graphics::VertexArray vertexArray_;
+
+    graphics::RenderTexture ldrColor_;
+    graphics::Framebuffer framebuffer_;
 
     std::size_t lastDrawCallCount_ = 0;
 

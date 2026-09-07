@@ -27,7 +27,7 @@ struct MToonOutlineParameters
     bool enabled = false;
 
     OutlineWidthMode widthMode =
-        OutlineWidthMode::Screen;
+        OutlineWidthMode::World;
 
     float width = 1.0F;
 
@@ -40,6 +40,9 @@ struct MToonTextureBindings
 {
     asset::AssetHandle<asset::TextureAsset>
         shadeTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        toonRampTexture;
 
     asset::AssetHandle<asset::TextureAsset>
         normalTexture;
@@ -58,6 +61,25 @@ struct MToonTextureBindings
 
     asset::AssetHandle<asset::TextureAsset>
         outlineWidthMaskTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        occlusionTexture;
+
+    asset::AssetHandle<asset::TextureAsset>
+        specularTexture;
+};
+
+struct MToonFaceSdfParameters
+{
+    bool enabled = false;
+    bool disableProjectedShadows = false;
+    bool flipHorizontal = false;
+
+    float offset = 0.0F;
+    float softness = 0.03F;
+    float strength = 1.0F;
+
+    asset::AssetHandle<asset::TextureAsset> texture;
 };
 
 struct MToonMaterialParameters
@@ -70,6 +92,20 @@ struct MToonMaterialParameters
     float giEqualization = 0.9F;
 
     float normalScale = 1.0F;
+    float surfaceOffset = 0.0F;
+    float shadowNormalInfluence = 0.0F;
+    bool castShadow = true;
+    bool receiveShadow = true;
+    bool shadowCutoffEnabled = false;
+    float shadowCutoff = 0.5F;
+
+    MToonFaceSdfParameters faceSdf;
+
+    bool sphericalFaceNormalEnabled = false;
+    glm::vec3 sphericalFaceNormalCenter{0.0F};
+    float sphericalFaceNormalRadius = 0.06F;
+    float sphericalFaceNormalSoftness = 0.015F;
+    float sphericalFaceNormalBlend = 1.0F;
 
     glm::vec3 matcapColor{1.0F};
     float matcapStrength = 0.0F;
@@ -85,6 +121,12 @@ struct MToonMaterialParameters
     MToonOutlineParameters outline;
 
     MToonTextureBindings textures;
+
+    float occlusionStrength = 1.0F;
+
+    glm::vec3 specularColor{1.0F};
+    float specularStrength = 1.0F;
+    float specularPower = 64.0F;
 };
 
 } // namespace stylized::material

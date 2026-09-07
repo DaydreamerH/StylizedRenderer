@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "headNode": "頭",
+  "headRight": [1.0, 0.0, 0.0],
+  "headForward": [0.0, 0.0, 1.0],
+  "faceMaterial": "Face__stylized_gltf",
+  "faceHairShadow": {
+    "enabled": true,
+    "casterMaterial": "HairA__stylized_gltf",
+    "resolution": 512,
+    "localCenter": [0.001066, 0.044914, 0.02416],
+    "width": 0.11,
+    "height": 0.14,
+    "depth": 0.25,
+    "cameraDistance": 0.12,
+    "alphaCutoff": 0.72,
+    "softness": 0.004,
+    "strength": 0.8,
+    "uvOffset": [0.0, 0.0]
+  }
+}

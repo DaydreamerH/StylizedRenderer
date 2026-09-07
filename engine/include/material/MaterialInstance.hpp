@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asset/AssetHandle.hpp>
+#include <material/ScreenOutlineMaterialParameters.hpp>
 #include <material/MaterialTemplate.hpp>
 #include <material/mtoon/MToonMaterialParameters.hpp>
 
@@ -23,10 +24,14 @@ struct MaterialInstance
 
     glm::vec4 baseColorFactor{1.F};
 
+    float alphaCutoff = 0.5F;
+
     float metallic = 0.F;
     float roughness = 1.F;
 
     asset::AssetHandle<asset::TextureAsset> baseColorTexture;
+
+    ScreenOutlineMaterialParameters screenOutline;
 
     std::optional<MToonMaterialParameters> mtoonParameters;
 

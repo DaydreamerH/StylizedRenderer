@@ -179,13 +179,14 @@ bool OutlineMaskPass::execute(FrameContext& frame)
     const DirectionalLightData& mainLight =
         renderWorld.mainView.mainLight;
 
+    const bool globalWorldOutlineEnabled =
+        globalSettings_.mode ==
+            GlobalOutlineMode::World &&
+        globalSettings_.worldWidth > 0.0F;
+
     if (!shader_.setMat4(
             "uViewProjection",
             renderWorld.mainView.viewProjection) ||
-        !shader_.setVec2(
-            "uViewportSize",
-            static_cast<float>(extent_.width),
-            static_cast<float>(extent_.height)) ||
         !shader_.setInt(
             "uOutlineWidthMask",
             0) ||
@@ -236,20 +237,19 @@ bool OutlineMaskPass::execute(FrameContext& frame)
                 RenderMaterialClass::Opaque ||
             item.primitive == nullptr ||
             item.vertexArray == nullptr ||
-            item.materialInstance == nullptr ||
             !item.primitive->isValid())
         {
             continue;
         }
 
-        const material::MaterialInstance&
-            materialInstance =
-                *item.materialInstance;
-
-        if (!materialInstance.mtoonParameters)
-        {
-            continue;
-        }
+        const material::MToonMaterialParameters*
+            mtoonParameters =
+                item.materialInstance != nullptr &&
+                    item.materialInstance
+                        ->mtoonParameters
+                    ? &*item.materialInstance
+                        ->mtoonParameters
+                    : nullptr;
 
         const bool skinningEnabled =
             item.skinningPalette != nullptr;
@@ -261,22 +261,47 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             return false;
         }
 
-        const material::MToonOutlineParameters&
-            outline =
-                materialInstance
-                    .mtoonParameters
-                    ->outline;
+        const material::MToonOutlineParameters*
+            materialOutline =
+                mtoonParameters != nullptr
+                    ? &mtoonParameters->outline
+                    : nullptr;
 
-        if (!outline.enabled ||
-            outline.width <= 0.0F)
+        const bool materialOutlineEnabled =
+            materialOutline != nullptr &&
+            materialOutline->enabled &&
+            materialOutline->widthMode ==
+                material::OutlineWidthMode::World &&
+            materialOutline->width > 0.0F;
+
+        if (!globalWorldOutlineEnabled &&
+            !materialOutlineEnabled)
         {
             continue;
         }
 
+        const float width =
+            globalWorldOutlineEnabled
+                ? globalSettings_.worldWidth
+                : materialOutline->width;
+
+        const glm::vec3 color =
+            globalWorldOutlineEnabled
+                ? globalSettings_.color
+                : materialOutline->color;
+
+        const float lightingMix =
+            globalWorldOutlineEnabled
+                ? 0.0F
+                : materialOutline->lightingMix;
+
         const asset::AssetHandle<asset::TextureAsset>
             widthMaskHandle =
-                materialInstance
-                    .mtoonParameters
+                globalWorldOutlineEnabled ||
+                    mtoonParameters == nullptr
+                ? asset::AssetHandle<
+                    asset::TextureAsset>{}
+                : mtoonParameters
                     ->textures.outlineWidthMaskTexture;
 
         const graphics::Texture2D& widthMaskTexture =
@@ -310,21 +335,17 @@ bool OutlineMaskPass::execute(FrameContext& frame)
             !shader_.setInt(
                 "uSkinningEnabled",
                 skinningEnabled ? 1 : 0) ||
-            !shader_.setInt(
-                "uOutlineWidthMode",
-                static_cast<int>(
-                outline.widthMode)) ||
             !shader_.setFloat(
                 "uOutlineWidth",
-                outline.width) ||
+                width) ||
             !shader_.setVec3(
                 "uOutlineColor",
-                outline.color.r,
-                outline.color.g,
-                outline.color.b) ||
+                color.r,
+                color.g,
+                color.b) ||
             !shader_.setFloat(
                 "uOutlineLightingMix",
-                outline.lightingMix))
+                lightingMix))
         {
             restoreState();
             return false;
@@ -398,6 +419,18 @@ std::size_t OutlineMaskPass::renderTargetRebuildCount()
     const noexcept
 {
     return renderTargetRebuildCount_;
+}
+
+void OutlineMaskPass::setGlobalSettings(
+    const GlobalOutlineSettings& settings) noexcept
+{
+    globalSettings_ = settings;
+}
+
+const GlobalOutlineSettings&
+OutlineMaskPass::globalSettings() const noexcept
+{
+    return globalSettings_;
 }
 
 

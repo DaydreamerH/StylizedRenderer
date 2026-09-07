@@ -54,6 +54,12 @@ RuntimeMaterial::RuntimeMaterial(
             shader_ = {};
         break;
     case material::MaterialKind::DebugNormal:
+        if (!shader_.setInt(
+                "uBaseColorTexture",
+                0))
+        {
+            shader_ = {};
+        }
         break;
     case material::MaterialKind::MToon:
         if (!shader_.setInt(
@@ -86,6 +92,25 @@ RuntimeMaterial::RuntimeMaterial(
             !shader_.setInt(
                 "uEmissionTexture",
                 7
+            ) ||
+            !shader_.setInt(
+                "uToonRampTexture",
+                8) ||
+            !shader_.setInt(
+                "uOcclusionTexture",
+                9
+            ) ||
+            !shader_.setInt(
+                "uSpecularTexture",
+                10
+            ) ||
+            !shader_.setInt(
+                "uFaceSdfTexture",
+                11
+            ) ||
+            !shader_.setInt(
+                "uFaceHairShadowMask",
+                12
             ))
         {
             shader_ = {};
@@ -172,7 +197,28 @@ bool RuntimeMaterial::bind(
         return true;
     }
     case material::MaterialKind::DebugNormal:
+    {
+        const graphics::Texture2D& baseColorTexture =
+            resourceCache.getOrCreateTexture(
+                instance.baseColorTexture,
+                assetRegistry);
+
+        if (!baseColorTexture.isValid())
+        {
+            return false;
+        }
+
+        if (!shader_.setVec4(
+                "uBaseColorFactor",
+                instance.baseColorFactor))
+        {
+            return false;
+        }
+
+        baseColorTexture.bind(0);
+
         return true;
+    }
 
     case material::MaterialKind::BasicPbr:
     {
@@ -245,6 +291,14 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& toonRampTexture =
+            parameters.textures.toonRampTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.toonRampTexture,
+                assetRegistry
+            );
+
         const graphics::Texture2D& normalTexture =
             parameters.textures.normalTexture.isNull()
             ? resourceCache.neutralNormalTexture()
@@ -277,12 +331,39 @@ bool RuntimeMaterial::bind(
                 assetRegistry
             );
 
+        const graphics::Texture2D& occlusionTexture =
+            parameters.textures.occlusionTexture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.occlusionTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& specularTexture =
+            parameters.textures.specularTexture.isNull()
+            ? resourceCache.blackTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.textures.specularTexture,
+                assetRegistry
+            );
+
+        const graphics::Texture2D& faceSdfTexture =
+            parameters.faceSdf.texture.isNull()
+            ? resourceCache.whiteTexture()
+            : resourceCache.getOrCreateTexture(
+                parameters.faceSdf.texture,
+                assetRegistry);
+
         if (!shadeTexture.isValid() ||
+            !toonRampTexture.isValid() ||
             !shadingShiftTexture.isValid() ||
             !normalTexture.isValid() ||
             !matcapTexture.isValid() ||
             !rimMaskTexture.isValid() ||
-            !emissionTexture.isValid())
+            !emissionTexture.isValid() ||
+            !occlusionTexture.isValid() ||
+            !specularTexture.isValid() ||
+            !faceSdfTexture.isValid())
         {
             return false;
         }
@@ -328,6 +409,69 @@ bool RuntimeMaterial::bind(
             "uNormalScale",
             parameters.normalScale
         ))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uSurfaceOffset",
+                parameters.surfaceOffset))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadowNormalInfluence",
+                parameters.shadowNormalInfluence))
+        {
+            return false;
+        }
+
+        if (!shader_.setFloat(
+                "uShadowCutoff",
+                parameters.shadowCutoff))
+        {
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uFaceSdfFlipHorizontal",
+                parameters.faceSdf.flipHorizontal ? 1 : 0) ||
+            !shader_.setFloat(
+                "uFaceSdfOffset",
+                parameters.faceSdf.offset) ||
+            !shader_.setFloat(
+                "uFaceSdfSoftness",
+                parameters.faceSdf.softness) ||
+            !shader_.setFloat(
+                "uFaceSdfStrength",
+                parameters.faceSdf.strength))
+        {
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uShadowCutoffEnabled",
+                parameters.shadowCutoffEnabled ? 1 : 0))
+        {
+            return false;
+        }
+
+        if (!shader_.setInt(
+                "uSphericalFaceNormalEnabled",
+                parameters.sphericalFaceNormalEnabled ? 1 : 0) ||
+            !shader_.setVec3(
+                "uSphericalFaceNormalCenter",
+                parameters.sphericalFaceNormalCenter) ||
+            !shader_.setFloat(
+                "uSphericalFaceNormalRadius",
+                parameters.sphericalFaceNormalRadius) ||
+            !shader_.setFloat(
+                "uSphericalFaceNormalSoftness",
+                parameters.sphericalFaceNormalSoftness) ||
+            !shader_.setFloat(
+                "uSphericalFaceNormalBlend",
+                parameters.sphericalFaceNormalBlend))
         {
             return false;
         }
@@ -402,6 +546,27 @@ bool RuntimeMaterial::bind(
             return false;
         }
 
+        if (!shader_.setFloat(
+            "uOcclusionStrength",
+            parameters.occlusionStrength
+        ))
+        {
+            return false;
+        }
+
+        if (!shader_.setVec3(
+                "uSpecularColor",
+                parameters.specularColor) ||
+            !shader_.setFloat(
+                "uSpecularStrength",
+                parameters.specularStrength) ||
+            !shader_.setFloat(
+                "uSpecularPower",
+                parameters.specularPower))
+        {
+            return false;
+        }
+
         baseColorTexture.bind(0);
         normalTexture.bind(2);
         shadeTexture.bind(3);
@@ -409,6 +574,10 @@ bool RuntimeMaterial::bind(
         matcapTexture.bind(5);
         rimMaskTexture.bind(6);
         emissionTexture.bind(7);
+        toonRampTexture.bind(8);
+        occlusionTexture.bind(9);
+        specularTexture.bind(10);
+        faceSdfTexture.bind(11);
 
         return true;
     }

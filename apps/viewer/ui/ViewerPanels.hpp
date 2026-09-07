@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <string_view>
 
 struct GLFWwindow;
 
@@ -39,6 +40,7 @@ class AnimationPlayer;
 namespace stylized::render
 {
 class ForwardOpaquePass;
+class ForwardTransparentPass;
 class FramePipeline;
 class OutlineMaskPass;
 class PostProcessPass;
@@ -47,7 +49,13 @@ class RuntimeMeshInstance;
 class ScreenSpaceOutlinePass;
 class ShadowPass;
 class SkinningPaletteSet;
+struct DirectionalLightData;
 struct RenderWorld;
+}
+
+namespace stylized::scene
+{
+class Transform;
 }
 
 class ViewerPanels final : public stylized::core::NonCopyable
@@ -59,16 +67,29 @@ public:
     [[nodiscard]] bool initialize(GLFWwindow* window);
     [[nodiscard]] bool wantsMouseCapture() const noexcept;
 
+    [[nodiscard]] bool loadMaterialSidecarForScene(
+        const std::filesystem::path& modelPath,
+        const stylized::asset::SceneAsset& scene,
+        stylized::asset::AssetRegistry& assets,
+        stylized::render::RuntimeResourceCache& resourceCache,
+        stylized::asset::AssetHandle<
+            stylized::material::MaterialTemplate>
+            materialTemplate);
+
     void beginFrame() noexcept;
 
     void draw(
-        const std::filesystem::path& modelPath,
+        std::span<const std::filesystem::path> modelPaths,
+        std::size_t& selectedSceneIndex,
+        stylized::scene::Transform& rootTransform,
         stylized::asset::AssetRegistry& assets,
         stylized::render::RuntimeResourceCache& resourceCache,
         stylized::asset::AssetHandle<
             stylized::material::MaterialTemplate>
             materialTemplate,
         const stylized::asset::SceneAsset* scene,
+        std::string_view sceneCameraName,
+        bool sceneCameraAvailable,
         stylized::animation::AnimationPlayer&
             animationPlayer,
         const stylized::render::SkinningPaletteSet&
@@ -76,19 +97,24 @@ public:
         std::span<stylized::render::RuntimeMeshInstance>
             morphMeshInstances,
         stylized::render::RenderWorld& renderWorld,
+        stylized::render::DirectionalLightData& mainLight,
         std::size_t drawCallCount,
         const ViewerCpuTimings& cpuTimings,
         const stylized::render::FramePipeline* framePipeline,
         const stylized::render::ShadowPass* shadowPass,
         const stylized::render::ForwardOpaquePass* forwardPass,
-        const stylized::render::OutlineMaskPass* outlineMaskPass,
+        const stylized::render::ForwardTransparentPass*
+            transparentPass,
+        stylized::render::OutlineMaskPass* outlineMaskPass,
         stylized::render::ScreenSpaceOutlinePass*
             screenSpaceOutlinePass,
         const stylized::render::PostProcessPass* postProcessPass,
         stylized::material::MaterialKind& materialKind,
         bool& shadowsEnabled,
         float& exposure,
-        bool& toneMappingEnabled);
+        bool& toneMappingEnabled,
+        bool& fxaaEnabled,
+        bool& useSceneCamera);
 
     void endFrame() noexcept;
     void shutdown() noexcept;
@@ -100,10 +126,12 @@ private:
 
     std::string materialSidecarStatus_;
     bool materialSidecarFailed_ = false;
+    std::filesystem::path displayedModelPath_;
+    bool pendingSidecarLoad_ = true;
 
     float sidebarWidth_ = 0.0F;
     bool sidebarResizing_ = false;
-    bool sidebarExpanded_ = true;
+    bool uiVisible_ = true;
     bool initialized_ = false;
 };
 

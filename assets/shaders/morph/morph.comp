@@ -1,0 +1,124 @@
+#version 450 core
+
+layout(local_size_x = 64) in;
+
+struct BaseVertex
+{
+    vec4 position;
+    vec4 normal;
+    vec4 tangent;
+};
+
+struct MorphDelta
+{
+    vec4 position;
+    vec4 normal;
+    vec4 tangent;
+    uvec4 metadata;
+};
+
+layout(std430, binding = 0)
+readonly buffer BaseVertexBuffer
+{
+    BaseVertex baseVertices[];
+};
+
+layout(std430, binding = 1)
+readonly buffer MorphOffsetBuffer
+{
+    uint vertexOffsets[];
+};
+
+layout(std430, binding = 2)
+readonly buffer MorphDeltaBuffer
+{
+    MorphDelta morphDeltas[];
+};
+
+layout(std430, binding = 3)
+readonly buffer MorphWeightBuffer
+{
+    float morphWeights[];
+};
+
+layout(std430, binding = 4)
+writeonly buffer OutputVertexBuffer
+{
+    uint outputWords[];
+};
+
+uniform uint uVertexCount;
+uniform uint uOutputStrideWords;
+uniform uint uPositionOffsetWords;
+uniform uint uNormalOffsetWords;
+uniform uint uTangentOffsetWords;
+
+vec3 normalizeOrFallback(
+    const vec3 value,
+    const vec3 fallback)
+{
+    const float lengthSquared = dot(value, value);
+
+    if (lengthSquared <= 1.0e-12)
+    {
+        return fallback;
+    }
+
+    return value * inversesqrt(lengthSquared);
+}
+
+void storeVec3(
+    const uint wordOffset,
+    const vec3 value)
+{
+    outputWords[wordOffset] = floatBitsToUint(value.x);
+    outputWords[wordOffset + 1] = floatBitsToUint(value.y);
+    outputWords[wordOffset + 2] = floatBitsToUint(value.z);
+}
+
+void main()
+{
+    const uint vertexIndex = gl_GlobalInvocationID.x;
+
+    if (vertexIndex >= uVertexCount)
+    {
+        return;
+    }
+
+    BaseVertex result = baseVertices[vertexIndex];
+
+    for (uint deltaIndex = vertexOffsets[vertexIndex];
+         deltaIndex < vertexOffsets[vertexIndex + 1];
+         ++deltaIndex)
+    {
+        const MorphDelta delta = morphDeltas[deltaIndex];
+        const float weight = morphWeights[delta.metadata.x];
+
+        result.position.xyz += delta.position.xyz * weight;
+        result.normal.xyz += delta.normal.xyz * weight;
+        result.tangent.xyz += delta.tangent.xyz * weight;
+    }
+
+    result.normal.xyz = normalizeOrFallback(
+        result.normal.xyz,
+        baseVertices[vertexIndex].normal.xyz);
+
+    result.tangent.xyz = normalizeOrFallback(
+        result.tangent.xyz,
+        baseVertices[vertexIndex].tangent.xyz);
+
+    const uint outputBase =
+        vertexIndex * uOutputStrideWords;
+
+    storeVec3(
+        outputBase + uPositionOffsetWords,
+        result.position.xyz);
+
+    storeVec3(
+        outputBase + uNormalOffsetWords,
+        result.normal.xyz);
+
+    storeVec3(
+        outputBase + uTangentOffsetWords,
+        result.tangent.xyz);
+}

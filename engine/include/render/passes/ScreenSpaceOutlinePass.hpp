@@ -9,11 +9,9 @@
 #include <graphics/resources/VertexArray.hpp>
 
 #include <render/pipeline/IRenderPass.hpp>
-
-#include <glm/vec3.hpp>
+#include <render/outline/OutlineSettings.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <string_view>
 
 namespace stylized::graphics
@@ -26,30 +24,7 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
-enum class OutlineDebugView : std::uint8_t
-{
-    Final = 0,
-    SurfaceNormal,
-    LinearDepth,
-    ShellOutlineMask,
-    ScreenEdge,
-    CombinedOutline
-};
-
-struct ScreenSpaceOutlineSettings
-{
-    bool enabled = false;
-
-    glm::vec3 color{0.0F};
-
-    float width = 1.0F;
-    float depthThreshold = 0.01F;
-    float normalThreshold = 0.2F;
-
-    OutlineDebugView debugView =
-        OutlineDebugView::Final;
-};
-
+struct RenderWorld;
 
 class ScreenSpaceOutlinePass final
     : public IRenderPass,
@@ -87,29 +62,41 @@ public:
         renderTargetRebuildCount() const noexcept;
 
     void setSettings(
-        const ScreenSpaceOutlineSettings& settings) noexcept;
+        const GlobalOutlineSettings& settings) noexcept;
 
-    [[nodiscard]] const ScreenSpaceOutlineSettings&
+    [[nodiscard]] const GlobalOutlineSettings&
         settings() const noexcept;
 
 private:
+    [[nodiscard]] bool ensurePolicyBuffer(
+        std::size_t policyCount);
+
+    [[nodiscard]] bool updatePolicyBuffer(
+        const RenderWorld& renderWorld);
+
     graphics::GraphicsDevice& graphicsDevice_;
 
     graphics::ShaderProgram shader_;
+    graphics::ShaderProgram edgeShader_;
 
     graphics::Buffer vertexBuffer_;
     graphics::Buffer indexBuffer_;
+    graphics::Buffer policyBuffer_;
     graphics::VertexArray vertexArray_;
 
     graphics::RenderTexture outlinedHdrColor_;
     graphics::Framebuffer framebuffer_;
 
+    graphics::RenderTexture screenEdgeMask_;
+    graphics::Framebuffer screenEdgeFramebuffer_;
+
     graphics::Extent2D extent_{};
 
-    ScreenSpaceOutlineSettings settings_;
+    GlobalOutlineSettings settings_;
 
     std::size_t lastDrawCallCount_ = 0;
     std::size_t renderTargetRebuildCount_ = 0;
+    std::size_t policyBufferCapacity_ = 0;
 
     bool initialized_ = false;
 };

@@ -62,7 +62,8 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
         !framebuffer_.isValid() ||
         !hdrColor_.isValid() ||
         !depth_.isValid() ||
-        !normal_.isValid())
+        !normal_.isValid() ||
+        !materialId_.isValid())
     {
         return false;
     }
@@ -76,6 +77,7 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
     frame.hdrColor = &hdrColor_;
     frame.depth = &depth_;
     frame.normal = &normal_;
+    frame.materialId = &materialId_;
     frame.framebuffer = &framebuffer_;
 
     graphicsDevice_.bindFramebuffer(&framebuffer_);
@@ -86,6 +88,12 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
         1,
         graphics::ClearValue{
             0.5F, 0.5F, 1.0F, 0.0F
+        });
+
+    graphicsDevice_.clearColorAttachment(
+        2,
+        graphics::ClearValue{
+            0.0F, 0.0F, 0.0F, 0.0F
         });
 
     const bool shadowMapAvailable =
@@ -101,7 +109,10 @@ bool ForwardOpaquePass::execute(FrameContext& frame)
     if (!renderer_.render(
             *frame.renderWorld,
             sampledShadowMap,
-            shadowMapAvailable))
+            shadowMapAvailable,
+            frame.faceFilteredShadowMap,
+            frame.faceHairShadowMask,
+            StaticModelRenderQueue::Opaque))
     {
         return false;
     }
@@ -149,6 +160,22 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
         return false;
     }
 
+    graphics::RenderTextureDesc materialIdDesc;
+    materialIdDesc.extent = extent;
+    materialIdDesc.format = graphics::RenderTextureFormat::RGBA8;
+    materialIdDesc.sampled = true;
+    materialIdDesc.debugName =
+        "Forward Opaque Material ID";
+
+    graphics::RenderTexture newMaterialId =
+        graphicsDevice_.createRenderTexture(
+            materialIdDesc);
+
+    if (!newMaterialId.isValid())
+    {
+        return false;
+    }
+
     if (!newHdrColor.isValid()) return false;
 
     graphics::DepthTextureDesc depthDesc;
@@ -162,8 +189,12 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
 
     graphics::FramebufferDesc framebufferDesc;
 
-    const std::array<const graphics::RenderTexture*, 2>
-        colorTextures{&newHdrColor, &newNormal};
+    const std::array<const graphics::RenderTexture*, 3>
+        colorTextures{
+            &newHdrColor,
+            &newNormal,
+            &newMaterialId
+        };
 
     framebufferDesc.colorTextures = colorTextures;
     framebufferDesc.depthTexture = &newDepth;
@@ -176,6 +207,7 @@ bool ForwardOpaquePass::resize(graphics::Extent2D extent)
 
     hdrColor_ = std::move(newHdrColor);
     normal_ = std::move(newNormal);
+    materialId_ = std::move(newMaterialId);
     depth_ = std::move(newDepth);
     framebuffer_ = std::move(newFramebuffer);
     extent_ = extent;
@@ -202,6 +234,7 @@ bool ForwardOpaquePass::hasRenderTargets() const noexcept
 {
     return hdrColor_.isValid() &&
         normal_.isValid() &&
+        materialId_.isValid() &&
         depth_.isValid() &&
         framebuffer_.isValid();
 }

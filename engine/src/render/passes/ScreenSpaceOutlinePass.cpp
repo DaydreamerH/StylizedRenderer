@@ -3,6 +3,7 @@
 #include <graphics/device/GraphicsCommands.hpp>
 #include <graphics/device/GraphicsDevice.hpp>
 #include <graphics/resources/DepthTexture.hpp>
+#include <material/MaterialInstance.hpp>
 #include <render/world/RenderWorld.hpp>
 
 #include <array>
@@ -10,6 +11,9 @@
 #include <cstdint>
 #include <span>
 #include <utility>
+#include <vector>
+
+#include <glm/vec4.hpp>
 
 namespace stylized::render
 {
@@ -26,7 +30,130 @@ struct FullscreenVertex
     float textureV = 0.0F;
 };
 
+struct alignas(16) GpuScreenOutlinePolicy
+{
+    glm::vec4 colorAndWidth{0.0F};
+    glm::vec4 thresholds{0.0F};
+    glm::uvec4 metadata{0U};
+};
+
+constexpr std::uint32_t policyBufferBinding = 1;
+
+constexpr std::uint32_t policyEnabled = 1U << 0U;
+constexpr std::uint32_t policyDepthEnabled = 1U << 1U;
+constexpr std::uint32_t policyNormalEnabled = 1U << 2U;
+constexpr std::uint32_t policyDetectSelfDepth = 1U << 3U;
+constexpr std::uint32_t policyDetectSelfNormal = 1U << 4U;
+
 } // namespace
+
+bool ScreenSpaceOutlinePass::ensurePolicyBuffer(
+    const std::size_t policyCount)
+{
+    if (policyCount <= policyBufferCapacity_ &&
+        policyBuffer_.isValid())
+    {
+        return true;
+    }
+
+    std::size_t newCapacity = 16;
+    while (newCapacity < policyCount)
+    {
+        newCapacity *= 2;
+    }
+
+    graphics::BufferDesc desc;
+    desc.size = newCapacity *
+        sizeof(GpuScreenOutlinePolicy);
+    desc.usage = graphics::BufferUsage::Dynamic;
+    desc.debugName = "Screen Outline Policy Buffer";
+
+    graphics::Buffer newBuffer =
+        graphicsDevice_.createBuffer(desc);
+
+    if (!newBuffer.isValid())
+    {
+        return false;
+    }
+
+    policyBuffer_ = std::move(newBuffer);
+    policyBufferCapacity_ = newCapacity;
+    return true;
+}
+
+bool ScreenSpaceOutlinePass::updatePolicyBuffer(
+    const RenderWorld& renderWorld)
+{
+    const std::size_t policyCount =
+        renderWorld.outlinePolicies.size() + 1U;
+
+    if (!ensurePolicyBuffer(policyCount))
+    {
+        return false;
+    }
+
+    std::vector<GpuScreenOutlinePolicy> policies(
+        policyCount);
+
+    for (std::size_t index = 0;
+         index < renderWorld.outlinePolicies.size();
+         ++index)
+    {
+        const ScreenOutlinePolicy& source =
+            renderWorld.outlinePolicies[index];
+
+        if (source.materialInstance == nullptr)
+        {
+            return false;
+        }
+
+        const material::ScreenOutlineMaterialParameters& parameters =
+            source.materialInstance->screenOutline;
+
+        std::uint32_t flags = 0;
+        flags |= parameters.enabled ? policyEnabled : 0U;
+        flags |= parameters.depthEnabled ? policyDepthEnabled : 0U;
+        flags |= parameters.normalEnabled ? policyNormalEnabled : 0U;
+        flags |= parameters.detectSelfDepth ? policyDetectSelfDepth : 0U;
+        flags |= parameters.detectSelfNormal ? policyDetectSelfNormal : 0U;
+
+        policies[index + 1U] =
+            GpuScreenOutlinePolicy{
+                .colorAndWidth = glm::vec4{
+                    parameters.color.value_or(settings_.color),
+                    parameters.screenWidth.value_or(
+                        settings_.screenWidth)
+                },
+                .thresholds = glm::vec4{
+                    parameters.depthThreshold.value_or(
+                        settings_.depthThreshold),
+                    parameters.normalThreshold.value_or(
+                        settings_.normalThreshold),
+                    0.0F,
+                    0.0F
+                },
+                .metadata = glm::uvec4{
+                    source.groupId,
+                    flags,
+                    0U,
+                    0U
+                }
+            };
+    }
+
+    if (!policyBuffer_.update<GpuScreenOutlinePolicy>(
+            0,
+            std::span<const GpuScreenOutlinePolicy>{
+                policies
+            }))
+    {
+        return false;
+    }
+
+    policyBuffer_.bindShaderStorage(
+        policyBufferBinding);
+    return true;
+}
 
 ScreenSpaceOutlinePass::ScreenSpaceOutlinePass(
     graphics::GraphicsDevice& graphicsDevice
@@ -55,6 +182,22 @@ bool ScreenSpaceOutlinePass::initialize()
         graphicsDevice_.createShaderProgram(shaderDesc);
 
     if (!newShader.isValid())
+    {
+        return false;
+    }
+
+    graphics::ShaderProgramDesc edgeShaderDesc;
+    edgeShaderDesc.vertexShaderPath =
+        "assets/shaders/postprocess/postprocess.vert";
+    edgeShaderDesc.fragmentShaderPath =
+        "assets/shaders/outline/screen_edge.frag";
+    edgeShaderDesc.debugName =
+        "Screen Edge Mask";
+
+    graphics::ShaderProgram newEdgeShader =
+        graphicsDevice_.createShaderProgram(edgeShaderDesc);
+
+    if (!newEdgeShader.isValid())
     {
         return false;
     }
@@ -181,6 +324,7 @@ bool ScreenSpaceOutlinePass::initialize()
     }
 
     shader_ = std::move(newShader);
+    edgeShader_ = std::move(newEdgeShader);
     vertexBuffer_ = std::move(newVertexBuffer);
     indexBuffer_ = std::move(newIndexBuffer);
     vertexArray_ = std::move(newVertexArray);
@@ -194,14 +338,16 @@ bool ScreenSpaceOutlinePass::resize(
     const graphics::Extent2D extent
 )
 {
-    if (extent.width == 0||
-        extent.height ==0)
+    if (extent.width == 0 ||
+        extent.height == 0)
     {
         return false;
     }
 
     if (outlinedHdrColor_.isValid() &&
         framebuffer_.isValid() &&
+        screenEdgeMask_.isValid() &&
+        screenEdgeFramebuffer_.isValid() &&
         extent_.width == extent.width &&
         extent_.height == extent.height)
     {
@@ -223,7 +369,25 @@ bool ScreenSpaceOutlinePass::resize(
         graphicsDevice_.createRenderTexture(textureDesc);
 
     if (!newOutlinedHdrColor.isValid())
+    {
         return false;
+    }
+
+    graphics::RenderTextureDesc edgeMaskDesc;
+    edgeMaskDesc.extent = extent;
+    edgeMaskDesc.format =
+        graphics::RenderTextureFormat::RGBA8;
+    edgeMaskDesc.sampled = true;
+    edgeMaskDesc.debugName =
+        "Raw Screen Edge Mask";
+
+    graphics::RenderTexture newScreenEdgeMask =
+        graphicsDevice_.createRenderTexture(edgeMaskDesc);
+
+    if (!newScreenEdgeMask.isValid())
+    {
+        return false;
+    }
 
     const std::array<
         const graphics::RenderTexture*,
@@ -248,11 +412,36 @@ bool ScreenSpaceOutlinePass::resize(
         return false;
     }
 
+    const std::array<
+        const graphics::RenderTexture*,
+        1> rawEdgeTextures{
+            &newScreenEdgeMask
+        };
+
+    graphics::FramebufferDesc rawEdgeFramebufferDesc;
+    rawEdgeFramebufferDesc.colorTextures = rawEdgeTextures;
+    rawEdgeFramebufferDesc.debugName =
+        "Raw Screen Edge Framebuffer";
+
+    graphics::Framebuffer newScreenEdgeFramebuffer =
+        graphicsDevice_.createFramebuffer(rawEdgeFramebufferDesc);
+
+    if (!newScreenEdgeFramebuffer.isValid())
+    {
+        return false;
+    }
+
     outlinedHdrColor_ =
         std::move(newOutlinedHdrColor);
 
+    screenEdgeMask_ =
+        std::move(newScreenEdgeMask);
+
     framebuffer_ =
         std::move(newFramebuffer);
+
+    screenEdgeFramebuffer_ =
+        std::move(newScreenEdgeFramebuffer);
 
     extent_ = extent;
 
@@ -275,23 +464,88 @@ bool ScreenSpaceOutlinePass::execute(
         frame.outlineMask == nullptr ||
         frame.depth == nullptr ||
         frame.normal == nullptr ||
+        frame.materialId == nullptr ||
         !frame.hdrColor->isValid() ||
         !frame.normal->isValid() ||
         !frame.outlineMask->isValid() ||
         !frame.depth->isValid() ||
+        !frame.materialId->isValid() ||
         !outlinedHdrColor_.isValid() ||
-        !framebuffer_.isValid())
+        !framebuffer_.isValid() ||
+        !screenEdgeMask_.isValid() ||
+        !screenEdgeFramebuffer_.isValid())
     {
         return false;
     }
 
-    frame.hdrColor->bind(0);
-    frame.outlineMask->bind(1);
-    frame.depth->bind(2);
-    frame.normal->bind(3);
-
     const RenderView& view =
         frame.renderWorld->mainView;
+
+    if (!updatePolicyBuffer(*frame.renderWorld))
+    {
+        return false;
+    }
+
+    frame.depth->bind(0);
+    frame.normal->bind(1);
+    frame.materialId->bind(2);
+
+    if (!edgeShader_.setInt(
+            "uDepth",
+            0) ||
+        !edgeShader_.setInt(
+            "uNormal",
+            1) ||
+        !edgeShader_.setInt(
+            "uMaterialId",
+            2) ||
+        !edgeShader_.setInt(
+            "uScreenOutlineEnabled",
+            settings_.mode ==
+                    GlobalOutlineMode::Screen
+                ? 1
+                : 0) ||
+        !edgeShader_.setFloat(
+            "uNearPlane",
+            view.nearPlane) ||
+        !edgeShader_.setFloat(
+            "uFarPlane",
+            view.farPlane))
+    {
+        return false;
+    }
+
+    graphicsDevice_.bindFramebuffer(
+        &screenEdgeFramebuffer_);
+
+    graphicsDevice_.setViewport(
+        extent_);
+
+    graphics::DrawIndexedCommand edgeCommand;
+
+    edgeCommand.shader =
+        &edgeShader_;
+
+    edgeCommand.vertexArray =
+        &vertexArray_;
+
+    edgeCommand.topology =
+        graphics::PrimitiveTopology::Triangles;
+
+    edgeCommand.indexType =
+        graphics::IndexType::Uint16;
+
+    edgeCommand.indexCount = 3;
+    edgeCommand.firstIndex = 0;
+
+    graphicsDevice_.drawIndexed(edgeCommand);
+
+    frame.hdrColor->bind(0);
+    frame.outlineMask->bind(1);
+    screenEdgeMask_.bind(2);
+    frame.depth->bind(3);
+    frame.normal->bind(4);
+    frame.materialId->bind(5);
 
     if (!shader_.setInt(
             "uHdrColor",
@@ -300,37 +554,31 @@ bool ScreenSpaceOutlinePass::execute(
             "uOutlineMask",
             1) ||
         !shader_.setInt(
-            "uDepth",
+            "uScreenEdgeMask",
             2) ||
         !shader_.setInt(
-            "uNormal",
+            "uDepth",
             3) ||
+        !shader_.setInt(
+            "uNormal",
+            4) ||
+        !shader_.setInt(
+            "uMaterialId",
+            5) ||
         !shader_.setInt(
             "uDebugView",
             static_cast<int>(settings_.debugView)) ||
-        !shader_.setInt(
-            "uScreenOutlineEnabled",
-            settings_.enabled ? 1 : 0) ||
         !shader_.setVec3(
             "uScreenOutlineColor",
             settings_.color.r,
             settings_.color.g,
             settings_.color.b) ||
         !shader_.setFloat(
-            "uScreenOutlineWidth",
-            settings_.width) ||
-        !shader_.setFloat(
-            "uDepthThreshold",
-            settings_.depthThreshold) ||
-        !shader_.setFloat(
             "uNearPlane",
             view.nearPlane) ||
         !shader_.setFloat(
             "uFarPlane",
-            view.farPlane) ||
-        !shader_.setFloat(
-            "uNormalThreshold",
-            settings_.normalThreshold))
+            view.farPlane))
     {
         return false;
     }
@@ -338,27 +586,15 @@ bool ScreenSpaceOutlinePass::execute(
     graphicsDevice_.bindFramebuffer(
         &framebuffer_);
 
-    graphicsDevice_.setViewport(
-        extent_);
-
-    graphics::DrawIndexedCommand command;
-
-    command.shader =
-        &shader_;
-
-    command.vertexArray =
-        &vertexArray_;
-
-    command.topology =
-        graphics::PrimitiveTopology::Triangles;
-
-    command.indexType =
-        graphics::IndexType::Uint16;
-
-    command.indexCount = 3;
-    command.firstIndex = 0;
-
-    graphicsDevice_.drawIndexed(command);
+    graphicsDevice_.drawIndexed(
+        graphics::DrawIndexedCommand{
+            .shader = &shader_,
+            .vertexArray = &vertexArray_,
+            .topology = graphics::PrimitiveTopology::Triangles,
+            .indexType = graphics::IndexType::Uint16,
+            .indexCount = 3,
+            .firstIndex = 0
+        });
 
     frame.hdrColor =
         &outlinedHdrColor_;
@@ -366,7 +602,7 @@ bool ScreenSpaceOutlinePass::execute(
     frame.framebuffer =
         &framebuffer_;
 
-    lastDrawCallCount_ = 1;
+    lastDrawCallCount_ = 2;
 
     return true;
 }
@@ -387,7 +623,9 @@ ScreenSpaceOutlinePass::lastDrawCallCount()
 bool ScreenSpaceOutlinePass::hasRenderTarget() const noexcept
 {
     return outlinedHdrColor_.isValid() &&
-        framebuffer_.isValid();
+        framebuffer_.isValid() &&
+        screenEdgeMask_.isValid() &&
+        screenEdgeFramebuffer_.isValid();
 }
 
 graphics::Extent2D
@@ -410,12 +648,12 @@ ScreenSpaceOutlinePass::renderTargetRebuildCount()
 }
 
 void ScreenSpaceOutlinePass::setSettings(
-    const ScreenSpaceOutlineSettings& settings) noexcept
+    const GlobalOutlineSettings& settings) noexcept
 {
     settings_ = settings;
 }
 
-const ScreenSpaceOutlineSettings&
+const GlobalOutlineSettings&
 ScreenSpaceOutlinePass::settings() const noexcept
 {
     return settings_;

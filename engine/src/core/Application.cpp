@@ -15,6 +15,7 @@ Application::Application(const ApplicationDesc& desc)
     windowDesc.width = desc.width;
     windowDesc.height = desc.height;
     windowDesc.visible = desc.visible;
+    windowDesc.borderlessFullscreen = desc.borderlessFullscreen;
 
     window_ = std::make_unique<platform::Window>(windowDesc);
     if (!window_->isValid())

@@ -31,7 +31,9 @@ public:
 
     void setViewport(const Extent2D& extent);
     void setCullMode(CullMode mode);
+    void setDepthTest(bool enabled);
     void setDepthWrite(bool enabled);
+    void setAlphaBlending(bool enabled);
 
     void clear(const ClearValue& value);
     void clearColorAttachment(std::uint32_t attachmentIndex, const ClearValue& value);
@@ -80,6 +82,10 @@ public:
         float factor = 0.0F,
         float units = 0.0F
     );
+
+    void setColorAttachmentWrite(
+        std::uint32_t attachmentIndex,
+        bool enabled);
 
     void clearDepth(float value = 1.0F);
 

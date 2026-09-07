@@ -2,6 +2,8 @@
 
 #include <glad/gl.h>
 
+#include <algorithm>
+#include <bit>
 #include <iostream>
 #include <limits>
 #include <utility>
@@ -110,6 +112,14 @@ GLint toOpenGLFilter(
     }
 
     return GL_LINEAR;
+}
+
+GLint toOpenGLMipmapFilter(
+    const TextureFilter filter) noexcept
+{
+    return filter == TextureFilter::Nearest
+        ? GL_NEAREST_MIPMAP_NEAREST
+        : GL_LINEAR_MIPMAP_LINEAR;
 }
 
 bool fitsGLsizei(const uint32_t value) noexcept
@@ -254,9 +264,14 @@ Texture2D::Texture2D(const Texture2DDesc& desc, const std::span<const std::byte>
         return;
     }
 
+    const GLsizei mipLevelCount = desc.generateMipmaps
+        ? static_cast<GLsizei>(std::bit_width(
+            std::max(desc.width, desc.height)))
+        : 1;
+
     glTextureStorage2D(
         id_,
-        1,
+        mipLevelCount,
         glFormat.internalFormat,
         static_cast<GLsizei>(desc.width),
         static_cast<GLsizei>(desc.height));
@@ -271,7 +286,9 @@ Texture2D::Texture2D(const Texture2DDesc& desc, const std::span<const std::byte>
     glTextureParameteri(
         id_,
         GL_TEXTURE_MIN_FILTER,
-        toOpenGLFilter(desc.minFilter));
+        desc.generateMipmaps
+            ? toOpenGLMipmapFilter(desc.minFilter)
+            : toOpenGLFilter(desc.minFilter));
     glTextureParameteri(
         id_,
         GL_TEXTURE_MAG_FILTER,
@@ -297,6 +314,12 @@ Texture2D::Texture2D(const Texture2DDesc& desc, const std::span<const std::byte>
     glPixelStorei(
         GL_UNPACK_ALIGNMENT,
         previousUnpackAlignment);
+
+    if (desc.generateMipmaps)
+    {
+        glGenerateTextureMipmap(id_);
+    }
+
     setTextureLabel(
         id_,
         desc.debugName);

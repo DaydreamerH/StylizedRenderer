@@ -22,7 +22,8 @@ public:
     [[nodiscard]]
     AssetHandle<TextureAsset> import(
         const std::filesystem::path& path,
-        ColorSpace colorSpace);
+        ColorSpace colorSpace,
+        bool generateMipmaps = true);
 
 private:
     AssetRegistry& registry_;

@@ -51,6 +51,7 @@ struct StagedScene
 {
     SceneAsset asset;
     std::vector<std::optional<std::size_t>> meshIndices;
+    std::vector<const aiNode*> sourceNodes;
 
     std::unordered_map<
         std::string,
@@ -83,6 +84,10 @@ struct StagedScene
     MeshPrimitiveAsset& primitiveAsset);
 
 [[nodiscard]] bool stageAnimations(
+    const aiScene& importedScene,
+    StagedScene& scene);
+
+[[nodiscard]] bool stageCameras(
     const aiScene& importedScene,
     StagedScene& scene);
 

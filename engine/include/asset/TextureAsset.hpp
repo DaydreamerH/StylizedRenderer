@@ -30,6 +30,7 @@ struct TextureAsset
 
     TexturePixelFormat format = TexturePixelFormat::RGBA8;
     ColorSpace colorSpace = ColorSpace::Linear;
+    bool generateMipmaps = true;
 
     std::vector<std::byte> pixels;
 

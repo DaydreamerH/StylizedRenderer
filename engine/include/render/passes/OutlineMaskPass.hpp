@@ -7,6 +7,7 @@
 #include <graphics/resources/ShaderProgram.hpp>
 
 #include <render/pipeline/IRenderPass.hpp>
+#include <render/outline/OutlineSettings.hpp>
 
 #include <cstddef>
 #include <string_view>
@@ -64,6 +65,12 @@ public:
     [[nodiscard]] std::size_t
         renderTargetRebuildCount() const noexcept;
 
+    void setGlobalSettings(
+        const GlobalOutlineSettings& settings) noexcept;
+
+    [[nodiscard]] const GlobalOutlineSettings&
+        globalSettings() const noexcept;
+
 private:
     [[nodiscard]] bool ensureFramebuffer(
         const graphics::DepthTexture& depth
@@ -82,6 +89,8 @@ private:
 
     std::size_t lastDrawCallCount_ = 0;
     std::size_t renderTargetRebuildCount_ = 0;
+
+    GlobalOutlineSettings globalSettings_;
 
     bool initialized_ = false;
 };

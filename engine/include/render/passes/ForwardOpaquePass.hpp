@@ -63,9 +63,11 @@ private:
     StaticModelRenderer renderer_;
 
     graphics::ClearValue clearValue_{
-        0.06F,
-        0.07F,
-        0.10F,
+        // Produces display RGB 213 with the default exposure, exponential
+        // tone mapping and 2.2 gamma correction.
+        1.117945F,
+        1.117945F,
+        1.117945F,
         1.0F
     };
 
@@ -75,6 +77,7 @@ private:
 
     graphics::RenderTexture hdrColor_;
     graphics::RenderTexture normal_;
+    graphics::RenderTexture materialId_;
     graphics::DepthTexture depth_;
     graphics::Framebuffer framebuffer_;
 

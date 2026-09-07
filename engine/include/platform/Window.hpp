@@ -12,7 +12,8 @@ namespace stylized::platform
 
 enum class Key : uint8_t
 {
-    Escape
+    Escape,
+    Space
 };
 
 enum class MouseButton : uint8_t
@@ -31,6 +32,7 @@ public:
         uint32_t width = 1280;
         uint32_t height = 720;
         bool visible = true;
+        bool borderlessFullscreen = false;
     };
 
     explicit Window(const Desc& desc);

@@ -9,7 +9,13 @@
 #include <render/pipeline/IRenderPass.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
+
+namespace stylized::asset
+{
+class AssetRegistry;
+} // namespace stylized::asset
 
 namespace stylized::graphics
 {
@@ -21,11 +27,22 @@ class GraphicsDevice;
 namespace stylized::render
 {
 
+class RuntimeResourceCache;
+
+enum class ShadowPassKind : std::uint8_t
+{
+    Main,
+    FaceFiltered
+};
+
 class ShadowPass final : public IRenderPass, public core::NonCopyable
 {
 public:
-    explicit ShadowPass(
-        graphics::GraphicsDevice& graphicsDevice) noexcept;
+    ShadowPass(
+        graphics::GraphicsDevice& graphicsDevice,
+        const asset::AssetRegistry& assetRegistry,
+        RuntimeResourceCache& resourceCache,
+        ShadowPassKind kind = ShadowPassKind::Main) noexcept;
 
     ~ShadowPass() override = default;
 
@@ -59,6 +76,9 @@ private:
         graphics::Extent2D extent);
 
     graphics::GraphicsDevice& graphicsDevice_;
+    const asset::AssetRegistry& assetRegistry_;
+    RuntimeResourceCache& resourceCache_;
+    ShadowPassKind kind_ = ShadowPassKind::Main;
 
     graphics::ShaderProgram shader_;
     graphics::DepthTexture depth_;

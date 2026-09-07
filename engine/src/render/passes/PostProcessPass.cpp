@@ -192,8 +192,57 @@ bool PostProcessPass::initialize()
 bool PostProcessPass::resize(
     const graphics::Extent2D extent)
 {
-    return extent.width > 0 &&
-        extent.height > 0;
+    if (extent.width == 0 || extent.height == 0)
+    {
+        return false;
+    }
+
+    if (ldrColor_.isValid() &&
+        ldrColor_.extent().width == extent.width &&
+        ldrColor_.extent().height == extent.height)
+    {
+        return true;
+    }
+
+    graphics::RenderTextureDesc colorDesc;
+    colorDesc.extent = extent;
+    colorDesc.format =
+        graphics::RenderTextureFormat::RGBA8;
+    colorDesc.debugName =
+        "Post Process LDR Color";
+
+    graphics::RenderTexture newLdrColor =
+        graphicsDevice_.createRenderTexture(
+            colorDesc);
+
+    if (!newLdrColor.isValid())
+    {
+        return false;
+    }
+
+    const std::array<const graphics::RenderTexture*, 1>
+        colorTextures{
+            &newLdrColor
+        };
+
+    graphics::FramebufferDesc framebufferDesc;
+    framebufferDesc.colorTextures = colorTextures;
+    framebufferDesc.debugName =
+        "Post Process Framebuffer";
+
+    graphics::Framebuffer newFramebuffer =
+        graphicsDevice_.createFramebuffer(
+            framebufferDesc);
+
+    if (!newFramebuffer.isValid())
+    {
+        return false;
+    }
+
+    ldrColor_ = std::move(newLdrColor);
+    framebuffer_ = std::move(newFramebuffer);
+
+    return true;
 }
 
 bool PostProcessPass::execute(
@@ -204,18 +253,22 @@ bool PostProcessPass::execute(
     if (!initialized_ ||
         frame.hdrColor == nullptr ||
         !frame.hdrColor->isValid() ||
+        !ldrColor_.isValid() ||
+        !framebuffer_.isValid() ||
         frame.framebufferSize.width == 0 ||
         frame.framebufferSize.height == 0)
     {
         return false;
     }
 
-    graphicsDevice_.bindFramebuffer(nullptr);
+    graphicsDevice_.bindFramebuffer(
+        &framebuffer_);
 
     graphicsDevice_.setViewport(
         frame.framebufferSize);
 
-    graphicsDevice_.clear(
+    graphicsDevice_.clearColorAttachment(
+        0,
         graphics::ClearValue{
             0.0F,
             0.0F,
@@ -246,6 +299,13 @@ bool PostProcessPass::execute(
         return false;
     }
 
+    graphicsDevice_.setDepthTest(false);
+    graphicsDevice_.setDepthWrite(false);
+    graphicsDevice_.setCullMode(
+        graphics::CullMode::None);
+    graphicsDevice_.setAlphaBlending(false);
+    graphicsDevice_.setColorAttachmentWrite(0, true);
+
     graphics::DrawIndexedCommand command;
 
     command.shader =
@@ -265,7 +325,13 @@ bool PostProcessPass::execute(
 
     graphicsDevice_.drawIndexed(command);
 
-    frame.framebuffer = nullptr;
+    graphicsDevice_.setDepthTest(true);
+    graphicsDevice_.setDepthWrite(true);
+    graphicsDevice_.setCullMode(
+        graphics::CullMode::Back);
+
+    frame.ldrColor = &ldrColor_;
+    frame.framebuffer = &framebuffer_;
 
     lastDrawCallCount_ = 1;
 

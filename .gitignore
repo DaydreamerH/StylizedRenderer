@@ -5,8 +5,12 @@
 /CMakeUserPresets.json
 /imgui.ini
 /assets/models/
+/README.md
+/PROJECT_PROPOSAL.md
 
 *.sln
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+
+/tools/**/__pycache__/

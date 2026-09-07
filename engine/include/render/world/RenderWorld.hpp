@@ -6,11 +6,14 @@
 #include <graphics/device/GraphicsTypes.hpp>
 
 #include <cstdint>
-#include <vector>
 #include <cstddef>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace stylized::material
@@ -95,15 +98,15 @@ struct DirectionalLightData
 struct EnvironmentLightData
 {
     glm::vec3 skyColor{
-        0.04F,
-        0.05F,
-        0.07F
+        0.075F,
+        0.045F,
+        0.065F
     };
 
     glm::vec3 groundColor{
-        0.015F,
+        0.025F,
         0.012F,
-        0.01F
+        0.020F
     };
 
     float intensity = 1.0F;
@@ -125,9 +128,34 @@ struct ShadowRenderItem
 
     const graphics::VertexArray* vertexArray = nullptr;
 
+    const material::MaterialInstance* materialInstance = nullptr;
+
     const SkinningPalette* skinningPalette = nullptr;
 
     glm::mat4 world{1.0F};
+
+    RenderMaterialClass materialClass = RenderMaterialClass::Opaque;
+    bool excludeFromFaceFilteredShadow = false;
+};
+
+struct FaceHairShadowRenderItem
+{
+    const RuntimeMeshPrimitive* primitive = nullptr;
+    const graphics::VertexArray* vertexArray = nullptr;
+    const material::MaterialInstance* materialInstance = nullptr;
+    const SkinningPalette* skinningPalette = nullptr;
+    glm::mat4 world{1.0F};
+};
+
+struct FaceHairShadowView
+{
+    bool valid = false;
+    glm::mat4 viewProjection{1.0F};
+    graphics::Extent2D extent{512, 512};
+    glm::vec2 uvOffset{0.0F};
+    float alphaCutoff = 0.72F;
+    float softness = 0.004F;
+    float strength = 0.8F;
 };
 
 struct RenderView
@@ -170,15 +198,31 @@ struct RenderItem
     glm::mat4 world{1.0F};
     glm::mat3 normalMatrix{1.0F};
 
+    bool faceSdfFrameValid = false;
+    bool receivesFaceHairShadow = false;
+    glm::vec3 faceForward{0.0F, 0.0F, 1.0F};
+    glm::vec3 faceRight{1.0F, 0.0F, 0.0F};
+    glm::vec3 faceUp{0.0F, 1.0F, 0.0F};
+
     math::Bounds worldBounds;
 
     std::uint32_t objectId = 0;
+
+    // Zero is reserved for the background. Visible materials receive a
+    // compact per-frame screen-outline policy index.
+    std::uint32_t outlinePolicyIndex = 0;
 
     RenderMaterialClass materialClass = 
         RenderMaterialClass::Opaque;
     
     RenderItemFlags flags = 
         RenderItemFlags::CastShadow | RenderItemFlags::ReceiveShadow;
+};
+
+struct ScreenOutlinePolicy
+{
+    const material::MaterialInstance* materialInstance = nullptr;
+    std::uint32_t groupId = 0;
 };
 
 struct RenderStats
@@ -197,19 +241,44 @@ struct RenderWorld
 {
     RenderView mainView;
     ShadowView shadowView;
+    FaceHairShadowView faceHairShadowView;
+
+    math::Bounds shadowCasterBounds;
+    math::Bounds shadowReceiverBounds;
 
     std::vector<RenderItem> items;
     std::vector<ShadowRenderItem> shadowItems;
+    std::vector<FaceHairShadowRenderItem> faceHairShadowItems;
+    std::vector<ScreenOutlinePolicy> outlinePolicies;
+
+    std::unordered_map<
+        const material::MaterialInstance*,
+        std::uint32_t> outlinePolicyIndices;
+
+    std::unordered_map<std::string, std::uint32_t>
+        outlineGroupIds;
 
     RenderStats renderStats;
+
+    std::uint32_t nextObjectId = 0;
 
     void clear() noexcept
     {
         items.clear();
         shadowItems.clear();
+        faceHairShadowItems.clear();
+        outlinePolicies.clear();
+        outlinePolicyIndices.clear();
+        outlineGroupIds.clear();
+
+        shadowCasterBounds = {};
+        shadowReceiverBounds = {};
 
         renderStats = {};
         shadowView = {};
+        faceHairShadowView = {};
+
+        nextObjectId = 0;
     }
 
     [[nodiscard]] bool empty() const noexcept

@@ -2,6 +2,7 @@
 
 #include <asset/AssetHandle.hpp>
 #include <asset/AnimationAsset.hpp>
+#include <asset/CameraAsset.hpp>
 #include <scene/Transform.hpp>
 
 #include <cstdint>
@@ -37,6 +38,7 @@ struct SceneAsset
     std::string name;
     std::vector<SceneNodeAsset> nodes;
     std::vector<AnimationClipAsset> animations;
+    std::vector<CameraAsset> cameras;
 
     [[nodiscard]] bool isValid() const noexcept;
 };

@@ -6,6 +6,7 @@
 #include <render/world/RenderWorld.hpp>
 #include <render/resources/RuntimeMesh.hpp>
 #include <render/resources/SkinningPalette.hpp>
+#include <render/resources/RuntimeResourceCache.hpp>
 
 #include <utility>
 
@@ -20,8 +21,14 @@ constexpr std::uint32_t skinningPaletteBinding = 0;
 } // namespace
 
 ShadowPass::ShadowPass(
-    graphics::GraphicsDevice& graphicsDevice) noexcept
-    : graphicsDevice_(graphicsDevice)
+    graphics::GraphicsDevice& graphicsDevice,
+    const asset::AssetRegistry& assetRegistry,
+    RuntimeResourceCache& resourceCache,
+    const ShadowPassKind kind) noexcept
+    : graphicsDevice_(graphicsDevice),
+      assetRegistry_(assetRegistry),
+      resourceCache_(resourceCache),
+      kind_(kind)
 {
 }
 
@@ -41,7 +48,9 @@ bool ShadowPass::initialize()
         "assets/shaders/shadow/shadow.frag";
 
     shaderDesc.debugName =
-        "Directional Shadow";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow"
+        : "Face Filtered Directional Shadow";
 
     shader_ =
         graphicsDevice_.createShaderProgram(
@@ -86,7 +95,9 @@ bool ShadowPass::ensureResources(
     depthDesc.comparisonSampling = true;
 
     depthDesc.debugName =
-        "Directional Shadow Depth";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow Depth"
+        : "Face Filtered Shadow Depth";
 
     graphics::DepthTexture newDepth =
         graphicsDevice_.createDepthTexture(
@@ -103,7 +114,9 @@ bool ShadowPass::ensureResources(
         &newDepth;
 
     framebufferDesc.debugName =
-        "Directional Shadow Framebuffer";
+        kind_ == ShadowPassKind::Main
+        ? "Directional Shadow Framebuffer"
+        : "Face Filtered Shadow Framebuffer";
 
     graphics::Framebuffer newFramebuffer =
         graphicsDevice_.createFramebuffer(
@@ -130,7 +143,15 @@ bool ShadowPass::execute(
     FrameContext& frame)
 {
     lastDrawCallCount_ = 0;
-    frame.shadowMap = nullptr;
+
+    if (kind_ == ShadowPassKind::Main)
+    {
+        frame.shadowMap = nullptr;
+    }
+    else
+    {
+        frame.faceFilteredShadowMap = nullptr;
+    }
 
     if (!initialized_ ||
         frame.renderWorld == nullptr)
@@ -145,6 +166,12 @@ bool ShadowPass::execute(
 
     const RenderWorld& renderWorld =
         *frame.renderWorld;
+
+    if (kind_ == ShadowPassKind::FaceFiltered &&
+        !renderWorld.faceHairShadowView.valid)
+    {
+        return true;
+    }
 
     if (renderWorld.shadowItems.empty())
     {
@@ -183,6 +210,12 @@ bool ShadowPass::execute(
     for (const ShadowRenderItem& item :
          renderWorld.shadowItems)
     {
+        if (kind_ == ShadowPassKind::FaceFiltered &&
+            item.excludeFromFaceFilteredShadow)
+        {
+            continue;
+        }
+
         if (item.primitive == nullptr ||
             item.vertexArray == nullptr ||
             !item.primitive->isValid())
@@ -241,6 +274,70 @@ bool ShadowPass::execute(
                 skinningPaletteBinding);
         }
 
+        const bool alphaMaskEnabled =
+            item.materialClass ==
+                RenderMaterialClass::Masked;
+
+        if (!shader_.setInt(
+                "uAlphaMaskEnabled",
+                alphaMaskEnabled ? 1 : 0))
+        {
+            graphicsDevice_.setPolygonOffset(false);
+            graphicsDevice_.bindFramebuffer(nullptr);
+            graphicsDevice_.setViewport(
+                frame.framebufferSize);
+
+            return false;
+        }
+
+        if (alphaMaskEnabled)
+        {
+            if (item.materialInstance == nullptr)
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            const material::MaterialInstance& instance =
+                *item.materialInstance;
+
+            const graphics::Texture2D& baseColorTexture =
+                resourceCache_.getOrCreateTexture(
+                    instance.baseColorTexture,
+                    assetRegistry_);
+
+            if (!baseColorTexture.isValid())
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            if (!shader_.setVec4(
+                    "uBaseColorFactor",
+                    instance.baseColorFactor) ||
+                !shader_.setFloat(
+                    "uAlphaCutoff",
+                    instance.alphaCutoff))
+            {
+                graphicsDevice_.setPolygonOffset(false);
+                graphicsDevice_.bindFramebuffer(nullptr);
+                graphicsDevice_.setViewport(
+                    frame.framebufferSize);
+
+                return false;
+            }
+
+            baseColorTexture.bind(0);
+        }
+
         graphics::DrawIndexedCommand command;
 
         command.shader =
@@ -268,8 +365,14 @@ bool ShadowPass::execute(
 
     graphicsDevice_.setPolygonOffset(false);
 
-    frame.shadowMap =
-        &depth_;
+    if (kind_ == ShadowPassKind::Main)
+    {
+        frame.shadowMap = &depth_;
+    }
+    else
+    {
+        frame.faceFilteredShadowMap = &depth_;
+    }
 
     return true;
 }
@@ -284,7 +387,9 @@ bool ShadowPass::resize(
 std::string_view ShadowPass::name()
     const noexcept
 {
-    return "ShadowPass";
+    return kind_ == ShadowPassKind::Main
+        ? "ShadowPass"
+        : "FaceFilteredShadowPass";
 }
 
 std::size_t ShadowPass::lastDrawCallCount()

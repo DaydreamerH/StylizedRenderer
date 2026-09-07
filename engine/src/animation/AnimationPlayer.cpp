@@ -1,6 +1,7 @@
 #include <animation/AnimationPlayer.hpp>
 
 #include <animation/ScenePose.hpp>
+#include <animation/SceneMorphPose.hpp>
 #include <asset/AnimationAsset.hpp>
 #include <asset/SceneAsset.hpp>
 #include <scene/Transform.hpp>
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include <glm/common.hpp>
@@ -40,10 +42,26 @@ template<typename Key>
         iterator - keys.begin());
 }
 
+[[nodiscard]] bool isCameraNode(
+    const asset::SceneAsset& sceneAsset,
+    const std::uint32_t nodeIndex) noexcept
+{
+    for (const asset::CameraAsset& camera : sceneAsset.cameras)
+    {
+        if (camera.nodeIndex == nodeIndex)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 [[nodiscard]] glm::vec3 sampleVectorTrack(
     const std::vector<asset::VectorAnimationKey>& keys,
     const float timeSeconds,
-    const glm::vec3& fallback) noexcept
+    const glm::vec3& fallback,
+    const float maximumInterpolationDelta) noexcept
 {
     if (keys.empty())
     {
@@ -76,6 +94,15 @@ template<typename Key>
     const asset::VectorAnimationKey& right =
         keys[rightIndex];
 
+    if (std::isfinite(maximumInterpolationDelta) &&
+        glm::length(right.value - left.value) >
+            maximumInterpolationDelta)
+    {
+        return right.timeSeconds <= timeSeconds
+            ? right.value
+            : left.value;
+    }
+
     const float interval =
         right.timeSeconds -
         left.timeSeconds;
@@ -101,7 +128,8 @@ template<typename Key>
     const std::vector<
         asset::QuaternionAnimationKey>& keys,
     const float timeSeconds,
-    const glm::quat& fallback) noexcept
+    const glm::quat& fallback,
+    const float maximumInterpolationAngleRadians) noexcept
 {
     if (keys.empty())
     {
@@ -133,6 +161,24 @@ template<typename Key>
 
     const asset::QuaternionAnimationKey& right =
         keys[rightIndex];
+
+    const float rotationDot = std::abs(
+        glm::dot(
+            glm::normalize(left.value),
+            glm::normalize(right.value)));
+
+    const float rotationAngle =
+        2.0F *
+        std::acos(
+            std::clamp(rotationDot, 0.0F, 1.0F));
+
+    if (std::isfinite(maximumInterpolationAngleRadians) &&
+        rotationAngle > maximumInterpolationAngleRadians)
+    {
+        return right.timeSeconds <= timeSeconds
+            ? right.value
+            : left.value;
+    }
 
     const float interval =
         right.timeSeconds -
@@ -167,6 +213,90 @@ template<typename Key>
             factor));
 }
 
+[[nodiscard]] bool sampleMorphTrack(
+    const asset::NodeMorphAnimationChannelAsset& channel,
+    const float timeSeconds,
+    std::vector<float>& sampledWeights)
+{
+    if (channel.keys.empty() ||
+        channel.targetCount == 0)
+    {
+        return false;
+    }
+
+    const auto copyKey =
+        [&sampledWeights](
+            const asset::MorphWeightKey& key)
+        {
+            sampledWeights = key.weights;
+        };
+
+    if (channel.keys.size() == 1 ||
+        timeSeconds <=
+            channel.keys.front().timeSeconds)
+    {
+        copyKey(channel.keys.front());
+        return true;
+    }
+
+    if (timeSeconds >=
+        channel.keys.back().timeSeconds)
+    {
+        copyKey(channel.keys.back());
+        return true;
+    }
+
+    const std::size_t rightIndex =
+        findRightKey(channel.keys, timeSeconds);
+
+    if (rightIndex == 0 ||
+        rightIndex >= channel.keys.size())
+    {
+        copyKey(channel.keys.back());
+        return true;
+    }
+
+    const asset::MorphWeightKey& left =
+        channel.keys[rightIndex - 1];
+    const asset::MorphWeightKey& right =
+        channel.keys[rightIndex];
+
+    if (left.weights.size() != channel.targetCount ||
+        right.weights.size() != channel.targetCount)
+    {
+        return false;
+    }
+
+    const float interval =
+        right.timeSeconds - left.timeSeconds;
+
+    if (interval <= minimumKeyInterval)
+    {
+        copyKey(right);
+        return true;
+    }
+
+    const float factor = std::clamp(
+        (timeSeconds - left.timeSeconds) / interval,
+        0.0F,
+        1.0F);
+
+    sampledWeights.resize(channel.targetCount);
+
+    for (std::size_t targetIndex = 0;
+         targetIndex < channel.targetCount;
+         ++targetIndex)
+    {
+        sampledWeights[targetIndex] =
+            std::lerp(
+                left.weights[targetIndex],
+                right.weights[targetIndex],
+                factor);
+    }
+
+    return true;
+}
+
 } // namespace
 
 bool AnimationPlayer::setClip(
@@ -175,7 +305,8 @@ bool AnimationPlayer::setClip(
     if (clip == nullptr ||
         !std::isfinite(clip->durationSeconds) ||
         clip->durationSeconds <= 0.0F ||
-        clip->channels.empty())
+        (clip->channels.empty() &&
+         clip->morphChannels.empty()))
     {
         return false;
     }
@@ -253,12 +384,14 @@ void AnimationPlayer::seek(
 bool AnimationPlayer::update(
     const float deltaTime,
     const asset::SceneAsset& sceneAsset,
-    ScenePose& pose) noexcept
+    ScenePose& pose,
+    SceneMorphPose& morphPose) noexcept
 {
     if (clip_ == nullptr ||
         !std::isfinite(deltaTime) ||
         deltaTime < 0.0F ||
-        !pose.isForScene(sceneAsset))
+        !pose.isForScene(sceneAsset) ||
+        !morphPose.isForScene(sceneAsset))
     {
         return false;
     }
@@ -318,10 +451,12 @@ bool AnimationPlayer::update(
             return false;
         }
 
+        morphPose.reset();
+
         resetPoseOnNextSample_ = false;
     }
 
-    if (!sample(pose))
+    if (!sample(sceneAsset, pose, morphPose))
     {
         return false;
     }
@@ -357,13 +492,34 @@ float AnimationPlayer::playbackSpeed() const noexcept
     return playbackSpeed_;
 }
 
+void AnimationPlayer::setCameraInterpolationThresholds(
+    const CameraInterpolationThresholds& thresholds) noexcept
+{
+    cameraInterpolationThresholds_.translation =
+        std::max(thresholds.translation, 0.0F);
+    cameraInterpolationThresholds_.rotationDegrees =
+        std::max(thresholds.rotationDegrees, 0.0F);
+    cameraInterpolationThresholds_.scale =
+        std::max(thresholds.scale, 0.0F);
+}
+
+const CameraInterpolationThresholds&
+AnimationPlayer::cameraInterpolationThresholds() const noexcept
+{
+    return cameraInterpolationThresholds_;
+}
+
 bool AnimationPlayer::sample(
-    ScenePose& pose) noexcept
+    const asset::SceneAsset& sceneAsset,
+    ScenePose& pose,
+    SceneMorphPose& morphPose) noexcept
 {
     if (clip_ == nullptr)
     {
         return false;
     }
+
+    bool transformsChanged = false;
 
     for (const asset::NodeAnimationChannelAsset& channel :
          clip_->channels)
@@ -379,13 +535,35 @@ bool AnimationPlayer::sample(
         scene::Transform sampledTransform =
             *currentTransform;
 
+        const bool isCameraChannel =
+            isCameraNode(
+                sceneAsset,
+                channel.nodeIndex);
+
+        const float vectorInterpolationDelta =
+            isCameraChannel
+                ? cameraInterpolationThresholds_.translation
+                : std::numeric_limits<float>::infinity();
+
+        const float rotationInterpolationAngleRadians =
+            isCameraChannel
+                ? glm::radians(
+                    cameraInterpolationThresholds_.rotationDegrees)
+                : std::numeric_limits<float>::infinity();
+
+        const float scaleInterpolationDelta =
+            isCameraChannel
+                ? cameraInterpolationThresholds_.scale
+                : std::numeric_limits<float>::infinity();
+
         if (!channel.translations.empty())
         {
             sampledTransform.setTranslation(
                 sampleVectorTrack(
                     channel.translations,
                     currentTime_,
-                    currentTransform->translation()));
+                    currentTransform->translation(),
+                    vectorInterpolationDelta));
         }
 
         if (!channel.rotations.empty())
@@ -394,7 +572,8 @@ bool AnimationPlayer::sample(
                     sampleRotationTrack(
                         channel.rotations,
                         currentTime_,
-                        currentTransform->rotation())))
+                        currentTransform->rotation(),
+                        rotationInterpolationAngleRadians)))
             {
                 return false;
             }
@@ -406,7 +585,8 @@ bool AnimationPlayer::sample(
                 sampleVectorTrack(
                     channel.scales,
                     currentTime_,
-                    currentTransform->scale()));
+                    currentTransform->scale(),
+                    scaleInterpolationDelta));
         }
 
         if (!pose.setLocalTransform(
@@ -415,9 +595,35 @@ bool AnimationPlayer::sample(
         {
             return false;
         }
+
+
+        transformsChanged = true;
     }
 
-    return pose.updateWorldMatrices();
+    if (transformsChanged &&
+        !pose.updateWorldMatrices())
+    {
+        return false;
+    }
+
+    std::vector<float> sampledWeights;
+
+    for (const asset::NodeMorphAnimationChannelAsset& channel :
+         clip_->morphChannels)
+    {
+        if (!sampleMorphTrack(
+                channel,
+                currentTime_,
+                sampledWeights) ||
+            !morphPose.setWeights(
+                channel.nodeIndex,
+                sampledWeights))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace stylized::animation
